@@ -52,7 +52,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     if (!selectedVideoForFace) return;
 
     console.log("เลือกรูปภาพสำหรับวิดีโอ:", selectedVideoForFace.id, image);
-    
+
     // อัพเดท state ของรูปภาพที่เลือก
     setSelectedFaceImages(prev => ({
       ...prev,
@@ -430,8 +430,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
               onMouseLeave={() => setHoverRatings(prev => ({ ...prev, [videoId]: 0 }))}
               xmlns="http://www.w3.org/2000/svg"
               className={`${starSize} cursor-pointer transition-colors ${(currentHoverRating || currentRating) >= star
-                  ? 'text-yellow-400'
-                  : 'text-gray-400'
+                ? 'text-yellow-400'
+                : 'text-gray-400'
                 }`}
               fill="currentColor"
               viewBox="0 0 20 20"
@@ -485,10 +485,10 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                 key={star}
                 xmlns="http://www.w3.org/2000/svg"
                 className={`${starSize} ${star <= Math.floor(averageRating)
+                  ? 'text-yellow-400'
+                  : star === Math.ceil(averageRating) && averageRating % 1 !== 0
                     ? 'text-yellow-400'
-                    : star === Math.ceil(averageRating) && averageRating % 1 !== 0
-                      ? 'text-yellow-400'
-                      : 'text-gray-400'
+                    : 'text-gray-400'
                   }`}
                 fill="currentColor"
                 viewBox="0 0 20 20"
@@ -692,13 +692,42 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                       🏆 热门演员排名 #{actorRank}
                     </p>
                   )}
-                  {['age', 'height', 'weight', 'nationality', 'other'].map(key =>
+                  {['age', 'height', 'weight', 'nationality'].map(key =>
                     profile[key] && profile[key] !== 'ไม่ระบุ' && (
-                      <p key={key} className={`text-base ${textSec} drop-shadow-md font-medium`}>
-                        {key === 'age' ? '年龄' : key === 'height' ? '身高' : key === 'weight' ? '体重' : key === 'nationality' ? '国籍' : '其他'}: {profile[key]}
+                      <p
+                        key={key}
+                        className={`text-base ${textSec} drop-shadow-md font-medium`}
+                      >
+                        {key === 'age'
+                          ? '年龄'
+                          : key === 'height'
+                            ? '身高'
+                            : key === 'weight'
+                              ? '体重'
+                              : '国籍'}:{' '}
+                        {profile[key]}
                       </p>
                     )
                   )}
+
+                  {/* จัดการเฉพาะ 'other' แยกออกมา */}
+                  {profile.other && profile.other !== 'ไม่ระบุ' && (
+                    <p
+                      className={`text-base ${textSec} drop-shadow-md font-medium break-words whitespace-normal overflow-hidden text-ellipsis`}
+                      style={{
+                        maxWidth: '170px',
+                        wordBreak: 'break-word',
+                        whiteSpace: 'normal',
+                        flexShrink: 0,
+                        lineHeight: '1.5',
+                        paddingLeft: '2.5em', // ระยะเยื้องหลังเครื่องหมาย :
+                        textIndent: '-2.5em', // ดึงบรรทัดแรกกลับ
+                      }}
+                    >
+                      其他: {profile.other}
+                    </p>
+                  )}
+
                   <p className={`text-base ${textSec} font-semibold drop-shadow-md`}>视频数量: {profile.videoCount} 部</p>
                 </div>
               </div>
@@ -878,10 +907,11 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                             <RatingStats videoId={video.id} size="sm" />
                           </div>
 
-                          <div className="flex items-center justify-between">
-                            <div className='flex flex-row items-center gap-1'>
+                          <div className="flex items-center justify-between w-full">
+                            {/* ซ้าย: ไอคอนไฟ + view */}
+                            <div className="flex items-center gap-1">
                               {video.views >= 1000 && (
-                                <div className="-mt-1 -mr-1 fire-icon-container">
+                                <div className="fire-icon-container">
                                   <FireIcon />
                                 </div>
                               )}
@@ -889,8 +919,18 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                                 {formatViewCount(video.views)} 次观看
                               </p>
                             </div>
-                            {video.uploadDate && <p className={`text-xs ${textSec} drop-shadow`}>{video.uploadDate}</p>}
+
+                            {/* กลาง: ID */}
+                            <span className="text-white">{video.id}</span>
+
+                            {/* ขวา: วันที่ */}
+                            {video.uploadDate && (
+                              <p className={`text-xs ${textSec} drop-shadow`}>
+                                {video.uploadDate}
+                              </p>
+                            )}
                           </div>
+
                         </div>
                       </div>
                     );
@@ -933,7 +973,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
               </button>
             </div>
             <div className="p-4 max-h-[70vh] overflow-y-auto">
-              <ImageSelector 
+              <ImageSelector
                 onImageSelect={handleFaceImageSelect}
                 isDarkMode={isDarkMode}
               />

@@ -276,9 +276,42 @@ export const getVideoById = async (id) => {
 };
 
 // ค้นหาวิดีโอ
+// 🔍 ค้นหาวิดีโอ (รองรับการค้นหาด้วยชื่อ, id เดี่ยว, และ id หลายตัว)
 export const searchVideos = async (query, limit = 0) => {
-  if (!query.trim()) return [];
-  return fetchVideosFromAPI_S('', query, limit);
+  if (!query || !query.trim()) return [];
+
+  const trimmedQuery = query.trim();
+
+  // ✅ ตรวจสอบว่าผู้ใช้ป้อน id เดียวหรือหลาย id
+  const idList = trimmedQuery
+    .split(/[,\s]+/) // แยกด้วย comma หรือช่องว่าง
+    .map(id => id.trim())
+    .filter(id => /^\d+$/.test(id)); // เอาเฉพาะตัวเลข
+
+  if (idList.length > 0) {
+    // ✅ ถ้ามี id มากกว่า 1 — ดึงทั้งหมดในคราวเดียว
+    if (idList.length === 1) {
+      const video = await getVideoById(idList[0]);
+      return video ? [video] : [];
+    } else {
+      // ดึงข้อมูลหลายวิดีโอพร้อมกัน
+      const videos = await getVideosWithDetails(idList);
+
+      // ดึงยอดวิวจากเซิร์ฟเวอร์
+      const serverViews = await fetchViewsFromServer(idList);
+
+      // รวมยอดวิว
+      const videosWithServerViews = videos.map(video => ({
+        ...video,
+        views: serverViews[video.id] || video.views
+      }));
+
+      return videosWithServerViews;
+    }
+  }
+
+  // ✅ ถ้าไม่ใช่ตัวเลข — ค้นหาตามชื่อหรือคำค้นตามปกติ
+  return fetchVideosFromAPI_S('', trimmedQuery, limit);
 };
 
 // ดึงวิดีโอตามหมวดหมู่
