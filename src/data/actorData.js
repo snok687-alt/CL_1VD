@@ -18,7 +18,7 @@ const actorsDatabase = [
     title: "可爱美丽的沙月惠奈..."
   },
   {
-    vod_id: "84661, 59738, 59737, 89875, 90898, 88222, 88034, 91141, 94347, 98313",
+    vod_id: "84661, 59738, 59737, 89875, 90898, 88222, 88034, 91141, 94347, 98313, 99207, 98408, 94645, 92490, 91141, 88226, 87180, 86741, 84661, 82403, 82127, 64526, 51924",
     actors: ["白峰美羽"],
     title: "當我查看妻子的智慧型手機..."
   },
@@ -341,6 +341,41 @@ const actorsDatabase = [
     vod_id: "49417, 56558, 38494, 38491, 38497, 38487, 38485, 38429, 38443, 38357, 38347",
     actors: ["宮村菜菜子"],
     title: "女僕裝可愛侍奉 3P中出榨精"
+  },
+  {
+    vod_id: "98811, 95532, 94647, 78947, 78131, 78127, 78125, ",
+    actors: ["有馬瑞希"],
+    title: "受虐調教孕ませ性交…恥辱的家庭訪問"
+  },
+  {
+    vod_id: "98810, 90920, 83214, 78131, 78127, 76580, 76579, 76577, 76576, 76574, 76569",
+    actors: ["虹村夢"],
+    title: "令嬢調教 監禁30日懷孕中出毒的受虐女…「種付」"
+  },
+  {
+    vod_id: "60917, 58648, 52282, 42497, 80472",
+    actors: ["星乃夏月"],
+    title: "美乳、特濃。「一直在高潮…一直在啊…」淫亂絶頂生徒會長 濃厚パイズリ409連發"
+  },
+  {
+    vod_id: "76524",
+    actors: ["仲村奈々美"],
+    title: "尻貴族sports edition 滑雪隊長×仲村奈々美 尻愛的ハメ潮2連発！！"
+  },
+  {
+    vod_id: "68505, 71979",
+    actors: ["星名千聖"],
+    title: "女王様本格調教 4 真實女王SM調教全紀錄"
+  },
+  {
+    vod_id: "99492, 99493, 90429, 86243, 77227, 77218, 77225, 75866, 32081, ",
+    actors: ["西元美沙"],
+    title: "逆NTR相房＆公司裡對上司的我最喜歡的美人部下…"
+  },
+  {
+    vod_id: "81265, 79188, 79127, 78946, 78910, 78903, 78899, 78878, 78754, 77147, 76823, 75810, 75366, 75168, 75085, 32132, 32029, 31147",
+    actors: ["奏音花音"],
+    title: "中出到壞掉的一天 棒球部顧問與相房被徹底NTR"
   }
 ];
 
@@ -1917,36 +1952,146 @@ const actorProfiles = new Map([
       ]
     }
   ],
-  ["", {
-    "primaryName": "",
-    "alternativeNames": [""],
-    "profileImage": "",
-    "backgroundImage": "",
-    "age": "",
-    "height": "",
-    "weight": "",
-    "nationality": "",
-    "other": "",
-    "bio": "",
-    galleryImages: [
-      "",
-    ]
-  }],
-  ["", {
-    "primaryName": "",
-    "alternativeNames": [""],
-    "profileImage": "",
-    "backgroundImage": "",
-    "age": "",
-    "height": "",
-    "weight": "",
-    "nationality": "",
-    "other": "",
-    "bio": "",
-    galleryImages: [
-      "",
-    ]
-  }],
+  [
+    "有馬瑞希",
+    {
+      "actors": ["有馬瑞希"],
+      "title": "受虐調教孕ませ性交…恥辱的家庭訪問",
+      "primaryName": "有馬瑞希",
+      "alternativeNames": ["有馬みずき", "有馬瑞希"],
+      "profileImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQFzwm-dCanCEQsj7D5fZafr6Mn6bioMHTDR69tJKj74t2JTr63wEDDh60w&s=10",
+      "backgroundImage": "",
+      "age": "25歲",
+      "height": "158厘米",
+      "weight": "48公斤",
+      "nationality": "日本",
+      "other": "胸圍88（F罩杯） 腰圍58 臀圍86",
+      "bio": "有馬瑞希（1998年生）是日本歐若拉計劃超清純美人教師，以88cm F罩杯與墮落家庭訪問聞名。2023年《APNS-331》推出「孕ませ性交恥辱家庭訪問」，真實記錄她穿OL套裝上門輔導問題學生，卻被父子聯手調教、從抗拒到沉淪、連續中出懷孕的全過程。風格極致凌辱，擅長教師墮落與孕ませ調教，被譽為「最危險的F杯美人教師」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "虹村夢",
+    {
+      "actors": ["虹村夢"],
+      "title": "令嬢調教 監禁30日懷孕中出毒的受虐女…「種付」",
+      "primaryName": "虹村夢",
+      "alternativeNames": ["虹村ゆめ", "虹村夢"],
+      "profileImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3m4XYOM8TyWe9y4Ti_BFsT_ro8XCbcP2sAeIVxDV8X7kkLgFvo7dsIas&s=10",
+      "backgroundImage": "",
+      "age": "22歲",
+      "height": "152厘米",
+      "weight": "42公斤",
+      "nationality": "日本",
+      "other": "胸圍83（C罩杯） 腰圍56 臀圍84",
+      "bio": "虹村夢（2003年生）是日本歐若拉計劃超嬌小千金，以152cm蘿莉身材與30日懷孕調教聞名。2024年《APNS-340》推出「令嬢調教 監禁30日間」，真實記錄她從名門千金被綁架、每天肉棒中毒開花、絕頂狂亂到徹底懷孕的全過程。風格極致監禁，擅長嬌小墮落與種付連擊，被譽為「最危險的30日受孕千金」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "星乃夏月",
+    {
+      "actors": ["星乃夏月"],
+      "title": "美乳、特濃。「一直在高潮…一直在啊…」淫亂絶頂生徒會長 濃厚パイズリ409連發",
+      "primaryName": "星乃夏月",
+      "alternativeNames": ["星乃夏月", "Hoshino Natsuki"],
+      "profileImage": "https://m.media-amazon.com/images/I/71jZ+aH1jIL._AC_UF1000,1000_QL80_.jpg",
+      "backgroundImage": "",
+      "age": "19歲",
+      "height": "148厘米",
+      "weight": "40公斤",
+      "nationality": "日本",
+      "other": "胸圍92（G罩杯） 腰圍55 臀圍84",
+      "bio": "星乃夏月（2005年生）是日本歐若拉計劃超嬌小G杯生徒會長，以148cm蘿莉身材與409連發濃厚乳交聞名。2024年《APAK-264》推出「淫亂絶頂生徒會長」，真實記錄她穿水手服在教室被連續抽插、從「濃厚パイズリ」到「淫語連發失神」、全程50次以上高潮噴奶的全過程。風格極致抖M，擅長巨乳榨精與無限高潮，被譽為「最危險的148cm乳交怪物」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "仲村奈々美",
+    {
+      "actors": ["仲村奈々美"],
+      "title": "尻貴族sports edition 滑雪隊長×仲村奈々美 尻愛的ハメ潮2連発！！",
+      "primaryName": "仲村奈々美",
+      "alternativeNames": ["仲村奈々美", "仲村奈奈美"],
+      "profileImage": "https://pbs.twimg.com/profile_images/1456592426970521600/twix33vJ_400x400.jpg",
+      "backgroundImage": "",
+      "age": "24歲",
+      "height": "160厘米",
+      "weight": "50公斤",
+      "nationality": "日本",
+      "other": "胸圍88（F罩杯） 腰圍58 臀圍98",
+      "bio": "仲村奈奈美（2000年生）是日本HMJM超肉感滑雪隊長，以98cm巨尻與「尻貴族」聞名。2019年《VGD-206》推出「尻愛ハメ潮2連発」，真實記錄她穿緊身瑜伽褲被狂插、從「デカ尻×ジョグタイツ」到「素人尻×車中後背位」、連續噴潮榨乾的全過程。風格極致肉彈，擅長巨尻騎乘與潮吹連發，被譽為「最危險的98cm滑雪尻貴族」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "星名千聖",
+    {
+      "actors": ["星名千聖"],
+      "title": "女王様本格調教 4 真實女王SM調教全紀錄",
+      "primaryName": "星名千聖",
+      "alternativeNames": ["星名千聖", "星名千聖"],
+      "profileImage": "https://pbs.twimg.com/profile_images/1855839551132184577/B7VwcDVc.jpg",
+      "backgroundImage": "",
+      "age": "32歲",
+      "height": "168厘米",
+      "weight": "55公斤",
+      "nationality": "日本",
+      "other": "胸圍92（F罩杯） 腰圍60 臀圍90",
+      "bio": "星名千聖（1993年生）是日本AVS collector女王系最強女帝，以168cm高挑身材與真實SM調教聞名。2024年《GMEM-109》推出「REAL MISTRESS 4」，完整記錄她穿紅色漆皮女王裝、從鞭打到蠟燭、5位M男連續榨精、4小時極限調教的全過程。風格真實重口，擅長女王凌辱與肉體支配，被譽為「最危險的真實女王」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "西元美沙",
+    {
+      "actors": ["西元美沙"],
+      "title": "逆NTR相房＆公司裡對上司的我最喜歡的美人部下…",
+      "primaryName": "西元美沙",
+      "alternativeNames": ["西元めいさ", "西元美沙"],
+      "profileImage": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Kindai_Mahjong_Swimsuit_Festival_%28September%2C_2023%29IMG_1982.jpg",
+      "backgroundImage": "",
+      "age": "24歲",
+      "height": "158厘米",
+      "weight": "46公斤",
+      "nationality": "日本",
+      "other": "胸圍85（D罩杯） 腰圍56 臀圍84",
+      "bio": "西元美沙（2001年生）是日本Planet Plus超反轉NTR系女優，以「主動誘惑上司」聞名。2024年《NACR-896》推出「逆NTR相房」，真實記錄她出差與上司同房→浴巾誘惑→騎乘位主導→連續中出到天亮的全過程。風格極致主動，擅長下屬逆推與公司不倫，被譽為「最危險的D杯肉食部下」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
+  [
+    "奏音花音",
+    {
+      "actors": ["奏音花音"],
+      "title": "中出到壞掉的一天 棒球部顧問與相房被徹底NTR",
+      "primaryName": "奏音花音",
+      "alternativeNames": ["奏音かのん", "奏音花音"],
+      "profileImage": "https://pbs.twimg.com/profile_images/1918661762418892800/KVjeSUqx_400x400.jpg",
+      "backgroundImage": "",
+      "age": "19歲",
+      "height": "148厘米",
+      "weight": "39公斤",
+      "nationality": "日本",
+      "other": "胸圍83（C罩杯） 腰圍54 臀圍82",
+      "bio": "奏音花音（2005年生）是日本無垢超嬌小棒球部經理，以148cm蘿莉身材與「顧問NTR」聞名。2024年《MUDR-257》推出「中出到壞掉的一天」，真實記錄她出征前與顧問同房→從「老師的大肉棒好燙…」到連續12發中出→子宮痙攣失神→最後穿水手服哭著求饒的全過程。風格極致純愛墮落，擅長蘿莉調教與完墮中出，被譽為「最危險的148cm肉便器經理」。",
+      "galleryImages": [
+        ""
+      ]
+    }
+  ],
   ["", {
     "primaryName": "",
     "alternativeNames": [""],
