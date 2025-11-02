@@ -1,0 +1,163 @@
+/* Gold Animations สำหรับอันดับ 1 */
+@keyframes ping-gold {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-ring-gold {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+}
+
+/* Silver Animations สำหรับอันดับ 2 */
+@keyframes ping-silver {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-ring-silver {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+}
+
+/* Bronze Animations สำหรับอันดับ 3 */
+@keyframes ping-bronze {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-ring-bronze {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+}
+
+/* Common Animations */
+@keyframes rotate-border {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sparkle-1 {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sparkle-2 {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+  }
+}
+
+@keyframes sparkle-3 {
+  0%, 100% {
+    opacity: 0;
+    transform: translateX(0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(3px) scale(1);
+  }
+}
+
+.animate-ping-gold {
+  animation: ping-gold 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-ping-silver {
+  animation: ping-silver 2.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-ping-bronze {
+  animation: ping-bronze 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-rotate-border {
+  animation: rotate-border 3s linear infinite;
+}
+
+.animate-pulse-ring-gold {
+  animation: pulse-ring-gold 2s ease-in-out infinite;
+}
+
+.animate-pulse-ring-silver {
+  animation: pulse-ring-silver 2.2s ease-in-out infinite;
+}
+
+.animate-pulse-ring-bronze {
+  animation: pulse-ring-bronze 2.4s ease-in-out infinite;
+}
+
+.animate-sparkle-1 {
+  animation: sparkle-1 3s ease-in-out infinite;
+}
+
+.animate-sparkle-2 {
+  animation: sparkle-2 2.5s ease-in-out infinite 0.5s;
+}
+
+.animate-sparkle-3 {
+  animation: sparkle-3 2s ease-in-out infinite 1s;
+}

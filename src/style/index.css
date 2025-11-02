@@ -1,0 +1,19 @@
+/* ใช้ Tailwind base */
+@import "tailwindcss";
+
+body, #root {
+  margin: 0;
+  padding: 0;
+}
+
+/* ซ่อน scrollbar สำหรับจอเล็ก */
+@media (max-width: 1023px) {
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: none;     /* Firefox */
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;             /* Chrome/Safari */
+  }
+}

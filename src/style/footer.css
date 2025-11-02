@@ -1,0 +1,10 @@
+/* ในไฟล์ CSS หลักของคุณ */
+main {
+  padding-bottom: 4rem; /* พื้นที่สำหรับ Footer */
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding-bottom: 0; /* บนหน้าจอใหญ่ไม่ต้องมี padding */
+  }
+}
