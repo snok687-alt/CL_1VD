@@ -13,6 +13,10 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [selectedFaceImage, setSelectedFaceImage] = useState(null);
   const [isSwapping, setIsSwapping] = useState(false);
+  
+  // ✅ State สำหรับยอดวิว real-time
+  const [currentViews, setCurrentViews] = useState(video.views || 0);
+  const [loadingViews, setLoadingViews] = useState(false);
 
   const handleVideoClick = () => {
     if (onClick) {
@@ -22,25 +26,81 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     }
   };
 
-  const fetchRating = async () => {
+  // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
+  const fetchRealTimeViews = async () => {
+    if (!video?.id) return;
+    
+    try {
+      setLoadingViews(true);
+      console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
+      
+      const response = await fetch('/backend-api/views/get', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_ids: [video.id] }),
+      });
+
+      if (response.ok) {
+        const viewsData = await response.json();
+        const latestViews = viewsData[video.id] || currentViews;
+        
+        // ✅ อัปเดต state เฉพาะยอดวิว
+        setCurrentViews(latestViews);
+        console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
+      } else {
+        console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
+      }
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+    } finally {
+      setLoadingViews(false);
+    }
+  };
+
+  // ✅ ฟังก์ชันดึง rating และยอดวิว
+  const fetchRatingAndViews = async () => {
     try {
       setLoadingRating(true);
-      const res = await fetch(`/backend-api/rating/${video.id}`);
-      if (!res.ok) throw new Error('ไม่สามารถดึงคะแนนดาวได้');
-      const data = await res.json();
-      setRatingData(data);
+      
+      // ดึง rating
+      const ratingRes = await fetch(`/backend-api/rating/${video.id}`);
+      if (ratingRes.ok) {
+        const ratingData = await ratingRes.json();
+        setRatingData(ratingData);
+      }
+      
+      // ดึงยอดวิวล่าสุด
+      await fetchRealTimeViews();
+      
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching rating and views:', err);
       setRatingData(null);
     } finally {
       setLoadingRating(false);
     }
   };
 
+  // ✅ ดึงข้อมูลครั้งแรกเมื่อ component โหลด
   useEffect(() => {
-    fetchRating();
+    fetchRatingAndViews();
   }, [video.id]);
 
+  // ✅ ดึงยอดวิวทุก 30 วินาที (real-time polling)
+  useEffect(() => {
+    if (!video?.id) return;
+
+    const intervalId = setInterval(() => {
+      fetchRealTimeViews();
+    }, 30000); // 30 seconds
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [video?.id]);
+
+  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว (ใช้ currentViews แทน video.views)
   const formatViews = (views) => {
     const viewCount = views || 0;
     if (viewCount >= 1000000) {
@@ -68,7 +128,8 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     e.target.src = '';
   };
 
-  const viewData = formatViews(video.views);
+  // ✅ ใช้ currentViews สำหรับการแสดงผล
+  const viewData = formatViews(currentViews);
 
   const getMaxStar = () => {
     if (!ratingData) return 0;
@@ -239,8 +300,9 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   return (
     <>
       <div
-        className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 animate-fadeInUp ${isDarkMode ? 'bg-white' : 'bg-white'
-          }`}
+        className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 animate-fadeInUp ${
+          isDarkMode ? 'bg-white' : 'bg-white'
+        }`}
         onClick={handleVideoClick}
       >
         <div className="relative aspect-[6/4] bg-gray-700 overflow-hidden group">
@@ -252,6 +314,16 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
             decoding="async"
             onError={handleImageError}
           />
+
+          {/* ✅ Loading indicator สำหรับยอดวิว */}
+          {loadingViews && (
+            <div className="absolute top-1 left-10 bg-black bg-opacity-70 rounded px-1 py-0.5">
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span className="text-white text-xs">更新中...</span>
+              </div>
+            </div>
+          )}
 
           <div className="absolute top-1 left-1 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
             {loadingRating ? (
@@ -266,10 +338,11 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           {viewData.isPopular && (
             <div className="absolute top-1 right-1">
               <div
-                className={`flex items-center pr-0 rounded-full text-xs font-semibold ${viewData.level === 'mega'
-                  ? 'bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white border-purple-300/30'
-                  : ''
-                  }`}
+                className={`flex items-center pr-0 rounded-full text-xs font-semibold ${
+                  viewData.level === 'mega'
+                    ? 'bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white border-purple-300/30'
+                    : ''
+                }`}
               >
                 <div className="-mr-1 -mt-1 fire-icon-container">
                   <FireIcon />
@@ -300,15 +373,17 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
         <div className="px-2 py-1">
           <p
-            className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${isDarkMode ? 'text-gray-900 ' : 'text-black'
-              }`}
+            className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${
+              isDarkMode ? 'text-gray-900 ' : 'text-black'
+            }`}
             title={video.title}
           >
             {video.title}
           </p>
           <div
-            className={`flex items-center justify-between text-xs ${isDarkMode ? 'text-gray-900' : 'text-gray-600'
-              }`}
+            className={`flex items-center justify-between text-xs ${
+              isDarkMode ? 'text-gray-900' : 'text-gray-600'
+            }`}
           >
             <div className="flex items-center">
               {viewData.isPopular && (
@@ -317,22 +392,25 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                 </div>
               )}
               <span
-                className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''
-                  } ${viewData.level === 'mega'
+                className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''} ${
+                  viewData.level === 'mega'
                     ? 'text-purple-400'
                     : viewData.level === 'popular'
-                      ? 'text-orange-400'
-                      : isDarkMode
-                        ? 'text-gray-900'
-                        : 'text-gray-600'
-                  }`}
+                    ? 'text-orange-400'
+                    : isDarkMode
+                    ? 'text-gray-900'
+                    : 'text-gray-600'
+                }`}
               >
-                {viewData.text}
+                {/* ✅ แสดงยอดวิว real-time */}
+                {loadingViews ? (
+                  <span className="text-blue-500 animate-pulse">更新中...</span>
+                ) : (
+                  viewData.text
+                )}
               </span>
             </div>
-              <span>
-                {video.id}
-              </span>
+            <span className="text-xs opacity-50">ID: {video.id}</span>
             <span className="text-xs">{video.uploadDate}</span>
           </div>
         </div>

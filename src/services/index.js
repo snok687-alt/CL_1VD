@@ -25,10 +25,12 @@ app.use(logRequest);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ โหลด routes อื่น ๆ
+const viewRoutes = require('./routes/viewRoutes');
 const starRoute = require('./routes/star');
 const swapFaceRoute = require('./routes/swap-face');
 const uploadRoute = require('./routes/upload');
-const viewRoutes = require('./routes/viewRoutes');
+const adminRoutes = require('./routes/admin');
+const ipRoutes = require('./routes/ip');
 
 // ✅ Proxy route สำหรับ ap.api-bet.net
 app.post('/backend-api/proxy/login', async (req, res) => {
@@ -54,10 +56,13 @@ app.post('/backend-api/proxy/login', async (req, res) => {
 });
 
 
+app.use('/backend-api', viewRoutes);
 app.use('/backend-api', starRoute);
 app.use('/backend-api', swapFaceRoute);
 app.use('/backend-api', uploadRoute);
-app.use('/backend-api', viewRoutes);
+app.use('/backend-api/admin', adminRoutes);
+app.use('/backend-api/admin', ipRoutes);
+
 
 // ✅ เพิ่ม route สำหรับดู logs
 app.use('/backend-api', logRoutes);

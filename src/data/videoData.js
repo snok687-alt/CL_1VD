@@ -50,20 +50,37 @@ const apiCall = async (params) => {
 };
 
 // ฟังชันดึงยอดวิวจากเซิร์บเวอร์
+// ใน videoData.js - แก้ไขฟังก์ชัน fetchViewsFromServer
 const fetchViewsFromServer = async (videoIds) => {
   try {
+    // ตรวจสอบว่า videoIds เป็น array และมีค่า
+    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
+      return {};
+    }
+
+    const validVideoIds = videoIds.filter(id => id != null && id !== '');
+    
+    if (validVideoIds.length === 0) {
+      return {};
+    }
+
     const response = await fetch('/backend-api/views/get', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ video_ids: videoIds }),
+      body: JSON.stringify({ video_ids: validVideoIds }),
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const viewsData = await response.json();
+    console.log('📊 ยอดวิวที่ดึงได้:', viewsData);
     return viewsData;
   } catch (error) {
-    console.error('เกิดข้อผิดพาดในการดึงยอดวิว:', error);
+    console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว:', error);
     return {};
   }
 };
@@ -111,7 +128,8 @@ const formatVideo = (item, serverViews = {}) => {
     title: item.vod_name || item.title || actorInfo?.title || 'ບໍ່ມີຊື່',
     channelName: item.vod_director || item.director || item.type_name || 'ບໍ່ລະບຸ',
     actors: normalizedActors,
-    views: serverViews[item.vod_id || item.id] || parseInt(item.vod_hits || item.hits || 0),
+    // views: serverViews[item.vod_id || item.id] || parseInt(item.vod_hits || item.hits || 0),
+    views: serverViews[item.vod_id || item.id] ?? 0,
     duration: parseInt(item.vod_duration || item.duration || 0),
     uploadDate: item.vod_year || item.year || item.vod_time || 'ບໍ່ລະບຸ',
     thumbnail: item.vod_pic || item.pic || '',
@@ -796,3 +814,36 @@ export const getActorVideoStats = async () => {
   }
 };
 
+// ใน videoData.js - เพิ่มฟังก์ชันดึงยอดวิว real-time
+export const fetchRealTimeViews = async (videoIds) => {
+  try {
+    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
+      return {};
+    }
+
+    const validVideoIds = videoIds.filter(id => id != null && id !== '');
+    
+    if (validVideoIds.length === 0) {
+      return {};
+    }
+
+    const response = await fetch('/backend-api/views/get', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ video_ids: validVideoIds }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const viewsData = await response.json();
+    console.log('📊 ยอดวิว real-time ที่ดึงได้:', viewsData);
+    return viewsData;
+  } catch (error) {
+    console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+    return {};
+  }
+};

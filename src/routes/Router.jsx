@@ -8,6 +8,8 @@ import SearchResults from '../pages/SearchResults';
 import ProfilePage from '../helpers/ProfilePage';
 import ImagesUploadForm from '../uploads/ImageUploadForm';
 import Gaming from '../game/Gaming'
+import Admin from '../Admin/Admin'
+import Ip from '../Admin/Ip'
 
 // ข้อมูลหมวดหมู่
 const categories = [
@@ -58,6 +60,8 @@ const Router = () => {
         </Route>
         <Route path="/upload" element={<ImagesUploadForm />} />
         <Route path="/gaming" element={<Gaming/>}/>
+        <Route path="/CL_____/Admin" element={<Admin/>}/>
+        <Route path="/Ip" element={<Ip/>}/>
       </Routes>
     </BrowserRouter>
   );
