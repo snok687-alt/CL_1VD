@@ -32,7 +32,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     
     try {
       setLoadingViews(true);
-      console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
+      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
       
       const response = await fetch('/backend-api/views/get', {
         method: 'POST',
@@ -48,7 +48,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
         
         // ✅ อัปเดต state เฉพาะยอดวิว
         setCurrentViews(latestViews);
-        console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
+        // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
       } else {
         console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
       }

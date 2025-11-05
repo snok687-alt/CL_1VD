@@ -6,7 +6,7 @@ exports.incrementView = async (req, res) => {
   try {
     const { video_id } = req.body;
     
-    console.log('📥 รับคำขอเพิ่มวิว:', { video_id, body: req.body });
+    // console.log('📥 รับคำขอเพิ่มวิว:', { video_id, body: req.body });
 
     if (!video_id && video_id !== 0) {
       return res.status(400).json({ 
@@ -62,7 +62,7 @@ exports.getViews = async (req, res) => {
   try {
     const { video_ids } = req.body;
     
-    console.log('📥 รับคำขอ getViews:', { video_ids });
+    // console.log('📥 รับคำขอ getViews:', { video_ids });
 
     if (!Array.isArray(video_ids)) {
       return res.status(400).json({ 
@@ -72,7 +72,7 @@ exports.getViews = async (req, res) => {
     }
 
     const views = await ViewModel.getViewCounts(video_ids);
-    console.log('📊 ส่งกลับยอดวิว:', views);
+    // console.log('📊 ส่งกลับยอดวิว:', views);
 
     res.json(views);
 

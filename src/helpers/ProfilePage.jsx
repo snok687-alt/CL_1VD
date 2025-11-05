@@ -5,7 +5,7 @@ import { getVideosByActor, getVideoById } from '../data/videoData';
 import Hls from 'hls.js';
 import FireIcon from '../hook/Fire_Icon'
 import Swal from 'sweetalert2';
-import ImageSelector from '../uploads/ImageSelector'; // เพิ่ม import
+import ImageSelector from '../uploads/ImageSelector';
 import '../style/profilepage.css';
 
 const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
@@ -34,9 +34,14 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   const [userRatings, setUserRatings] = useState({});
   const [hoverRatings, setHoverRatings] = useState({});
   const [videoRatings, setVideoRatings] = useState({});
-  const [showImageSelector, setShowImageSelector] = useState(false); // เพิ่ม state สำหรับ ImageSelector
-  const [selectedVideoForFace, setSelectedVideoForFace] = useState(null); // วิดีโอที่กำลังเลือกรูปภาพ
-  const [selectedFaceImages, setSelectedFaceImages] = useState({}); // รูปภาพที่เลือกสำหรับแต่ละวิดีโอ
+  const [showImageSelector, setShowImageSelector] = useState(false);
+  const [selectedVideoForFace, setSelectedVideoForFace] = useState(null);
+  const [selectedFaceImages, setSelectedFaceImages] = useState({});
+  
+  // ✅ State สำหรับยอดวิว real-time
+  const [videoViews, setVideoViews] = useState({});
+  const [loadingViews, setLoadingViews] = useState({});
+
   const imageSectionRef = useRef(null);
 
   // Constants
@@ -47,63 +52,219 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   const actorRankColors = ['bg-red-600', 'bg-orange-500', 'bg-yellow-400'];
   const rankColors = actorRankColors;
 
-  // ฟังก์ชันจัดการการเลือกรูปภาพสำหรับวิดีโอ
-  const handleFaceImageSelect = (image) => {
-    if (!selectedVideoForFace) return;
+  // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
+  const fetchRealTimeViews = async (videoIds) => {
+    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) return {};
+    
+    try {
+      const validVideoIds = videoIds.filter(id => id != null && id !== '');
+      if (validVideoIds.length === 0) return {};
 
-    console.log("เลือกรูปภาพสำหรับวิดีโอ:", selectedVideoForFace.id, image);
-
-    // อัพเดท state ของรูปภาพที่เลือก
-    setSelectedFaceImages(prev => ({
-      ...prev,
-      [selectedVideoForFace.id]: image
-    }));
-
-    // บันทึกการเลือกลง localStorage
-    localStorage.setItem(`faceImage_${selectedVideoForFace.id}`, JSON.stringify(image));
-
-    setShowImageSelector(false);
-    setSelectedVideoForFace(null);
-
-    Swal.fire({
-      icon: 'success',
-      title: 'เลือกรูปภาพสำเร็จ',
-      text: 'รูปภาพจะถูกใช้สำหรับการแทนที่ใบหน้าในวิดีโอ',
-      timer: 2000,
-      showConfirmButton: false
-    });
-  };
-
-  // ฟังก์ชันเปิด ImageSelector สำหรับวิดีโอ
-  const openImageSelectorForVideo = (video, e) => {
-    e.stopPropagation(); // ป้องกันการ trigger การเล่นวิดีโอ
-    setSelectedVideoForFace(video);
-    setShowImageSelector(true);
-  };
-
-  // ฟังก์ชันปิด ImageSelector
-  const closeImageSelector = () => {
-    setShowImageSelector(false);
-    setSelectedVideoForFace(null);
-  };
-
-  // โหลดรูปภาพที่เลือกไว้ก่อนหน้าสำหรับแต่ละวิดีโอ
-  useEffect(() => {
-    const loadSavedFaceImages = () => {
-      const savedImages = {};
-      videos.forEach(video => {
-        const savedImage = localStorage.getItem(`faceImage_${video.id}`);
-        if (savedImage) {
-          savedImages[video.id] = JSON.parse(savedImage);
-        }
+      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_ids:`, validVideoIds);
+      
+      const response = await fetch('/backend-api/views/get', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_ids: validVideoIds }),
       });
-      setSelectedFaceImages(savedImages);
-    };
 
+      if (response.ok) {
+        const viewsData = await response.json();
+        // console.log('📊 ยอดวิว real-time ที่ดึงได้:', viewsData);
+        return viewsData;
+      } else {
+        console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
+        return {};
+      }
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+      return {};
+    }
+  };
+
+  // ✅ ฟังก์ชันบันทึกยอดวิวเมื่อเล่นวิดีโอ
+  const recordVideoView = async (videoId) => {
+    if (!videoId) return;
+
+    try {
+      // console.log('🔄 บันทึกวิวสำหรับ video_id:', videoId);
+      
+      const response = await fetch('/backend-api/views/increment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_id: videoId }),
+      });
+      
+      if (response.ok) {
+        // console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${videoId}`);
+        
+        // ✅ อัปเดตยอดวิวใน state ทันที
+        setVideoViews(prev => ({
+          ...prev,
+          [videoId]: (prev[videoId] || 0) + 1
+        }));
+        
+        return true;
+      } else {
+        console.error('❌ ไม่สามารถบันทึกวิวได้:', await response.text());
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการบันทึกวิว:', error);
+      return false;
+    }
+  };
+
+  // ✅ ฟังก์ชันดึงและอัปเดตยอดวิวสำหรับวิดีโอทั้งหมด
+  const updateAllVideoViews = async (videoList) => {
+    if (!videoList || videoList.length === 0) return;
+
+    try {
+      setLoadingViews(prev => ({
+        ...prev,
+        all: true
+      }));
+
+      const videoIds = videoList.map(video => video.id).filter(Boolean);
+      const viewsData = await fetchRealTimeViews(videoIds);
+      
+      setVideoViews(prev => ({
+        ...prev,
+        ...viewsData
+      }));
+
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการอัปเดตยอดวิวทั้งหมด:', error);
+    } finally {
+      setLoadingViews(prev => ({
+        ...prev,
+        all: false
+      }));
+    }
+  };
+
+  // ✅ ฟังก์ชันดึงยอดวิวสำหรับวิดีโอเดียว
+  const updateSingleVideoView = async (videoId) => {
+    if (!videoId) return;
+
+    try {
+      setLoadingViews(prev => ({
+        ...prev,
+        [videoId]: true
+      }));
+
+      const viewsData = await fetchRealTimeViews([videoId]);
+      
+      if (viewsData[videoId] !== undefined) {
+        setVideoViews(prev => ({
+          ...prev,
+          [videoId]: viewsData[videoId]
+        }));
+      }
+
+    } catch (error) {
+      console.error(`❌ เกิดข้อผิดพลาดในการอัปเดตยอดวิว video_id ${videoId}:`, error);
+    } finally {
+      setLoadingViews(prev => ({
+        ...prev,
+        [videoId]: false
+      }));
+    }
+  };
+
+  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว
+  const formatViewCount = (views, videoId = null) => {
+    const viewCount = videoId ? (videoViews[videoId] || views || 0) : (views || 0);
+    
+    if (viewCount >= 1_000_000_000) {
+      return (viewCount / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+    } else if (viewCount >= 1_000_000) {
+      return (viewCount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    } else if (viewCount >= 1_000) {
+      return (viewCount / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    } else {
+      return viewCount.toString();
+    }
+  };
+
+  // ✅ คำนวณ totalViews จาก videoViews ล่าสุด
+  const calculateTotalViews = useCallback(() => {
+    return videos.reduce((sum, video) => {
+      const currentViews = videoViews[video.id] || video.views || 0;
+      return sum + currentViews;
+    }, 0);
+  }, [videos, videoViews]);
+
+  // ✅ คำนวณ hottestVideos จาก videoViews ล่าสุด
+  const calculateHottestVideos = useCallback(() => {
+    return [...videos]
+      .sort((a, b) => {
+        const viewsA = videoViews[a.id] || a.views || 0;
+        const viewsB = videoViews[b.id] || b.views || 0;
+        return viewsB - viewsA;
+      })
+      .slice(0, 3);
+  }, [videos, videoViews]);
+
+  const totalViews = calculateTotalViews();
+  const hottestVideos = calculateHottestVideos();
+
+  // ✅ โหลดยอดวิว real-time เมื่อโหลด videos
+  useEffect(() => {
     if (videos.length > 0) {
-      loadSavedFaceImages();
+      updateAllVideoViews(videos);
+      
+      // ✅ ดึงยอดวิวทุก 30 วินาที (real-time polling)
+      const intervalId = setInterval(() => {
+        updateAllVideoViews(videos);
+      }, 30000);
+
+      return () => {
+        clearInterval(intervalId);
+      };
     }
   }, [videos]);
+
+  // ✅ ฟังก์ชันเล่นวิดีโอ - บันทึกวิวเมื่อเริ่มเล่น
+  const playVideo = async (videoId) => {
+    try {
+      const videoData = await getVideoById(videoId);
+      if (!videoData) {
+        setVideoError('ไม่พบวิดีโอนี้');
+        return;
+      }
+
+      const videoUrl = processVideoUrl(videoData.videoUrl || videoData.rawData?.vod_play_url);
+      if (!videoUrl) {
+        setVideoError('ไม่พบไฟล์วิดีโอ');
+        return;
+      }
+
+      setPlayingVideo({ ...videoData, videoUrl });
+
+      // ✅ บันทึกยอดวิวเมื่อเริ่มเล่นวิดีโอ
+      await recordVideoView(videoId);
+
+      // ✅ อัปเดตยอดวิวใน state และดึงข้อมูลล่าสุด
+      await updateSingleVideoView(videoId);
+
+      // ดึงข้อมูล rating เมื่อเล่นวิดีโอ
+      await fetchVideoRating(videoId);
+
+      setTimeout(() => {
+        loadVideo(videoUrl);
+        if (window.innerWidth < 768) {
+          document.getElementById('video-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } catch (error) {
+      setVideoError('เกิดข้อผิดพลาดในการโหลดวิดีโอ');
+    }
+  };
 
   // ฟังก์ชันดึงข้อมูล rating จากฐานข้อมูล
   const fetchVideoRating = async (videoId) => {
@@ -128,7 +289,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     if (userRatings[videoId] > 0) return;
 
     try {
-      console.log('📤 กำลังส่งคะแนน:', { video_id: videoId, rating });
+      // console.log('📤 กำลังส่งคะแนน:', { video_id: videoId, rating });
 
       const response = await fetch(`/backend-api/rate`, {
         method: 'POST',
@@ -141,10 +302,10 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
         })
       });
 
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
 
       const result = await response.json();
-      console.log('📥 ได้รับผลลัพธ์:', result);
+      // console.log('📥 ได้รับผลลัพธ์:', result);
 
       if (result.success) {
         setUserRatings(prev => ({
@@ -203,22 +364,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       ratingData.star_4 + ratingData.star_5;
   };
 
-  const formatViewCount = (views) => {
-    if (views >= 1_000_000_000) {
-      return (views / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
-    } else if (views >= 1_000_000) {
-      return (views / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-    } else if (views >= 1_000) {
-      return (views / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
-    } else {
-      return views.toString();
-    }
-  };
-
-  // Calculations
-  const totalViews = videos.reduce((sum, video) => sum + (video.views || 0), 0);
-  const hottestVideos = [...videos].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3);
-
   const calculateActorRank = useCallback(() => {
     try {
       const allActors = getActorsData(50);
@@ -238,7 +383,11 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     const sortedVideos = [...videos];
     switch (sortBy) {
       case 'views':
-        sortedVideos.sort((a, b) => sortOrder === 'desc' ? (b.views || 0) - (a.views || 0) : (a.views || 0) - (b.views || 0));
+        sortedVideos.sort((a, b) => {
+          const viewsA = videoViews[a.id] || a.views || 0;
+          const viewsB = videoViews[b.id] || b.views || 0;
+          return sortOrder === 'desc' ? viewsB - viewsA : viewsA - viewsB;
+        });
         break;
       case 'date':
         sortedVideos.sort((a, b) => sortOrder === 'desc' ? new Date(b.uploadDate) - new Date(a.uploadDate) : new Date(a.uploadDate) - new Date(b.uploadDate));
@@ -249,7 +398,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       default: break;
     }
     return sortedVideos;
-  }, [videos, sortBy, sortOrder]);
+  }, [videos, sortBy, sortOrder, videoViews]);
 
   const startSlideShow = useCallback(() => {
     if (images.length <= 4 || showAllImages || isSlidePaused) return;
@@ -320,36 +469,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       setVideoLoading(false);
     }
   }, []);
-
-  const playVideo = async (videoId) => {
-    try {
-      const videoData = await getVideoById(videoId);
-      if (!videoData) {
-        setVideoError('ไม่พบวิดีโอนี้');
-        return;
-      }
-
-      const videoUrl = processVideoUrl(videoData.videoUrl || videoData.rawData?.vod_play_url);
-      if (!videoUrl) {
-        setVideoError('ไม่พบไฟล์วิดีโอ');
-        return;
-      }
-
-      setPlayingVideo({ ...videoData, videoUrl });
-
-      // ดึงข้อมูล rating เมื่อเล่นวิดีโอ
-      await fetchVideoRating(videoId);
-
-      setTimeout(() => {
-        loadVideo(videoUrl);
-        if (window.innerWidth < 768) {
-          document.getElementById('video-player-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    } catch (error) {
-      setVideoError('เกิดข้อผิดพลาดในการโหลดวิดีโอ');
-    }
-  };
 
   const stopVideo = () => {
     if (hlsRef.current) hlsRef.current.destroy();
@@ -504,6 +623,62 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     );
   };
 
+  // ฟังก์ชันจัดการการเลือกรูปภาพสำหรับวิดีโอ
+  const handleFaceImageSelect = (image) => {
+    if (!selectedVideoForFace) return;
+
+    // console.log("เลือกรูปภาพสำหรับวิดีโอ:", selectedVideoForFace.id, image);
+
+    setSelectedFaceImages(prev => ({
+      ...prev,
+      [selectedVideoForFace.id]: image
+    }));
+
+    localStorage.setItem(`faceImage_${selectedVideoForFace.id}`, JSON.stringify(image));
+
+    setShowImageSelector(false);
+    setSelectedVideoForFace(null);
+
+    Swal.fire({
+      icon: 'success',
+      title: 'เลือกรูปภาพสำเร็จ',
+      text: 'รูปภาพจะถูกใช้สำหรับการแทนที่ใบหน้าในวิดีโอ',
+      timer: 2000,
+      showConfirmButton: false
+    });
+  };
+
+  // ฟังก์ชันเปิด ImageSelector สำหรับวิดีโอ
+  const openImageSelectorForVideo = (video, e) => {
+    e.stopPropagation();
+    setSelectedVideoForFace(video);
+    setShowImageSelector(true);
+  };
+
+  // ฟังก์ชันปิด ImageSelector
+  const closeImageSelector = () => {
+    setShowImageSelector(false);
+    setSelectedVideoForFace(null);
+  };
+
+  // โหลดรูปภาพที่เลือกไว้ก่อนหน้าสำหรับแต่ละวิดีโอ
+  useEffect(() => {
+    const loadSavedFaceImages = () => {
+      const savedImages = {};
+      videos.forEach(video => {
+        const savedImage = localStorage.getItem(`faceImage_${video.id}`);
+        if (savedImage) {
+          savedImages[video.id] = JSON.parse(savedImage);
+        }
+      });
+      setSelectedFaceImages(savedImages);
+    };
+
+    if (videos.length > 0) {
+      loadSavedFaceImages();
+    }
+  }, [videos]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -630,7 +805,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
 
   return (
     <div className="relative max-w-screen-2xl mx-auto xl:px-2 min-h-screen">
-      {/* Background - เพิ่มการตรวจสอบ profile ก่อนใช้งาน */}
+      {/* Background */}
       <div className="fixed inset-0 w-full h-full overflow-hidden">
         <div className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
           style={{
@@ -643,7 +818,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       {/* Content */}
       <div className="relative z-10">
         <div className="flex flex-col xl:flex-row gap-4">
-          {/* Profile Info - เพิ่มการตรวจสอบ profile */}
+          {/* Profile Info */}
           {!playingVideo && profile && (
             <div className="md:flex flex-col md:justify-center items-center md:min-h-screen w-full xl:w-1/3 space-y-4 md:mt-0 space-x-0">
               <div className={`flex md:flex-row gap-x-1 pl-2 pt-6 items-center justify-between md:items-start space-x-3.5`}>
@@ -678,6 +853,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                 <div className="space-y-2 text-left">
                   <h1 className={`text-xl font-bold ${text} drop-shadow-lg text-shadow-lg`}>{profile.name}</h1>
                   {profile.alternativeName && <p className={`text-base ${textSec} italic drop-shadow-md`}>{profile.alternativeName}</p>}
+                  
+                  {/* ✅ แสดงยอดวิวรวมจาก MySQL */}
                   <div className={`text-base ${textSec} font-semibold drop-shadow-md bg-black/30 p-1 rounded-lg`}>
                     总观看次数: {totalViews.toLocaleString()}
                     {totalViews >= 1000 && (
@@ -710,7 +887,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                     )
                   )}
 
-                  {/* จัดการเฉพาะ 'other' แยกออกมา */}
                   {profile.other && profile.other !== 'ไม่ระบุ' && (
                     <p
                       className={`text-base ${textSec} drop-shadow-md font-medium break-words whitespace-normal overflow-hidden text-ellipsis`}
@@ -720,8 +896,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                         whiteSpace: 'normal',
                         flexShrink: 0,
                         lineHeight: '1.5',
-                        paddingLeft: '2.5em', // ระยะเยื้องหลังเครื่องหมาย :
-                        textIndent: '-2.5em', // ดึงบรรทัดแรกกลับ
+                        paddingLeft: '2.5em',
+                        textIndent: '-2.5em',
                       }}
                     >
                       其他: {profile.other}
@@ -767,10 +943,18 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                   <h3 className={`font-bold text-lg ${text} mb-2`}>{playingVideo.title}</h3>
                   <div className="flex flex-wrap items-center text-sm text-gray-300 gap-2">
                     <span>{playingVideo.channelName}</span><span>•</span>
-                    {playingVideo.views > 0 && <><span>
-                      {playingVideo.views.toLocaleString()} 次观看
-                    </span><span>•</span>
-                    </>}
+                    
+                    {/* ✅ แสดงยอดวิวจาก MySQL */}
+                    {playingVideo.views > 0 && (
+                      <>
+                        <span>
+                          {/* ใช้ videoViews ถ้ามี มิฉะนั้นใช้ playingVideo.views */}
+                          {(videoViews[playingVideo.id] || playingVideo.views).toLocaleString()} 次观看
+                        </span>
+                        <span>•</span>
+                      </>
+                    )}
+                    
                     <span>{playingVideo.uploadDate}</span>
                   </div>
                   {/* Rating Stars สำหรับวิดีโอที่กำลังเล่นเท่านั้น */}
@@ -860,6 +1044,9 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                     const hotVideoIndex = hottestVideos.findIndex(hotVideo => hotVideo.id === video.id);
                     const isHotVideo = hotVideoIndex !== -1;
                     const hasSelectedFace = selectedFaceImages[video.id];
+                    
+                    // ✅ ใช้ยอดวิวจาก MySQL ถ้ามี
+                    const currentVideoViews = videoViews[video.id] || video.views || 0;
 
                     return (
                       <div key={video.id} onClick={(e) => { e.stopPropagation(); playVideo(video.id); }}
@@ -883,13 +1070,13 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                           )}
 
                           {/* ปุ่มเลือกรูปภาพสำหรับวิดีโอ */}
-                          <button
+                          {/* <button
                             onClick={(e) => openImageSelectorForVideo(video, e)}
                             className={`absolute bottom-2 right-2 p-1.5 text-xl font-semibold transition-all transform hover:scale-110 flex items-center justify-center w-8 h-8 rounded-full text-white`}
                             title={hasSelectedFace ? 'เปลี่ยนรูปหน้า' : 'เลือกรูปหน้า'}
                           >
                             🎭
-                          </button>
+                          </button> */}
 
                           {/* แสดงไอคอนรูปภาพที่เลือกแล้ว */}
                           {hasSelectedFace && (
@@ -897,12 +1084,22 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                               📷
                             </div>
                           )}
+                          
+                          {/* ✅ Loading indicator สำหรับยอดวิว */}
+                          {loadingViews[video.id] && (
+                            <div className="absolute top-2 left-2 bg-black bg-opacity-70 rounded px-1 py-0.5">
+                              <div className="flex items-center space-x-1">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                                <span className="text-white text-xs">更新中...</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <div className="p-3">
 
                           <h3 className={`font-semibold text-sm line-clamp-2 mb-1 ${text} transition-colors drop-shadow-md`}>{video.title}</h3>
 
-                          {/* Rating Stats สำหรับการ์ดวิดีโอ - แสดงสถิติจากฐานข้อมูล */}
+                          {/* Rating Stats สำหรับการ์ดวิดีโอ */}
                           <div className="mb-2">
                             <RatingStats videoId={video.id} size="sm" />
                           </div>
@@ -910,13 +1107,18 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                           <div className="flex items-center justify-between w-full">
                             {/* ซ้าย: ไอคอนไฟ + view */}
                             <div className="flex items-center gap-1">
-                              {video.views >= 1000 && (
+                              {currentVideoViews >= 1000 && (
                                 <div className="fire-icon-container">
                                   <FireIcon />
                                 </div>
                               )}
                               <p className={`text-xs ${textSec} drop-shadow`}>
-                                {formatViewCount(video.views)} 次观看
+                                {/* ✅ ใช้ยอดวิวจาก MySQL */}
+                                {loadingViews[video.id] ? (
+                                  <span className="text-blue-400 animate-pulse">更新中...</span>
+                                ) : (
+                                  `${formatViewCount(currentVideoViews)} 次观看`
+                                )}
                               </p>
                             </div>
 
@@ -985,7 +1187,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   );
 };
 
-// Image Modal Component
+// Image Modal Component (คงเดิม)
 const ImageModal = ({ images, selectedImageIndex, onClose, onPrev, onNext, isDarkMode, actorName }) => {
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'ArrowLeft') onPrev();
