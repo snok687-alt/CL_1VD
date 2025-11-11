@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, 
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
   AreaChart, Area, BarChart, Bar, Legend
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -12,33 +12,25 @@ import {
   Eye,
   Video,
   DollarSign,
-  Bell,
-  Download,
   Home,
   LogOut,
   Menu,
   ChevronLeft,
   ChevronRight,
-  Smartphone,
-  Monitor,
-  Tablet,
   RefreshCw,
   CreditCard,
   BarChart3,
   Globe,
-  Clock,
-  UserCheck,
   Zap,
-  Calendar,
-  FileText,
-  Server,
-  Cpu,
-  Database,
-  Network,
-  Shield,
-  AlertTriangle
+
 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { io } from "socket.io-client";
+
+const socket = io(window.location.origin, {
+  path: "/socket.io",
+  transports: ["websocket"]
+});
 
 const Admin = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
@@ -52,7 +44,7 @@ const Admin = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  // ตรวจสอบขนาดหน้าจอ
+  // 检查屏幕尺寸
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -71,52 +63,61 @@ const Admin = () => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/admin' },
-    { id: 'ip', label: 'จัดการ IP', icon: Globe, path: '/ip' },
-    { id: 'videos', label: 'จัดการวิดีโอ', icon: Video, path: '/' },
-    { id: 'games', label: 'เกม', icon: BarChart3, path: '/gaming' },
+    { id: 'dashboard', label: '管理仪表板', icon: Home, path: '/CL_____________________________________________________________________________________******_/Admin' },
+    { id: 'ip', label: 'IP 管理', icon: Globe, path: '/ip' },
+    { id: 'videos', label: '视频管理', icon: Video, path: '/Addpayment' },
+    { id: 'games', label: '游戏管理', icon: BarChart3, path: '/gaming' },
   ];
 
-  // ฟังก์ชันดึงข้อมูล Dashboard
+  // 获取 Dashboard 数据函数
+  // โหลดข้อมูล Dashboard
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // console.log('🔄 ดึงข้อมูล Dashboard...');
-
       const response = await fetch(`/backend-api/admin/dashboard?period=${selectedPeriod}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
-      // console.log('📊 ข้อมูล Dashboard ที่ได้รับ:', data);
-
       setDashboardData(data);
       setLastUpdated(new Date());
-
     } catch (error) {
-      console.error('❌ Error fetching dashboard data:', error);
-      // ใช้ข้อมูลตัวอย่างถ้า API ล้มเหลว
+      console.warn('⚠️ โหลดข้อมูลไม่สำเร็จ ใช้ข้อมูลจำลองแทน:', error);
       setDashboardData(getSampleData());
-      
       Swal.fire({
         icon: 'warning',
         title: 'โหลดข้อมูลไม่สำเร็จ',
-        text: 'กำลังใช้ข้อมูลตัวอย่าง กรุณาตรวจสอบการเชื่อมต่อ',
-        timer: 3000,
-        showConfirmButton: false
+        text: 'กำลังใช้ข้อมูลจำลอง โปรดตรวจสอบการเชื่อมต่อ',
+        timer: 2500,
+        showConfirmButton: false,
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ โหลดใหม่อัตโนมัติเมื่อ selectedPeriod หรือ activeTab เปลี่ยน
   useEffect(() => {
     fetchDashboardData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, activeTab]);
 
-  // ข้อมูลตัวอย่างครบชุด
+  // ✅ ตั้ง auto-refresh ทุก 1 นาที (สามารถปรับเวลาได้)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Auto refreshing dashboard...');
+      fetchDashboardData();
+    }, 60000);
+
+    return () => clearInterval(interval); // ล้างเมื่อออกจากหน้า
+  }, []);
+  useEffect(() => {
+    socket.on("dashboard_update", (newData) => {
+      console.log("📡 ได้รับข้อมูลใหม่จาก socket:", newData);
+      setDashboardData((prev) => ({ ...prev, ...newData }));
+      setLastUpdated(new Date());
+    });
+    return () => socket.off("dashboard_update");
+  }, []);
+
+  // 完整示例数据集
   const getSampleData = () => {
     const now = new Date();
     const sampleRevenueStats = [];
@@ -126,11 +127,11 @@ const Admin = () => {
     const sampleCategoryStats = [];
     const sampleGeoData = [];
 
-    // สร้างข้อมูล 7 วันย้อนหลัง
+    // 生成过去7天的数据
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dayName = date.toLocaleDateString('th-TH', { weekday: 'short' });
+      const dayName = date.toLocaleDateString('zh-CN', { weekday: 'short' });
 
       sampleRevenueStats.push({
         name: dayName,
@@ -159,7 +160,7 @@ const Admin = () => {
       });
     }
 
-    // สร้างข้อมูลรายชั่วโมง
+    // 生成每小时数据
     for (let i = 0; i < 24; i++) {
       sampleHourlyTraffic.push({
         hour: `${i}:00`,
@@ -168,8 +169,8 @@ const Admin = () => {
       });
     }
 
-    // ข้อมูลหมวดหมู่
-    const categories = ['หนังโรแมนติก', 'หนังแอคชั่น', 'หนังคอมเมดี้', 'หนังสยองขวัญ', 'หนังไซไฟ', 'หนังดราม่า'];
+    // 分类数据
+    const categories = ['浪漫电影', '动作电影', '喜剧电影', '恐怖电影', '科幻电影', '剧情电影'];
     categories.forEach(category => {
       sampleCategoryStats.push({
         name: category,
@@ -179,8 +180,8 @@ const Admin = () => {
       });
     });
 
-    // ข้อมูลภูมิศาสตร์
-    const countries = ['ไทย', 'จีน', 'ญี่ปุ่น', 'เกาหลีใต้', 'ไต้หวัน', 'เวียดนาม'];
+    // 地理数据
+    const countries = ['泰国', '中国', '日本', '韩国', '台湾', '越南'];
     countries.forEach(country => {
       sampleGeoData.push({
         name: country,
@@ -191,26 +192,26 @@ const Admin = () => {
 
     return {
       stats: {
-        // Core Metrics
+        // 核心指标
         totalViews: 154230,
         totalVideos: 2847,
         totalUsers: 4832,
         totalRevenue: 0,
         uniqueIPs: 8920,
-        
-        // Performance Metrics
+
+        // 性能指标
         avgLoadTime: 1.8,
         uptime: 99.8,
         errorRate: 0.2,
         bandwidthUsage: 1250,
-        
-        // User Metrics
+
+        // 用户指标
         activeUsers: 3250,
         newUsers: 245,
         returningUsers: 2780,
         avgSessionDuration: 8.5,
-        
-        // Change Metrics
+
+        // 变化指标
         viewChange: 12.5,
         videoChange: 8.2,
         userChange: 15.3,
@@ -225,28 +226,28 @@ const Admin = () => {
       categoryStats: sampleCategoryStats,
       geoData: sampleGeoData,
       deviceData: [
-        { name: 'Mobile', value: 45, count: 4500, color: '#3b82f6' },
-        { name: 'Desktop', value: 35, count: 3500, color: '#10b981' },
-        { name: 'Tablet', value: 20, count: 2000, color: '#f59e0b' }
+        { name: '移动端', value: 45, count: 4500, color: '#3b82f6' },
+        { name: '桌面端', value: 35, count: 3500, color: '#10b981' },
+        { name: '平板', value: 20, count: 2000, color: '#f59e0b' }
       ],
       browserData: [
         { name: 'Chrome', value: 65, color: '#4285f4' },
         { name: 'Safari', value: 18, color: '#ff6d01' },
         { name: 'Firefox', value: 8, color: '#ff7139' },
         { name: 'Edge', value: 6, color: '#0078d7' },
-        { name: 'อื่นๆ', value: 3, color: '#6b7280' }
+        { name: '其他', value: 3, color: '#6b7280' }
       ],
       topVideos: [
-        { id: 1, title: 'Video 1 - หนังโรแมนติก', views: 12500, estimatedRevenue: 1250, duration: '2:15:00' },
-        { id: 2, title: 'Video 2 - หนังแอคชั่น', views: 11200, estimatedRevenue: 1120, duration: '1:45:00' },
-        { id: 3, title: 'Video 3 - หนังคอมเมดี้', views: 9800, estimatedRevenue: 980, duration: '1:30:00' },
-        { id: 4, title: 'Video 4 - หนังสยองขวัญ', views: 8700, estimatedRevenue: 870, duration: '1:55:00' },
-        { id: 5, title: 'Video 5 - หนังไซไฟ', views: 7600, estimatedRevenue: 760, duration: '2:20:00' }
+        { id: 1, title: '视频 1 - 浪漫电影', views: 12500, estimatedRevenue: 1250, duration: '2:15:00' },
+        { id: 2, title: '视频 2 - 动作电影', views: 11200, estimatedRevenue: 1120, duration: '1:45:00' },
+        { id: 3, title: '视频 3 - 喜剧电影', views: 9800, estimatedRevenue: 980, duration: '1:30:00' },
+        { id: 4, title: '视频 4 - 恐怖电影', views: 8700, estimatedRevenue: 870, duration: '1:55:00' },
+        { id: 5, title: '视频 5 - 科幻电影', views: 7600, estimatedRevenue: 760, duration: '2:20:00' }
       ],
       systemAlerts: [
-        { id: 1, type: 'warning', message: 'เซิร์ฟเวอร์ใช้ทรัพยากรสูง', time: '2 นาทีที่แล้ว' },
-        { id: 2, type: 'info', message: 'อัพเดทระบบเรียบร้อย', time: '1 ชั่วโมงที่แล้ว' },
-        { id: 3, type: 'success', message: 'การสำรองข้อมูลเสร็จสิ้น', time: '3 ชั่วโมงที่แล้ว' }
+        { id: 1, type: 'warning', message: '服务器资源使用率高', time: '2分钟前' },
+        { id: 2, type: 'info', message: '系统更新完成', time: '1小时前' },
+        { id: 3, type: 'success', message: '数据备份完成', time: '3小时前' }
       ]
     };
   };
@@ -274,7 +275,7 @@ const Admin = () => {
             <p className={`text-2xl font-bold mb-2 ${isRevenue ? 'text-green-600' : 'text-gray-900'}`}>
               {typeof value === 'number' ? (
                 isRevenue ? (
-                  value > 0 ? `฿${value.toLocaleString()}` : 'ยังไม่มีรายได้'
+                  value > 0 ? `¥${value.toLocaleString()}` : '暂无收入'
                 ) : (
                   value.toLocaleString()
                 )
@@ -312,7 +313,7 @@ const Admin = () => {
             <p key={index} style={{ color: entry.color }} className="text-sm">
               {entry.name}: {typeof entry.value === 'number' ? (
                 entry.dataKey === 'revenue' || entry.dataKey === 'estimated' || entry.dataKey === 'ads' ?
-                  `฿${entry.value.toLocaleString()}` :
+                  `¥${entry.value.toLocaleString()}` :
                   entry.dataKey === 'uptime' || entry.dataKey === 'loadTime' ?
                     `${entry.value}${entry.dataKey === 'uptime' ? '%' : 's'}` :
                     entry.value.toLocaleString()
@@ -330,9 +331,9 @@ const Admin = () => {
       return (
         <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
           <p className="font-medium text-gray-900 mb-2">{label}</p>
-          <p className="text-sm text-blue-600">เวลาโหลด: {payload[0]?.value}s</p>
-          <p className="text-sm text-green-600">อัพไทม์: {payload[1]?.value}%</p>
-          <p className="text-sm text-red-600">ข้อผิดพลาด: {payload[2]?.value} ครั้ง</p>
+          <p className="text-sm text-blue-600">加载时间: {payload[0]?.value}s</p>
+          <p className="text-sm text-green-600">正常运行时间: {payload[1]?.value}%</p>
+          <p className="text-sm text-red-600">错误: {payload[2]?.value} 次</p>
         </div>
       );
     }
@@ -342,16 +343,16 @@ const Admin = () => {
   const data = dashboardData || getSampleData();
 
   const tabs = [
-    { id: 'overview', label: 'ภาพรวม', icon: BarChart3 },
-    { id: 'performance', label: 'ประสิทธิภาพ', icon: Zap },
-    { id: 'users', label: 'ผู้ใช้งาน', icon: Users },
-    { id: 'content', label: 'เนื้อหา', icon: Video },
-    { id: 'revenue', label: 'รายได้', icon: DollarSign },
+    { id: 'overview', label: '概览', icon: BarChart3 },
+    { id: 'performance', label: '性能', icon: Zap },
+    { id: 'users', label: '用户', icon: Users },
+    { id: 'content', label: '内容', icon: Video },
+    { id: 'revenue', label: '收入', icon: DollarSign },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
-      {/* Mobile menu overlay */}
+      {/* 移动菜单遮罩 */}
       {isMobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden transition-opacity duration-300"
@@ -359,7 +360,7 @@ const Admin = () => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* 侧边栏 */}
       <div
         className={`fixed inset-y-0 left-0 z-50 bg-white/95 backdrop-blur-lg shadow-2xl transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'w-80' : 'w-20'} 
@@ -367,7 +368,7 @@ const Admin = () => {
           lg:translate-x-0 lg:static lg:inset-0`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo Section */}
+          {/* Logo 部分 */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
             <div className={`flex items-center space-x-3 transition-all ${sidebarOpen ? '' : 'justify-center w-full'}`}>
               <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -375,15 +376,12 @@ const Admin = () => {
               </div>
               {sidebarOpen && (
                 <div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    VideoAnalytics
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">ระบบวิเคราะห์วิดีโอครบวงจร</p>
+                  <p className="text-2xl font-bold text-gray-500 mt-1">视频综合分析平台</p>
                 </div>
               )}
             </div>
 
-            {/* Collapse button - desktop */}
+            {/* 折叠按钮 - 桌面端 */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="hidden lg:flex items-center justify-center h-8 w-8 hover:bg-gray-100 rounded-lg transition-colors"
@@ -392,7 +390,7 @@ const Admin = () => {
             </button>
           </div>
 
-          {/* Navigation */}
+          {/* 导航 */}
           <nav className="flex-1 p-2 overflow-y-auto">
             <ul className="space-y-2">
               {menuItems.map((item) => {
@@ -404,14 +402,14 @@ const Admin = () => {
                       onClick={async () => {
                         if (item.id === 'videos' || item.id === 'games') {
                           const result = await Swal.fire({
-                            title: 'ยืนยันการเปลี่ยนหน้า?',
-                            text: `คุณต้องการไปที่หน้า "${item.label}" หรือไม่?`,
+                            title: '确认切换页面?',
+                            text: `您确定要前往"${item.label}"页面吗?`,
                             icon: 'question',
                             showCancelButton: true,
                             confirmButtonColor: '#3b82f6',
                             cancelButtonColor: '#d33',
-                            confirmButtonText: 'ตกลง',
-                            cancelButtonText: 'ยกเลิก',
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
                             reverseButtons: true
                           });
 
@@ -440,7 +438,7 @@ const Admin = () => {
             </ul>
           </nav>
 
-          {/* User Profile */}
+          {/* 用户资料 */}
           <div className="p-4 border-t border-gray-200/60">
             <div className={`flex items-center ${sidebarOpen ? 'space-x-3' : 'justify-center'}`}>
               <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg">
@@ -448,23 +446,22 @@ const Admin = () => {
               </div>
               {sidebarOpen && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">ผู้ดูแลระบบ</p>
-                  <p className="text-xs text-gray-500 truncate">admin@videoapp.com</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">系统管理员</p>
                 </div>
               )}
             </div>
             {sidebarOpen && (
-              <button 
+              <button
                 onClick={() => {
                   Swal.fire({
-                    title: 'ออกจากระบบ?',
-                    text: 'คุณต้องการออกจากระบบหรือไม่?',
+                    title: '退出登录?',
+                    text: '您确定要退出登录吗?',
                     icon: 'question',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
                     cancelButtonColor: '#d33',
-                    confirmButtonText: 'ออกจากระบบ',
-                    cancelButtonText: 'ยกเลิก'
+                    confirmButtonText: '退出登录',
+                    cancelButtonText: '取消'
                   }).then((result) => {
                     if (result.isConfirmed) {
                       navigate('/login');
@@ -474,21 +471,21 @@ const Admin = () => {
                 className="mt-3 w-full flex items-center justify-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors font-medium"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                ออกจากระบบ
+                退出登录
               </button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* 主要内容 */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
+        {/* 头部 */}
         <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200/60 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                {/* Mobile menu button */}
+                {/* 移动端菜单按钮 */}
                 <button
                   onClick={() => setIsMobileMenuOpen(true)}
                   className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -497,28 +494,24 @@ const Admin = () => {
                 </button>
 
                 <div className="flex items-center space-x-3">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                    ระบบวิเคราะห์วิดีโอ
-                  </h1>
-
-                  {/* Refresh Button */}
+                  {/* 刷新按钮 */}
                   <button
                     onClick={fetchDashboardData}
                     disabled={loading}
                     className="p-2 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
-                    title="รีเฟรชข้อมูล"
+                    title="刷新数据"
                   >
                     <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                   </button>
 
                   {lastUpdated && (
                     <span className="text-xs text-gray-500 hidden sm:block">
-                      อัปเดตล่าสุด: {lastUpdated.toLocaleTimeString('th-TH')}
+                      最后更新: {lastUpdated.toLocaleTimeString('zh-CN')}
                     </span>
                   )}
                 </div>
 
-                {/* Period Selector */}
+                {/* 时间段选择器 */}
                 <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-xl p-1">
                   {['24h', '7d', '30d', '90d'].map((period) => (
                     <button
@@ -536,27 +529,9 @@ const Admin = () => {
                   ))}
                 </div>
               </div>
-
-              <div className="flex items-center space-x-3">
-                {/* System Status */}
-                <div className="hidden sm:flex items-center space-x-2 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
-                  <Server className="h-4 w-4 text-green-600" />
-                  <span className="text-sm text-green-700 font-medium">ระบบทำงานปกติ</span>
-                </div>
-
-                {/* Notifications */}
-                <button className="relative p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors">
-                  <Bell className="h-5 w-5" />
-                  {notifications > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium shadow-lg">
-                      {notifications}
-                    </span>
-                  )}
-                </button>
-              </div>
             </div>
 
-            {/* Tabs Navigation */}
+            {/* 标签导航 */}
             <div className="mt-4 overflow-x-auto">
               <div className="flex space-x-1 bg-gray-100 rounded-xl p-1">
                 {tabs.map((tab) => {
@@ -580,7 +555,7 @@ const Admin = () => {
               </div>
             </div>
 
-            {/* Mobile Period Selector */}
+            {/* 移动端时间段选择器 */}
             <div className="sm:hidden mt-3 overflow-x-auto">
               <div className="flex space-x-2 pb-2">
                 {['24h', '7d', '30d', '90d'].map((period) => (
@@ -602,34 +577,34 @@ const Admin = () => {
           </div>
         </header>
 
-        {/* Dashboard Content */}
+        {/* Dashboard 内容 */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-600">กำลังโหลดข้อมูล...</span>
+              <span className="ml-3 text-gray-600">正在加载数据...</span>
             </div>
           ) : (
             <div className="max-w-7xl mx-auto space-y-6">
-              
-              {/* Overview Tab */}
+
+              {/* 概览标签页 */}
               {activeTab === 'overview' && (
                 <>
-                  {/* Core Metrics Grid */}
+                  {/* 核心指标网格 */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                     <StatCard
-                      title="ยอดวิวทั้งหมด"
+                      title="总观看次数"
                       value={data.stats.totalViews}
-                      subtitle="จำนวนการดูวิดีโอ"
+                      subtitle="视频观看总数"
                       change={`${data.stats.viewChange > 0 ? '+' : ''}${data.stats.viewChange}%`}
                       icon={Eye}
                       trend={data.stats.viewChange >= 0 ? "up" : "down"}
                       color="blue"
                     />
                     <StatCard
-                      title="ผู้ใช้งานทั้งหมด"
+                      title="总视频观众"
                       value={data.stats.uniqueIPs}
-                      subtitle="จำนวน IP ที่ไม่ซ้ำ"
+                      subtitle="不重复 IP 数量"
                       change={`${data.stats.userChange > 0 ? '+' : ''}${data.stats.userChange}%`}
                       icon={Users}
                       trend={data.stats.userChange >= 0 ? "up" : "down"}
@@ -637,70 +612,30 @@ const Admin = () => {
                       onClick={() => navigate('/ip')}
                     />
                     <StatCard
-                      title="วิดีโอทั้งหมด"
+                      title="总游戏玩家"
                       value={data.stats.totalVideos}
-                      subtitle="วิดีโอในระบบ"
+                      subtitle="系统中的视频"
                       change={`${data.stats.videoChange > 0 ? '+' : ''}${data.stats.videoChange}%`}
                       icon={Video}
                       trend={data.stats.videoChange >= 0 ? "up" : "down"}
                       color="purple"
                     />
                     <StatCard
-                      title="ผู้ใช้งานปัจจุบัน"
-                      value={data.stats.activeUsers}
-                      subtitle="ผู้ใช้งานที่ออนไลน์"
-                      change={`${data.stats.activeUserChange > 0 ? '+' : ''}${data.stats.activeUserChange}%`}
-                      icon={UserCheck}
-                      trend={data.stats.activeUserChange >= 0 ? "up" : "down"}
-                      color="orange"
-                    />
-                  </div>
-
-                  {/* Performance Metrics Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                    <StatCard
-                      title="เวลาโหลดเฉลี่ย"
-                      value={data.stats.avgLoadTime}
-                      subtitle="วินาที"
-                      change="เสถียร"
-                      icon={Zap}
-                      trend="neutral"
-                      color="blue"
-                    />
-                    <StatCard
-                      title="อัพไทม์ระบบ"
-                      value={`${data.stats.uptime}%`}
-                      subtitle="ความเสถียร"
-                      change="ดีเยี่ยม"
-                      icon={Server}
-                      trend="up"
+                      title="收入汇总"
+                      value={`¥${data.stats.totalRevenue.toLocaleString()}`}
+                      subtitle="本月总收入"
+                      change={`${data.stats.revenueChange > 0 ? '+' : ''}${data.stats.revenueChange}%`}
+                      icon={DollarSign}
+                      trend={data.stats.revenueChange >= 0 ? "up" : "down"}
                       color="green"
                     />
-                    <StatCard
-                      title="ระยะเวลาใช้งานเฉลี่ย"
-                      value={`${data.stats.avgSessionDuration} นาที`}
-                      subtitle="ต่อเซสชัน"
-                      change={`${data.stats.sessionChange > 0 ? '+' : ''}${data.stats.sessionChange}%`}
-                      icon={Clock}
-                      trend={data.stats.sessionChange >= 0 ? "up" : "down"}
-                      color="purple"
-                    />
-                    <StatCard
-                      title="อัตราข้อผิดพลาด"
-                      value={`${data.stats.errorRate}%`}
-                      subtitle="ของระบบ"
-                      change="ต่ำมาก"
-                      icon={AlertTriangle}
-                      trend="down"
-                      color="red"
-                    />
                   </div>
 
-                  {/* Charts Grid */}
+                  {/* 图表网格 */}
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* Traffic Overview */}
+                    {/* 流量概览 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">ภาพรวมการใช้งาน</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">观看次数概览</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={data.revenueStats}>
                           <defs>
@@ -713,14 +648,14 @@ const Admin = () => {
                           <XAxis dataKey="name" />
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#viewsGradient)" name="จำนวนวิว" />
+                          <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#viewsGradient)" name="观看次数" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* User Growth */}
+                    {/* 用户增长 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">การเติบโตของผู้ใช้</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">用户增长</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={data.userGrowth}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -728,19 +663,19 @@ const Admin = () => {
                           <YAxis />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend />
-                          <Line type="monotone" dataKey="users" stroke="#8b5cf6" name="ผู้ใช้ทั้งหมด" />
-                          <Line type="monotone" dataKey="newUsers" stroke="#10b981" name="ผู้ใช้ใหม่" />
-                          <Line type="monotone" dataKey="returning" stroke="#f59e0b" name="ผู้ใช้กลับมา" />
+                          <Line type="monotone" dataKey="users" stroke="#8b5cf6" name="全部用户" />
+                          <Line type="monotone" dataKey="newUsers" stroke="#10b981" name="新用户" />
+                          <Line type="monotone" dataKey="returning" stroke="#f59e0b" name="回访用户" />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
-                  {/* Bottom Grid */}
+                  {/* 底部网格 */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Device Usage */}
+                    {/* 设备使用情况 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">อุปกรณ์ที่ใช้</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">设备使用情况</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                           <Pie
@@ -762,35 +697,33 @@ const Admin = () => {
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Top Videos */}
+                    {/* 热门视频 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">วิดีโอยอดนิยม</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">热门视频</h3>
                       <div className="space-y-4">
                         {data.topVideos.slice(0, 5).map((video, index) => (
                           <div key={video.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                             <div className="flex items-center space-x-3">
-                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                                index === 0 ? 'bg-yellow-100' :
+                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${index === 0 ? 'bg-yellow-100' :
                                 index === 1 ? 'bg-gray-100' :
-                                index === 2 ? 'bg-orange-100' : 'bg-blue-100'
-                              }`}>
-                                <span className={`font-bold text-sm ${
-                                  index === 0 ? 'text-yellow-600' :
-                                  index === 1 ? 'text-gray-600' :
-                                  index === 2 ? 'text-orange-600' : 'text-blue-600'
+                                  index === 2 ? 'bg-orange-100' : 'bg-blue-100'
                                 }`}>
+                                <span className={`font-bold text-sm ${index === 0 ? 'text-yellow-600' :
+                                  index === 1 ? 'text-gray-600' :
+                                    index === 2 ? 'text-orange-600' : 'text-blue-600'
+                                  }`}>
                                   {index + 1}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">{video.title}</p>
-                                <p className="text-xs text-gray-500">ระยะเวลา: {video.duration}</p>
+                                <p className="text-xs text-gray-500">时长: {video.duration}</p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-semibold text-gray-900">{video.views.toLocaleString()} วิว</p>
+                              <p className="text-sm font-semibold text-gray-900">{video.views.toLocaleString()} 观看</p>
                               <p className="text-xs text-gray-500">
-                                ประมาณการ: ฿{video.estimatedRevenue.toLocaleString()}
+                                预估收入: ¥{video.estimatedRevenue.toLocaleString()}
                               </p>
                             </div>
                           </div>
@@ -801,13 +734,13 @@ const Admin = () => {
                 </>
               )}
 
-              {/* Performance Tab */}
+              {/* 性能标签页 */}
               {activeTab === 'performance' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* System Performance */}
+                    {/* 系统性能 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">ประสิทธิภาพระบบ</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">系统性能</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={data.performanceStats}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -816,16 +749,16 @@ const Admin = () => {
                           <YAxis yAxisId="right" orientation="right" />
                           <Tooltip content={<PerformanceTooltip />} />
                           <Legend />
-                          <Line yAxisId="left" type="monotone" dataKey="loadTime" stroke="#3b82f6" name="เวลาโหลด (s)" />
-                          <Line yAxisId="right" type="monotone" dataKey="uptime" stroke="#10b981" name="อัพไทม์ (%)" />
-                          <Line yAxisId="left" type="monotone" dataKey="errors" stroke="#ef4444" name="ข้อผิดพลาด" />
+                          <Line yAxisId="left" type="monotone" dataKey="loadTime" stroke="#3b82f6" name="加载时间 (s)" />
+                          <Line yAxisId="right" type="monotone" dataKey="uptime" stroke="#10b981" name="正常运行时间 (%)" />
+                          <Line yAxisId="left" type="monotone" dataKey="errors" stroke="#ef4444" name="错误次数" />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Hourly Traffic */}
+                    {/* 每小时流量 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">การใช้งานรายชั่วโมง</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">每小时使用情况</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={data.hourlyTraffic}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -833,17 +766,17 @@ const Admin = () => {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="traffic" fill="#3b82f6" name="ปริมาณการใช้งาน" />
-                          <Bar dataKey="users" fill="#10b981" name="ผู้ใช้งาน" />
+                          <Bar dataKey="traffic" fill="#3b82f6" name="流量" />
+                          <Bar dataKey="users" fill="#10b981" name="用户" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Browser Usage */}
+                    {/* 浏览器使用情况 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">เบราว์เซอร์ที่ใช้</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">浏览器使用情况</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                           <Pie
@@ -863,17 +796,16 @@ const Admin = () => {
                       </ResponsiveContainer>
                     </div>
 
-                    {/* System Alerts */}
+                    {/* 系统警报 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">การแจ้งเตือนระบบ</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">系统警报</h3>
                       <div className="space-y-3">
                         {data.systemAlerts.map((alert) => (
-                          <div key={alert.id} className={`p-3 rounded-lg border ${
-                            alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
+                          <div key={alert.id} className={`p-3 rounded-lg border ${alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                             alert.type === 'error' ? 'bg-red-50 border-red-200' :
-                            alert.type === 'success' ? 'bg-green-50 border-green-200' :
-                            'bg-blue-50 border-blue-200'
-                          }`}>
+                              alert.type === 'success' ? 'bg-green-50 border-green-200' :
+                                'bg-blue-50 border-blue-200'
+                            }`}>
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-medium text-gray-900">{alert.message}</p>
                               <span className="text-xs text-gray-500">{alert.time}</span>
@@ -886,13 +818,13 @@ const Admin = () => {
                 </div>
               )}
 
-              {/* Users Tab */}
+              {/* 用户标签页 */}
               {activeTab === 'users' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* User Demographics */}
+                    {/* 用户人口统计 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">ภูมิศาสตร์ผู้ใช้งาน</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">用户地理分布</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={data.geoData} layout="vertical">
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -900,31 +832,31 @@ const Admin = () => {
                           <YAxis dataKey="name" type="category" />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="value" fill="#3b82f6" name="เปอร์เซ็นต์ (%)" />
-                          <Bar dataKey="users" fill="#10b981" name="จำนวนผู้ใช้" />
+                          <Bar dataKey="value" fill="#3b82f6" name="百分比 (%)" />
+                          <Bar dataKey="users" fill="#10b981" name="用户数量" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* User Engagement */}
+                    {/* 用户参与度 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">การมีส่วนร่วมของผู้ใช้</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">用户参与度</h3>
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
-                          <span className="text-sm font-medium text-blue-900">ผู้ใช้งานเฉลี่ยต่อวัน</span>
+                          <span className="text-sm font-medium text-blue-900">日均活跃用户</span>
                           <span className="text-lg font-bold text-blue-600">{data.stats.activeUsers.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
-                          <span className="text-sm font-medium text-green-900">ผู้ใช้งานใหม่</span>
+                          <span className="text-sm font-medium text-green-900">新用户</span>
                           <span className="text-lg font-bold text-green-600">{data.stats.newUsers.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
-                          <span className="text-sm font-medium text-purple-900">ผู้ใช้งานกลับมา</span>
+                          <span className="text-sm font-medium text-purple-900">回访用户</span>
                           <span className="text-lg font-bold text-purple-600">{data.stats.returningUsers.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
-                          <span className="text-sm font-medium text-orange-900">ระยะเวลาใช้งานเฉลี่ย</span>
-                          <span className="text-lg font-bold text-orange-600">{data.stats.avgSessionDuration} นาที</span>
+                          <span className="text-sm font-medium text-orange-900">平均使用时长</span>
+                          <span className="text-lg font-bold text-orange-600">{data.stats.avgSessionDuration} 分钟</span>
                         </div>
                       </div>
                     </div>
@@ -932,13 +864,13 @@ const Admin = () => {
                 </div>
               )}
 
-              {/* Content Tab */}
+              {/* 内容标签页 */}
               {activeTab === 'content' && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* Category Performance */}
+                    {/* 分类表现 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">ประสิทธิภาพหมวดหมู่</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">分类表现</h3>
                       <ResponsiveContainer width="100%" height={400}>
                         <BarChart data={data.categoryStats}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -946,33 +878,33 @@ const Admin = () => {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="views" fill="#3b82f6" name="จำนวนวิว" />
-                          <Bar dataKey="videos" fill="#10b981" name="จำนวนวิดีโอ" />
+                          <Bar dataKey="views" fill="#3b82f6" name="观看次数" />
+                          <Bar dataKey="videos" fill="#10b981" name="视频数量" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Content Statistics */}
+                    {/* 内容统计 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">สถิติเนื้อหา</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">内容统计</h3>
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 bg-blue-50 rounded-lg text-center">
                             <p className="text-2xl font-bold text-blue-600">{data.stats.totalVideos}</p>
-                            <p className="text-sm text-blue-800">วิดีโอทั้งหมด</p>
+                            <p className="text-sm text-blue-800">总视频数</p>
                           </div>
                           <div className="p-4 bg-green-50 rounded-lg text-center">
                             <p className="text-2xl font-bold text-green-600">{Math.round(data.stats.totalViews / data.stats.totalVideos)}</p>
-                            <p className="text-sm text-green-800">วิวเฉลี่ยต่อวิดีโอ</p>
+                            <p className="text-sm text-green-800">平均观看次数</p>
                           </div>
                         </div>
                         <div className="p-4 bg-purple-50 rounded-lg">
-                          <p className="text-sm font-medium text-purple-800 mb-2">หมวดหมู่ที่ได้รับความนิยม</p>
+                          <p className="text-sm font-medium text-purple-800 mb-2">热门分类</p>
                           <div className="space-y-2">
                             {data.categoryStats.slice(0, 3).map((category, index) => (
                               <div key={category.name} className="flex justify-between items-center">
                                 <span className="text-sm text-purple-700">{category.name}</span>
-                                <span className="text-sm font-bold text-purple-600">{category.views.toLocaleString()} วิว</span>
+                                <span className="text-sm font-bold text-purple-600">{category.views.toLocaleString()} 观看</span>
                               </div>
                             ))}
                           </div>
@@ -983,26 +915,26 @@ const Admin = () => {
                 </div>
               )}
 
-              {/* Revenue Tab */}
+              {/* 收入标签页 */}
               {activeTab === 'revenue' && (
                 <div className="space-y-6">
-                  {/* Revenue Notice */}
+                  {/* 收入通知 */}
                   <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
                     <div className="flex items-center space-x-3">
                       <CreditCard className="h-6 w-6 text-yellow-600" />
                       <div>
-                        <h3 className="text-lg font-semibold text-yellow-800">ระบบรายได้ยังไม่เปิดใช้งาน</h3>
+                        <h3 className="text-lg font-semibold text-yellow-800">收入系统尚未启用</h3>
                         <p className="text-yellow-700 mt-1">
-                          ขณะนี้ระบบยังไม่มีการเก็บรายได้จากวิดีโอ กราฟด้านล่างแสดงรายได้ประมาณการหากเปิดใช้งานระบบรายได้
+                          当前系统尚未从视频中收取收入，下方图表显示如果启用收入系统的预估收入
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* Estimated Revenue */}
+                    {/* 预估收入 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">รายได้ประมาณการ</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">预估收入</h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <AreaChart data={data.revenueStats}>
                           <defs>
@@ -1015,23 +947,23 @@ const Admin = () => {
                           <XAxis dataKey="name" />
                           <YAxis />
                           <Tooltip />
-                          <Area type="monotone" dataKey="estimated" stroke="#3b82f6" fillOpacity={1} fill="url(#estimatedGradient)" name="รายได้ประมาณการ" />
+                          <Area type="monotone" dataKey="estimated" stroke="#3b82f6" fillOpacity={1} fill="url(#estimatedGradient)" name="预估收入" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Revenue by Category */}
+                    {/* 按分类收入 */}
                     <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6">รายได้ตามหมวดหมู่</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">按分类收入</h3>
                       <div className="space-y-4">
                         {data.categoryStats.map((category, index) => (
                           <div key={category.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm font-medium text-gray-900">{category.name}</span>
                             <div className="text-right">
                               <p className="text-sm font-semibold text-gray-900">
-                                ฿{Math.floor(category.views * 0.1).toLocaleString()}
+                                ¥{Math.floor(category.views * 0.1).toLocaleString()}
                               </p>
-                              <p className="text-xs text-gray-500">{category.views.toLocaleString()} วิว</p>
+                              <p className="text-xs text-gray-500">{category.views.toLocaleString()} 观看</p>
                             </div>
                           </div>
                         ))}

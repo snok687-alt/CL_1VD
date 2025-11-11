@@ -7,11 +7,16 @@ import VideoGrid from '../pages/VideoGrid';
 import SearchResults from '../pages/SearchResults';
 import ProfilePage from '../helpers/ProfilePage';
 import ImagesUploadForm from '../uploads/ImageUploadForm';
-import Gaming from '../game/Gaming'
-import Admin from '../Admin/Admin'
-import Ip from '../Admin/Ip'
+import Gaming from '../game/Gaming';
+import Admin from '../Admin/Admin';
+import Ip from '../Admin/Ip';
+import Form_user from '../Admin/Form_user';
+import Login from '../Admin/Login';
+import ProtectedRoute from './ProtectedRoute'; 
+import AddLinkForm from '../Admin/AddLinkForm'; 
+import Addpayment from '../Admin/Addpayment'
 
-// ข้อมูลหมวดหมู่
+// ✅ หมวดหมู่เดิม
 const categories = [
   { id: '32', name: '国产视频' },
   { id: '33', name: '国产主播' },
@@ -33,13 +38,11 @@ const categories = [
   { id: '50', name: '欧美精品' }
 ];
 
-// Helper functions
 export const getCategoryName = (categoryId) => {
   const category = categories.find(cat => cat.id === categoryId);
   return category ? category.name : `หมวดหมู่ ${categoryId}`;
 };
 
-// Wrapper component to pass theme context to ProfilePage
 const ProfilePageWrapper = () => {
   const { isDarkMode } = useOutletContext();
   return <ProfilePage isDarkMode={isDarkMode} />;
@@ -54,14 +57,31 @@ const Router = () => {
           <Route path="category/:categoryId" element={<VideoGrid />} />
           <Route path="watch/:videoId" element={<VideoPlayer />} />
           <Route path="search" element={<SearchResults />} />
-          {/* อัปเดต Route ใหม่สำหรับ Profile พร้อม theme support */}
           <Route path="profile" element={<ProfilePageWrapper />} />
           <Route path="profile/:profileName" element={<ProfilePageWrapper />} />
         </Route>
+
         <Route path="/upload" element={<ImagesUploadForm />} />
-        <Route path="/gaming" element={<Gaming/>}/>
-        <Route path="/CL_____/Admin" element={<Admin/>}/>
-        <Route path="/Ip" element={<Ip/>}/>
+        <Route path="/gaming" element={<Gaming />} />
+        <Route path="/Ip" element={<Ip />} />
+        <Route path="/Form_user" element={<Form_user />} />
+        <Route path="/Login" element={<Login />} />
+
+        {/* ✅ ป้องกัน Admin Route */}
+        <Route
+          path="/CL_____________________________________________________________________________________******_/Admin"
+          element={
+            <ProtectedRoute>
+              <Admin />
+            </ProtectedRoute>
+          }
+        />
+
+            <Route path="/AddLinkForm" element={<AddLinkForm />} />
+            <Route path="/Addpayment" element={<Addpayment />} />
+
+        {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
+        <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Not Found</h1>} />
       </Routes>
     </BrowserRouter>
   );

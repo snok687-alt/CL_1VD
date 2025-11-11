@@ -38,9 +38,11 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   const [selectedVideoForFace, setSelectedVideoForFace] = useState(null);
   const [selectedFaceImages, setSelectedFaceImages] = useState({});
   
-  // ✅ State สำหรับยอดวิว real-time
+  // 🗃️ เก็บไว้ก่อน: State สำหรับยอดวิว real-time (ถ้าต้องการใช้งานในอนาคต)
+  /*
   const [videoViews, setVideoViews] = useState({});
   const [loadingViews, setLoadingViews] = useState({});
+  */
 
   const imageSectionRef = useRef(null);
 
@@ -52,7 +54,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   const actorRankColors = ['bg-red-600', 'bg-orange-500', 'bg-yellow-400'];
   const rankColors = actorRankColors;
 
-  // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
+  // 🗃️ เก็บไว้ก่อน: ฟังก์ชันดึงยอดวิว real-time จาก server (ถ้าต้องการใช้งานในอนาคต)
+  /*
   const fetchRealTimeViews = async (videoIds) => {
     if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) return {};
     
@@ -60,8 +63,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       const validVideoIds = videoIds.filter(id => id != null && id !== '');
       if (validVideoIds.length === 0) return {};
 
-      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_ids:`, validVideoIds);
-      
       const response = await fetch('/backend-api/views/get', {
         method: 'POST',
         headers: {
@@ -72,7 +73,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
 
       if (response.ok) {
         const viewsData = await response.json();
-        // console.log('📊 ยอดวิว real-time ที่ดึงได้:', viewsData);
         return viewsData;
       } else {
         console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
@@ -83,14 +83,13 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       return {};
     }
   };
+  */
 
-  // ✅ ฟังก์ชันบันทึกยอดวิวเมื่อเล่นวิดีโอ
+  // ✅ ฟังก์ชันบันทึกยอดวิวเมื่อเล่นวิดีโอ (ยังคงบันทึกลง MySQL)
   const recordVideoView = async (videoId) => {
     if (!videoId) return;
 
     try {
-      // console.log('🔄 บันทึกวิวสำหรับ video_id:', videoId);
-      
       const response = await fetch('/backend-api/views/increment', {
         method: 'POST',
         headers: {
@@ -100,14 +99,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       });
       
       if (response.ok) {
-        // console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${videoId}`);
-        
-        // ✅ อัปเดตยอดวิวใน state ทันที
-        setVideoViews(prev => ({
-          ...prev,
-          [videoId]: (prev[videoId] || 0) + 1
-        }));
-        
+        console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${videoId}`);
         return true;
       } else {
         console.error('❌ ไม่สามารถบันทึกวิวได้:', await response.text());
@@ -119,7 +111,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     }
   };
 
-  // ✅ ฟังก์ชันดึงและอัปเดตยอดวิวสำหรับวิดีโอทั้งหมด
+  // 🗃️ เก็บไว้ก่อน: ฟังก์ชันดึงและอัปเดตยอดวิวสำหรับวิดีโอทั้งหมด (ถ้าต้องการใช้งานในอนาคต)
+  /*
   const updateAllVideoViews = async (videoList) => {
     if (!videoList || videoList.length === 0) return;
 
@@ -146,8 +139,10 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       }));
     }
   };
+  */
 
-  // ✅ ฟังก์ชันดึงยอดวิวสำหรับวิดีโอเดียว
+  // 🗃️ เก็บไว้ก่อน: ฟังก์ชันดึงยอดวิวสำหรับวิดีโอเดียว (ถ้าต้องการใช้งานในอนาคต)
+  /*
   const updateSingleVideoView = async (videoId) => {
     if (!videoId) return;
 
@@ -175,10 +170,11 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       }));
     }
   };
+  */
 
-  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว
-  const formatViewCount = (views, videoId = null) => {
-    const viewCount = videoId ? (videoViews[videoId] || views || 0) : (views || 0);
+  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว (ใช้จาก video.views โดยตรง)
+  const formatViewCount = (views) => {
+    const viewCount = views || 0;
     
     if (viewCount >= 1_000_000_000) {
       return (viewCount / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
@@ -191,34 +187,27 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     }
   };
 
-  // ✅ คำนวณ totalViews จาก videoViews ล่าสุด
+  // ✅ คำนวณ totalViews จาก video.views โดยตรง
   const calculateTotalViews = useCallback(() => {
-    return videos.reduce((sum, video) => {
-      const currentViews = videoViews[video.id] || video.views || 0;
-      return sum + currentViews;
-    }, 0);
-  }, [videos, videoViews]);
+    return videos.reduce((sum, video) => sum + (video.views || 0), 0);
+  }, [videos]);
 
-  // ✅ คำนวณ hottestVideos จาก videoViews ล่าสุด
+  // ✅ คำนวณ hottestVideos จาก video.views โดยตรง
   const calculateHottestVideos = useCallback(() => {
     return [...videos]
-      .sort((a, b) => {
-        const viewsA = videoViews[a.id] || a.views || 0;
-        const viewsB = videoViews[b.id] || b.views || 0;
-        return viewsB - viewsA;
-      })
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 3);
-  }, [videos, videoViews]);
+  }, [videos]);
 
   const totalViews = calculateTotalViews();
   const hottestVideos = calculateHottestVideos();
 
-  // ✅ โหลดยอดวิว real-time เมื่อโหลด videos
+  // 🗃️ เก็บไว้ก่อน: โหลดยอดวิว real-time (ถ้าต้องการใช้งานในอนาคต)
+  /*
   useEffect(() => {
     if (videos.length > 0) {
       updateAllVideoViews(videos);
       
-      // ✅ ดึงยอดวิวทุก 30 วินาที (real-time polling)
       const intervalId = setInterval(() => {
         updateAllVideoViews(videos);
       }, 30000);
@@ -228,8 +217,9 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       };
     }
   }, [videos]);
+  */
 
-  // ✅ ฟังก์ชันเล่นวิดีโอ - บันทึกวิวเมื่อเริ่มเล่น
+  // ✅ ฟังก์ชันเล่นวิดีโอ - บันทึกวิวเมื่อเริ่มเล่น (ยังคงบันทึกลง MySQL)
   const playVideo = async (videoId) => {
     try {
       const videoData = await getVideoById(videoId);
@@ -246,11 +236,13 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
 
       setPlayingVideo({ ...videoData, videoUrl });
 
-      // ✅ บันทึกยอดวิวเมื่อเริ่มเล่นวิดีโอ
+      // ✅ บันทึกยอดวิวเมื่อเริ่มเล่นวิดีโอ (ยังคงบันทึกลง MySQL)
       await recordVideoView(videoId);
 
-      // ✅ อัปเดตยอดวิวใน state และดึงข้อมูลล่าสุด
+      // 🗃️ เก็บไว้ก่อน: อัปเดตยอดวิวใน state (ถ้าต้องการใช้งานในอนาคต)
+      /*
       await updateSingleVideoView(videoId);
+      */
 
       // ดึงข้อมูล rating เมื่อเล่นวิดีโอ
       await fetchVideoRating(videoId);
@@ -289,8 +281,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     if (userRatings[videoId] > 0) return;
 
     try {
-      // console.log('📤 กำลังส่งคะแนน:', { video_id: videoId, rating });
-
       const response = await fetch(`/backend-api/rate`, {
         method: 'POST',
         headers: {
@@ -302,10 +292,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
         })
       });
 
-      // console.log('📡 Response status:', response.status);
-
       const result = await response.json();
-      // console.log('📥 ได้รับผลลัพธ์:', result);
 
       if (result.success) {
         setUserRatings(prev => ({
@@ -384,8 +371,9 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
     switch (sortBy) {
       case 'views':
         sortedVideos.sort((a, b) => {
-          const viewsA = videoViews[a.id] || a.views || 0;
-          const viewsB = videoViews[b.id] || b.views || 0;
+          // ✅ ใช้ video.views โดยตรง (จาก API)
+          const viewsA = a.views || 0;
+          const viewsB = b.views || 0;
           return sortOrder === 'desc' ? viewsB - viewsA : viewsA - viewsB;
         });
         break;
@@ -398,7 +386,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
       default: break;
     }
     return sortedVideos;
-  }, [videos, sortBy, sortOrder, videoViews]);
+  }, [videos, sortBy, sortOrder]);
 
   const startSlideShow = useCallback(() => {
     if (images.length <= 4 || showAllImages || isSlidePaused) return;
@@ -627,8 +615,6 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
   const handleFaceImageSelect = (image) => {
     if (!selectedVideoForFace) return;
 
-    // console.log("เลือกรูปภาพสำหรับวิดีโอ:", selectedVideoForFace.id, image);
-
     setSelectedFaceImages(prev => ({
       ...prev,
       [selectedVideoForFace.id]: image
@@ -854,7 +840,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                   <h1 className={`text-xl font-bold ${text} drop-shadow-lg text-shadow-lg`}>{profile.name}</h1>
                   {profile.alternativeName && <p className={`text-base ${textSec} italic drop-shadow-md`}>{profile.alternativeName}</p>}
                   
-                  {/* ✅ แสดงยอดวิวรวมจาก MySQL */}
+                  {/* ✅ แสดงยอดวิวรวมจาก video.views โดยตรง */}
                   <div className={`text-base ${textSec} font-semibold drop-shadow-md bg-black/30 p-1 rounded-lg`}>
                     总观看次数: {totalViews.toLocaleString()}
                     {totalViews >= 1000 && (
@@ -944,12 +930,11 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                   <div className="flex flex-wrap items-center text-sm text-gray-300 gap-2">
                     <span>{playingVideo.channelName}</span><span>•</span>
                     
-                    {/* ✅ แสดงยอดวิวจาก MySQL */}
+                    {/* ✅ แสดงยอดวิวจาก playingVideo.views โดยตรง */}
                     {playingVideo.views > 0 && (
                       <>
                         <span>
-                          {/* ใช้ videoViews ถ้ามี มิฉะนั้นใช้ playingVideo.views */}
-                          {(videoViews[playingVideo.id] || playingVideo.views).toLocaleString()} 次观看
+                          {playingVideo.views.toLocaleString()} 次观看
                         </span>
                         <span>•</span>
                       </>
@@ -1045,8 +1030,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                     const isHotVideo = hotVideoIndex !== -1;
                     const hasSelectedFace = selectedFaceImages[video.id];
                     
-                    // ✅ ใช้ยอดวิวจาก MySQL ถ้ามี
-                    const currentVideoViews = videoViews[video.id] || video.views || 0;
+                    // ✅ ใช้ยอดวิวจาก video.views โดยตรง
+                    const currentVideoViews = video.views || 0;
 
                     return (
                       <div key={video.id} onClick={(e) => { e.stopPropagation(); playVideo(video.id); }}
@@ -1085,7 +1070,8 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                             </div>
                           )}
                           
-                          {/* ✅ Loading indicator สำหรับยอดวิว */}
+                          {/* 🗃️ เก็บไว้ก่อน: Loading indicator สำหรับยอดวิว (ถ้าต้องการใช้งานในอนาคต) */}
+                          {/*
                           {loadingViews[video.id] && (
                             <div className="absolute top-2 left-2 bg-black bg-opacity-70 rounded px-1 py-0.5">
                               <div className="flex items-center space-x-1">
@@ -1094,6 +1080,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                               </div>
                             </div>
                           )}
+                          */}
                         </div>
                         <div className="p-3">
 
@@ -1113,12 +1100,17 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                                 </div>
                               )}
                               <p className={`text-xs ${textSec} drop-shadow`}>
-                                {/* ✅ ใช้ยอดวิวจาก MySQL */}
+                                {/* ✅ ใช้ยอดวิวจาก video.views โดยตรง */}
+                                {`${formatViewCount(currentVideoViews)} 次观看`}
+                                
+                                {/* 🗃️ เก็บไว้ก่อน: ใช้ยอดวิวจาก MySQL (ถ้าต้องการใช้งานในอนาคต) */}
+                                {/*
                                 {loadingViews[video.id] ? (
                                   <span className="text-blue-400 animate-pulse">更新中...</span>
                                 ) : (
                                   `${formatViewCount(currentVideoViews)} 次观看`
                                 )}
+                                */}
                               </p>
                             </div>
 

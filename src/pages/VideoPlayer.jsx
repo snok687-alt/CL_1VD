@@ -27,14 +27,65 @@ const VideoPlayer = () => {
 
   // ใน VideoPlayer.jsx
 // ใน VideoPlayer.jsx - แก้ไข useEffect การบันทึกวิว
+// useEffect(() => {
+//   if (!video?.id) return;
+
+//   const recordAndFetchViews = async () => {
+//     try {
+//       console.log('🔄 บันทึกและดึงยอดวิวล่าสุดสำหรับ video_id:', video.id);
+      
+//       // ✅ บันทึกวิว
+//       const incrementResponse = await fetch('/backend-api/views/increment', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//         },
+//         body: JSON.stringify({ video_id: video.id }),
+//       });
+      
+//       if (incrementResponse.ok) {
+//         console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${video.id}`);
+        
+//         // ✅ ดึงยอดวิวล่าสุดจาก server
+//         const viewsResponse = await fetch('/backend-api/views/get', {
+//           method: 'POST',
+//           headers: {
+//             'Content-Type': 'application/json',
+//           },
+//           body: JSON.stringify({ video_ids: [video.id] }),
+//         });
+        
+//         if (viewsResponse.ok) {
+//           const viewsData = await viewsResponse.json();
+//           const latestViews = viewsData[video.id] || (video.views || 0) + 1;
+          
+//           console.log(`📊 ยอดวิวล่าสุด: ${latestViews}`);
+          
+//           // ✅ อัปเดต state ด้วยยอดวิวล่าสุดจาก server
+//           setVideo(prev => prev ? { ...prev, views: latestViews } : null);
+//         }
+//       } else {
+//         console.error('❌ ไม่สามารถบันทึกวิวได้:', await incrementResponse.text());
+//       }
+//     } catch (error) {
+//       console.error('❌ เกิดข้อผิดพลาดในการบันทึกวิว:', error);
+//     }
+//   };
+
+//   // บันทึกและดึงยอดวิวทันทีเมื่อโหลดวิดีโอเสร็จ
+//   recordAndFetchViews();
+
+// }, [video?.id]);
+
+// ใน VideoPlayer.jsx - แก้ไขการบันทึกวิว
 useEffect(() => {
   if (!video?.id) return;
 
-  const recordAndFetchViews = async () => {
+  const recordView = async () => {
     try {
-      console.log('🔄 บันทึกและดึงยอดวิวล่าสุดสำหรับ video_id:', video.id);
+      console.log('🔄 บันทึกวิวสำหรับ video_id:', video.id);
       
-      // ✅ บันทึกวิว
+      // ✅ ยังคงบันทึกวิวลง MySQL ตามปกติ (สำหรับเก็บสถิติ)
       const incrementResponse = await fetch('/backend-api/views/increment', {
         method: 'POST',
         headers: {
@@ -46,7 +97,8 @@ useEffect(() => {
       if (incrementResponse.ok) {
         console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${video.id}`);
         
-        // ✅ ดึงยอดวิวล่าสุดจาก server
+        // 🗃️ เก็บไว้ก่อน: การดึงยอดวิวล่าสุดจาก server (ถ้าต้องการใช้งานในอนาคต)
+        /*
         const viewsResponse = await fetch('/backend-api/views/get', {
           method: 'POST',
           headers: {
@@ -58,12 +110,9 @@ useEffect(() => {
         if (viewsResponse.ok) {
           const viewsData = await viewsResponse.json();
           const latestViews = viewsData[video.id] || (video.views || 0) + 1;
-          
-          console.log(`📊 ยอดวิวล่าสุด: ${latestViews}`);
-          
-          // ✅ อัปเดต state ด้วยยอดวิวล่าสุดจาก server
           setVideo(prev => prev ? { ...prev, views: latestViews } : null);
         }
+        */
       } else {
         console.error('❌ ไม่สามารถบันทึกวิวได้:', await incrementResponse.text());
       }
@@ -72,9 +121,7 @@ useEffect(() => {
     }
   };
 
-  // บันทึกและดึงยอดวิวทันทีเมื่อโหลดวิดีโอเสร็จ
-  recordAndFetchViews();
-
+  recordView();
 }, [video?.id]);
 
 

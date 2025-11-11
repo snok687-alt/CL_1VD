@@ -129,7 +129,8 @@ const formatVideo = (item, serverViews = {}) => {
     channelName: item.vod_director || item.director || item.type_name || 'ບໍ່ລະບຸ',
     actors: normalizedActors,
     // views: serverViews[item.vod_id || item.id] || parseInt(item.vod_hits || item.hits || 0),
-    views: serverViews[item.vod_id || item.id] ?? 0,
+    // views: serverViews[item.vod_id || item.id] ?? 0,
+    views: parseInt(item.vod_hits || item.hits || 0),
     duration: parseInt(item.vod_duration || item.duration || 0),
     uploadDate: item.vod_year || item.year || item.vod_time || 'ບໍ່ລະບຸ',
     thumbnail: item.vod_pic || item.pic || '',
@@ -165,9 +166,11 @@ export const getVideosWithDetails = async (ids) => {
       res.data?.list || res.data?.data || []
     );
 
-    // ใช้ map เพื่อความเร็ว
-    const serverViews = {}; // ยังไม่มีในฟังก์ชันนี้ (โหลดจาก fetchViewsFromServer ภายนอก)
-    return allItems.map(item => formatVideo(item, serverViews));
+    // ✅ เปลี่ยนแปลง: ไม่ต้องส่ง serverViews
+    // 🗃️ เก็บไว้ก่อน: ถ้าต้องการใช้ยอดวิวจาก MySQL
+    // const serverViews = await fetchViewsFromServer(ids);
+    
+    return allItems.map(item => formatVideo(item, {})); // ✅ ส่ง object ว่างแทน serverViews
 
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการโหลดรายละเอียดวิดีโอ:', error);
@@ -225,6 +228,7 @@ export const fetchVideosFromAPI_S = async (type_id = '', searchQuery = '', limit
   return result;
 };
 
+// ในฟังก์ชัน fetchVideosFromAPI - แก้ไขการรวมยอดวิว
 export const fetchVideosFromAPI = async (type_id = '', searchQuery = '', limit = 18, page = 1) => {
   const cacheKey = `videos:${type_id}:${searchQuery}:${limit}:${page}`;
   const cached = getFromCache(cacheKey);
@@ -242,24 +246,28 @@ export const fetchVideosFromAPI = async (type_id = '', searchQuery = '', limit =
 
     const ids = videoList.map(item => item.vod_id || item.id).filter(Boolean);
 
-    // ✅ โหลดพร้อมกัน (เร็วขึ้น)
+    // ✅ เปลี่ยนแปลง: โหลดเฉพาะ detailedVideos โดยไม่รวม serverViews
+    const detailedVideos = await getVideosWithDetails(ids);
+
+    // 🗃️ เก็บไว้ก่อน: การโหลดยอดวิวจาก MySQL (ถ้าต้องการใช้งานในอนาคต)
+    /*
     const [serverViews, detailedVideos] = await Promise.all([
       fetchViewsFromServer(ids),
-      getVideosWithDetails(ids) // ใช้เวอร์ชันใหม่ข้างล่าง
+      getVideosWithDetails(ids)
     ]);
 
-    // ✅ รวมยอดวิวจาก server
     const videosWithServerViews = detailedVideos.map(video => ({
       ...video,
       views: serverViews[video.id] || video.views
     }));
+    */
 
     const videos = limit > 0
-      ? videosWithServerViews.slice(0, limit)
-      : videosWithServerViews; // ถ้า limit=0 แสดงทั้งหมด
+      ? detailedVideos.slice(0, limit)  // ✅ ใช้ detailedVideos โดยตรง
+      : detailedVideos;
+    
     setToCache(cacheKey, videos);
     return videos;
-
 
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการดึงวิดีโอ:', error);
@@ -482,6 +490,7 @@ export const checkAPIStatus = async () => {
 // ดึงวิดีโอตามนักแสดง - ปรับปรุงให้ใช้ primary name
 
 
+// ในฟังก์ชันอื่นๆ ที่มีการรวมยอดวิวจาก server
 export const getVideosByActor = async (actorName, limit = 50) => {
   const primaryName = getPrimaryName(actorName);
   const cacheKey = `videosByActor:${primaryName}:${limit}`;
@@ -489,28 +498,23 @@ export const getVideosByActor = async (actorName, limit = 50) => {
   if (cached) return cached;
 
   try {
-    // ใช้ฟังก์ชันจาก actorData.js ด้วย primary name
     const actorVideos = getActorVideos(primaryName);
+    if (actorVideos.length === 0) return [];
 
-    if (actorVideos.length === 0) {
-      return [];
-    }
-
-    // ดึงรายละเอียดวิดีโอจาก API
     const videoIds = actorVideos.map(v => v.vod_id).slice(0, limit);
     const detailedVideos = await getVideosWithDetails(videoIds);
 
-    // ดึงยอดวิวจากเซิร์บเวอร์
+    // 🗃️ เก็บไว้ก่อน: การดึงยอดวิวจากเซิร์ฟเวอร์ (ถ้าต้องการใช้งานในอนาคต)
+    /*
     const serverViews = await fetchViewsFromServer(videoIds);
-
-    // รวมยอดวิวจากเซิร์บเวอร์
     const videosWithServerViews = detailedVideos.map(video => ({
       ...video,
       views: serverViews[video.id] || video.views
     }));
+    */
 
-    setToCache(cacheKey, videosWithServerViews);
-    return videosWithServerViews;
+    setToCache(cacheKey, detailedVideos);  // ✅ ใช้ detailedVideos โดยตรง
+    return detailedVideos;
   } catch (error) {
     console.error('เกิดข้อผิดพาดในการดึงวิดีโอของนักแสดง:', error);
     return [];

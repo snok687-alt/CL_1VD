@@ -27,37 +27,37 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   };
 
   // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
-  const fetchRealTimeViews = async () => {
-    if (!video?.id) return;
+  // const fetchRealTimeViews = async () => {
+  //   if (!video?.id) return;
     
-    try {
-      setLoadingViews(true);
-      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
+  //   try {
+  //     setLoadingViews(true);
+  //     // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
       
-      const response = await fetch('/backend-api/views/get', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ video_ids: [video.id] }),
-      });
+  //     const response = await fetch('/backend-api/views/get', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ video_ids: [video.id] }),
+  //     });
 
-      if (response.ok) {
-        const viewsData = await response.json();
-        const latestViews = viewsData[video.id] || currentViews;
+  //     if (response.ok) {
+  //       const viewsData = await response.json();
+  //       const latestViews = viewsData[video.id] || currentViews;
         
-        // ✅ อัปเดต state เฉพาะยอดวิว
-        setCurrentViews(latestViews);
-        // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
-      } else {
-        console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
-      }
-    } catch (error) {
-      console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
-    } finally {
-      setLoadingViews(false);
-    }
-  };
+  //       // ✅ อัปเดต state เฉพาะยอดวิว
+  //       setCurrentViews(latestViews);
+  //       // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
+  //     } else {
+  //       console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+  //   } finally {
+  //     setLoadingViews(false);
+  //   }
+  // };
 
   // ✅ ฟังก์ชันดึง rating และยอดวิว
   const fetchRatingAndViews = async () => {
@@ -124,12 +124,15 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     };
   };
 
+  // ✅ ใช้ยอดวิวจาก props โดยตรง
+  const viewData = formatViews(video.views);
+
   const handleImageError = (e) => {
     e.target.src = '';
   };
 
   // ✅ ใช้ currentViews สำหรับการแสดงผล
-  const viewData = formatViews(currentViews);
+  // const viewData = formatViews(currentViews);
 
   const getMaxStar = () => {
     if (!ratingData) return 0;
@@ -316,14 +319,14 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           />
 
           {/* ✅ Loading indicator สำหรับยอดวิว */}
-          {loadingViews && (
+          {/* {loadingViews && (
             <div className="absolute top-1 left-10 bg-black bg-opacity-70 rounded px-1 py-0.5">
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                 <span className="text-white text-xs">更新中...</span>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="absolute top-1 left-1 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
             {loadingRating ? (

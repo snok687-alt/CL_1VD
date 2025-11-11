@@ -25,14 +25,14 @@ function Game() {
       )}
 
       {/* รูปภาพ + ลิงก์ */}
-      <Link to={"/Gaming"}
+      <a href="http://47.238.3.148/game/"
       >
         <img
           src="https://image-sj.ng-demo.xyz/image//defaultImg/live/1.png"
           alt="AG真人"
           className="w-full object-cover"
         />
-      </Link>
+      </a>
 
       {/* 🔹 ข้อความด้านบนตรงกลางภาพ */}
       <div className="absolute top-15 left-18 transform -translate-x-1/2 text-left">
