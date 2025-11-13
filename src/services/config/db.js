@@ -95,7 +95,8 @@ async function initializeDatabase() {
           id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        role ENUM('user', 'admin') DEFAULT 'user'
+        role ENUM('user', 'admin') DEFAULT 'user',
+        image VARCHAR(500) NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
       CREATE TABLE IF NOT EXISTS links (
@@ -128,14 +129,14 @@ async function initializeDatabase() {
     const [rows] = await connection.query('SELECT COUNT(*) AS cnt FROM videos;');
     if (rows[0].cnt === 0) {
       await connection.query('INSERT INTO videos (title) VALUES (?)', ['ตัวอย่างวิดีโอ']);
-      console.log('🎥 เพิ่มวิดีโอตัวอย่างเรียบร้อยแล้ว');
+      // console.log('🎥 เพิ่มวิดีโอตัวอย่างเรียบร้อยแล้ว');
     }
 
     await connection.end();
-    console.log('✅ ฐานข้อมูลพร้อมใช้งานแล้ว');
+    // console.log('✅ ฐานข้อมูลพร้อมใช้งานแล้ว');
 
   } catch (err) {
-    console.error('❌ เกิดข้อผิดพลาดตอนสร้างฐานข้อมูล:', err.message);
+    // console.error('❌ เกิดข้อผิดพลาดตอนสร้างฐานข้อมูล:', err.message);
   }
 }
 

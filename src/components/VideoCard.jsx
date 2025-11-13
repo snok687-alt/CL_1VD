@@ -27,37 +27,37 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   };
 
   // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
-  // const fetchRealTimeViews = async () => {
-  //   if (!video?.id) return;
+  const fetchRealTimeViews = async () => {
+    if (!video?.id) return;
     
-  //   try {
-  //     setLoadingViews(true);
-  //     // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
+    try {
+      setLoadingViews(true);
+      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
       
-  //     const response = await fetch('/backend-api/views/get', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({ video_ids: [video.id] }),
-  //     });
+      const response = await fetch('/backend-api/views/get', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_ids: [video.id] }),
+      });
 
-  //     if (response.ok) {
-  //       const viewsData = await response.json();
-  //       const latestViews = viewsData[video.id] || currentViews;
+      if (response.ok) {
+        const viewsData = await response.json();
+        const latestViews = viewsData[video.id] || currentViews;
         
-  //       // ✅ อัปเดต state เฉพาะยอดวิว
-  //       setCurrentViews(latestViews);
-  //       // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
-  //     } else {
-  //       console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
-  //     }
-  //   } catch (error) {
-  //     console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
-  //   } finally {
-  //     setLoadingViews(false);
-  //   }
-  // };
+        // ✅ อัปเดต state เฉพาะยอดวิว
+        setCurrentViews(latestViews);
+        // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
+      } else {
+        console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
+      }
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+    } finally {
+      setLoadingViews(false);
+    }
+  };
 
   // ✅ ฟังก์ชันดึง rating และยอดวิว
   const fetchRatingAndViews = async () => {
@@ -168,12 +168,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
   const handleFaceClick = (e) => {
     e.stopPropagation();
-    console.log("เปิดตัวเลือกรูปภาพสำหรับวิดีโอ:", video.id);
+    // console.log("เปิดตัวเลือกรูปภาพสำหรับวิดีโอ:", video.id);
     setShowImageSelector(true);
   };
 
   const handleImageSelect = async (image) => {
-    console.log("เลือกรูปภาพสำหรับแปลงหน้า:", image);
+    // console.log("เลือกรูปภาพสำหรับแปลงหน้า:", image);
     setSelectedFaceImage(image);
     setShowImageSelector(false);
 
@@ -413,7 +413,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                 )}
               </span>
             </div>
-            <span className="text-xs opacity-50">ID: {video.id}</span>
+            {/* <span className="text-xs opacity-50">ID: {video.id}</span> */}
             <span className="text-xs">{video.uploadDate}</span>
           </div>
         </div>

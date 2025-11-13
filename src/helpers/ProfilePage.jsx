@@ -1115,7 +1115,7 @@ const ProfilePage = ({ isDarkMode = false, isTopActor = false }) => {
                             </div>
 
                             {/* กลาง: ID */}
-                            <span className="text-white">{video.id}</span>
+                            {/* <span className="text-white">{video.id}</span> */}
 
                             {/* ขวา: วันที่ */}
                             {video.uploadDate && (

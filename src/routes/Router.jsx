@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useOutletContext } from 'react-router-dom';
 import Dashboard from '../components/Dashboard';
 import VideoPlayer from '../pages/VideoPlayer';
 import VideoGrid from '../pages/VideoGrid';
@@ -13,8 +12,8 @@ import Ip from '../Admin/Ip';
 import Form_user from '../Admin/Form_user';
 import Login from '../Admin/Login';
 import ProtectedRoute from './ProtectedRoute'; 
-import AddLinkForm from '../Admin/AddLinkForm'; 
-import Addpayment from '../Admin/Addpayment'
+import GameDashboard from '../game/GameDashboard'
+import Addlinks from '../Admin/Addlinks'
 
 // ✅ หมวดหมู่เดิม
 const categories = [
@@ -43,9 +42,9 @@ export const getCategoryName = (categoryId) => {
   return category ? category.name : `หมวดหมู่ ${categoryId}`;
 };
 
+// ✅ ใช้ component แยกสำหรับ ProfilePage เพื่อหลีกเลี่ยงปัญหา hook
 const ProfilePageWrapper = () => {
-  const { isDarkMode } = useOutletContext();
-  return <ProfilePage isDarkMode={isDarkMode} />;
+  return <ProfilePage />;
 };
 
 const Router = () => {
@@ -64,7 +63,7 @@ const Router = () => {
         <Route path="/upload" element={<ImagesUploadForm />} />
         <Route path="/gaming" element={<Gaming />} />
         <Route path="/Ip" element={<Ip />} />
-        <Route path="/Form_user" element={<Form_user />} />
+        <Route path="/Form_user/ussdfrefsdfebwrfsdFEWI*RfhdsairueASDHFIOS" element={<Form_user />} />
         <Route path="/Login" element={<Login />} />
 
         {/* ✅ ป้องกัน Admin Route */}
@@ -77,8 +76,8 @@ const Router = () => {
           }
         />
 
-            <Route path="/AddLinkForm" element={<AddLinkForm />} />
-            <Route path="/Addpayment" element={<Addpayment />} />
+        <Route path="/GmaeDashboard" element={<GameDashboard/>} />
+        <Route path="/Addlinks" element={<Addlinks/>} />
 
         {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
         <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Not Found</h1>} />

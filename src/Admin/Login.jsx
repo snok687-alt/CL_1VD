@@ -20,12 +20,20 @@ export default function Login() {
       });
 
       const data = await res.json();
+      console.log("Login response:", data);
+      
       if (res.ok) {
+        // ✅ บันทึก token
         localStorage.setItem("token", data.token);
         setMessage("✅ ເຂົ້າລະບົບສຳເລັດ");
-        navigate('/CL_____________________________________________________________________________________******_/Admin');
+        
+        // ✅ ใช้ window.location.replace เพื่อป้องกัน history issue
+        setTimeout(() => {
+          window.location.replace("/CL_____________________________________________________________________________________******_/Admin");
+        }, 500);
+        
       } else {
-        setMessage(data.message);
+        setMessage(data.message || "ຊື່ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ");
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -51,6 +59,7 @@ export default function Login() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none"
+            required
           />
         </div>
 
@@ -62,6 +71,7 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none"
+            required
           />
         </div>
 
@@ -73,7 +83,11 @@ export default function Login() {
         </button>
 
         {message && (
-          <p className="text-center mt-2 text-sm text-gray-700">{message}</p>
+          <p className={`text-center mt-2 text-sm ${
+            message.includes('✅') ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {message}
+          </p>
         )}
       </form>
     </div>

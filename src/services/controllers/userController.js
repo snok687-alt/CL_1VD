@@ -1,15 +1,18 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 const UserModel = require('../models/userModel');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secretkey123';
 
 const UserController = {
 
-  // ✅ สมัครสมาชิก
+  // ✅ สมัครสมาชิก (รองรับรูปภาพ)
   async register(req, res) {
     try {
       const { name, password, role } = req.body;
+      let imagePath = null;
 
       if (!name || !password)
         return res.status(400).json({ message: 'ກະລຸນາປ້ອນຊື່ ແລະ ລະຫັດຜ່ານ' });
@@ -18,12 +21,26 @@ const UserController = {
       if (exist)
         return res.status(400).json({ message: 'ຊື່ນີ້ມີແລ້ວ!' });
 
-      const hashed = await bcrypt.hash(password, 10);
-      await UserModel.createUser(name, hashed, role || 'user');
+      // ✅ ตรวจสอบว่ามีไฟล์ภาพถูกอัพโหลดมาหรือไม่
+      if (req.file) {
+        imagePath = `/uploads/users/${req.file.filename}`;
+      }
 
-      res.json({ message: 'ສະໝັກສຳເລັດ' });
+      const hashed = await bcrypt.hash(password, 10);
+      await UserModel.createUser(name, hashed, role || 'user', imagePath);
+
+      res.json({ 
+        message: 'ສະໝັກສຳເລັດ',
+        image: imagePath 
+      });
     } catch (error) {
       console.error('Register error:', error);
+      
+      // ✅ ลบไฟล์ภาพที่อัพโหลดแล้วถ้าเกิด error
+      if (req.file) {
+        fs.unlinkSync(req.file.path);
+      }
+      
       res.status(500).json({ message: 'ຜິດພາດໃນການສະໝັກ' });
     }
   },
@@ -52,7 +69,12 @@ const UserController = {
       res.json({
         message: 'ເຂົ້າລະບົບສຳເລັດ',
         token,
-        user: { id: user.id, name: user.name, role: user.role }
+        user: { 
+          id: user.id, 
+          name: user.name, 
+          role: user.role,
+          image: user.image 
+        }
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -71,11 +93,20 @@ const UserController = {
     }
   },
 
-  // ✅ ลบผู้ใช้
+  // ✅ ลบผู้ใช้ (ลบรูปภาพด้วย)
   async deleteUser(req, res) {
     try {
       const { id } = req.params;
-      await UserModel.deleteUser(id);
+      const imagePath = await UserModel.deleteUser(id);
+      
+      // ✅ ลบไฟล์รูปภาพถ้ามี
+      if (imagePath) {
+        const fullPath = path.join(__dirname, '..', imagePath);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      }
+      
       res.json({ message: 'ລົບສຳເລັດ' });
     } catch (error) {
       console.error('Delete user error:', error);

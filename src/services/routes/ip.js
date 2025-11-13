@@ -6,15 +6,9 @@ const { pool } = require('../config/db');
 function isPrivateIP(ip) {
   if (!ip) return false;
   
-  // Private IP ranges
   const privateRanges = [
-    /^10\./, // 10.0.0.0/8
-    /^172\.(1[6-9]|2[0-9]|3[0-1])\./, // 172.16.0.0/12
-    /^192\.168\./, // 192.168.0.0/16
-    /^127\./, // localhost
-    /^::1$/, // IPv6 localhost
-    /^fc00:/, // IPv6 private
-    /^fe80:/, // IPv6 link-local
+    /^10\./, /^172\.(1[6-9]|2[0-9]|3[0-1])\./, /^192\.168\./, 
+    /^127\./, /^::1$/, /^fc00:/, /^fe80:/
   ];
 
   return privateRanges.some(range => range.test(ip));
@@ -31,29 +25,28 @@ router.get('/ip-list', async (req, res) => {
     // คำนวณวันที่เริ่มต้น
     const startDate = new Date();
     switch (period) {
-      case '24h':
-        startDate.setDate(startDate.getDate() - 1);
-        break;
-      case '7d':
-        startDate.setDate(startDate.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(startDate.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(startDate.getDate() - 90);
-        break;
+      case '24h': startDate.setDate(startDate.getDate() - 1); break;
+      case '7d': startDate.setDate(startDate.getDate() - 7); break;
+      case '30d': startDate.setDate(startDate.getDate() - 30); break;
+      case '90d': startDate.setDate(startDate.getDate() - 90); break;
     }
 
-    // Base query - นับจำนวน project ที่เข้าใช้งาน (นับจาก path ที่เป็น project)
+    // Base query - นับจำนวน project ที่เข้าใช้งาน
     let query = `
       SELECT 
         ip,
         COUNT(DISTINCT CASE WHEN url LIKE '/project/%' THEN url END) as project_access_count,
         COUNT(*) as total_requests,
         MAX(last_access) as last_activity,
-        MIN(last_access) as first_activity,
-        GROUP_CONCAT(DISTINCT user_agent) as user_agents
+        MIN(first_access) as first_activity,
+        GROUP_CONCAT(DISTINCT user_agent) as user_agents,
+        MAX(device) as device,
+        MAX(browser) as browser,
+        MAX(os) as os,
+        MAX(user_country) as country,
+        MAX(city) as city,
+        MAX(region) as region,
+        MAX(isp) as isp
       FROM access_logs 
       WHERE last_access >= ?
     `;
@@ -62,15 +55,15 @@ router.get('/ip-list', async (req, res) => {
 
     // Add search filter
     if (search && search.trim() !== '') {
-      query += ` AND (ip LIKE ? OR user_agent LIKE ?)`;
+      query += ` AND (ip LIKE ? OR user_agent LIKE ? OR user_country LIKE ? OR city LIKE ?)`;
       const searchPattern = `%${search}%`;
-      queryParams.push(searchPattern, searchPattern);
+      queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     // Add grouping and pagination
     query += ` 
       GROUP BY ip 
-      ORDER BY project_access_count DESC, last_activity DESC 
+      ORDER BY total_requests DESC, last_activity DESC 
       LIMIT ? OFFSET ?
     `;
     queryParams.push(parseInt(limit), parseInt(offset));
@@ -89,8 +82,8 @@ router.get('/ip-list', async (req, res) => {
     const countParams = [startDate];
 
     if (search && search.trim() !== '') {
-      countQuery += ` AND (ip LIKE ? OR user_agent LIKE ?)`;
-      countParams.push(`%${search}%`, `%${search}%`);
+      countQuery += ` AND (ip LIKE ? OR user_agent LIKE ? OR user_country LIKE ? OR city LIKE ?)`;
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const [countResult] = await pool.query(countQuery, countParams);
@@ -115,14 +108,30 @@ router.get('/ip-list', async (req, res) => {
     const [suspiciousResult] = await pool.query(suspiciousQuery, [startDate]);
     const suspiciousIPs = suspiciousResult[0]?.suspicious || 0;
 
+    // นับจำนวนประเทศที่ไม่ซ้ำ
+    let countryQuery = `
+      SELECT COUNT(DISTINCT user_country) as total_countries 
+      FROM access_logs 
+      WHERE last_access >= ? AND user_country IS NOT NULL AND user_country != ''
+    `;
+    const [countryResult] = await pool.query(countryQuery, [startDate]);
+    const totalCountries = countryResult[0]?.total_countries || 0;
+
     // ประมวลผลข้อมูล IP
     const processedIPs = ips.map(ip => ({
       ip: ip.ip,
-      projectAccessCount: ip.project_access_count || 0, // จำนวนครั้งที่เข้า project
-      totalRequests: ip.total_requests || 0, // จำนวน request ทั้งหมด
+      projectAccessCount: ip.project_access_count || 0,
+      totalRequests: ip.total_requests || 0,
       lastActivity: ip.last_activity,
       firstActivity: ip.first_activity,
       userAgents: ip.user_agents ? ip.user_agents.split(',').filter(ua => ua) : [],
+      device: ip.device || 'Unknown',
+      browser: ip.browser || 'Unknown',
+      os: ip.os || 'Unknown',
+      country: ip.country || 'Unknown',
+      city: ip.city || 'Unknown',
+      region: ip.region || 'Unknown',
+      isp: ip.isp || 'Unknown',
       isPrivate: isPrivateIP(ip.ip)
     }));
 
@@ -131,7 +140,8 @@ router.get('/ip-list', async (req, res) => {
       currentPage: page,
       totalPages: totalPages,
       returnedIPs: processedIPs.length,
-      suspiciousIPs: suspiciousIPs
+      suspiciousIPs: suspiciousIPs,
+      totalCountries: totalCountries
     });
 
     res.json({
@@ -140,7 +150,7 @@ router.get('/ip-list', async (req, res) => {
       totalPages,
       totalIPs: total,
       recentIPs: processedIPs.length,
-      totalCountries: 1, // ใช้ค่าเริ่มต้นก่อน
+      totalCountries: totalCountries,
       suspiciousIPs: suspiciousIPs
     });
 
@@ -161,50 +171,81 @@ router.get('/ip-details/:ip', async (req, res) => {
     
     console.log('🔍 ดึงรายละเอียด IP:', ip);
 
-    // ดึงข้อมูลพื้นฐาน - นับจำนวน project ที่เข้าใช้งาน
+    // ดึงข้อมูลพื้นฐาน
     const [ipStats] = await pool.query(`
       SELECT 
         COUNT(*) as total_requests,
         COUNT(DISTINCT CASE WHEN url LIKE '/project/%' THEN url END) as project_access_count,
         MAX(last_access) as last_activity,
-        MIN(last_access) as first_activity,
-        GROUP_CONCAT(DISTINCT user_agent) as user_agents
+        MIN(first_access) as first_activity,
+        GROUP_CONCAT(DISTINCT user_agent) as user_agents,
+        GROUP_CONCAT(DISTINCT device) as devices,
+        GROUP_CONCAT(DISTINCT browser) as browsers,
+        GROUP_CONCAT(DISTINCT os) as os_list,
+        MAX(user_country) as country,
+        MAX(city) as city,
+        MAX(region) as region,
+        MAX(isp) as isp
       FROM access_logs 
       WHERE ip = ?
     `, [ip]);
 
-    // ดึง project ที่เข้าชมบ่อย
-    const [topProjects] = await pool.query(`
+    // ดึง URL ที่เข้าชมบ่อย
+    const [topUrls] = await pool.query(`
       SELECT 
         url,
-        COUNT(*) as count
+        COUNT(*) as access_count,
+        MAX(last_access) as last_access
       FROM access_logs 
-      WHERE ip = ? AND url LIKE '/project/%'
+      WHERE ip = ?
       GROUP BY url
-      ORDER BY count DESC
+      ORDER BY access_count DESC
       LIMIT 10
+    `, [ip]);
+
+    // ดึงสถิติการใช้งานตามเวลา
+    const [hourlyStats] = await pool.query(`
+      SELECT 
+        HOUR(last_access) as hour,
+        COUNT(*) as requests
+      FROM access_logs 
+      WHERE ip = ?
+      GROUP BY HOUR(last_access)
+      ORDER BY hour
     `, [ip]);
 
     const stats = ipStats[0];
 
-    // ประมวลผล user agents
+    // ประมวลผลข้อมูล
     const userAgents = stats?.user_agents ? 
-      stats.user_agents.split(',').filter(ua => ua && ua.trim() !== '') : 
-      [];
+      stats.user_agents.split(',').filter(ua => ua && ua.trim() !== '') : [];
+    
+    const devices = stats?.devices ? 
+      stats.devices.split(',').filter(d => d && d.trim() !== '') : [];
+    
+    const browsers = stats?.browsers ? 
+      stats.browsers.split(',').filter(b => b && b.trim() !== '') : [];
+    
+    const osList = stats?.os_list ? 
+      stats.os_list.split(',').filter(os => os && os.trim() !== '') : [];
 
     const responseData = {
       success: true,
       ip: ip,
       totalRequests: stats?.total_requests || 0,
-      projectAccessCount: stats?.project_access_count || 0, // จำนวนครั้งที่เข้า project
+      projectAccessCount: stats?.project_access_count || 0,
       lastActivity: stats?.last_activity,
       firstActivity: stats?.first_activity,
       userAgents: userAgents,
-      topProjects: topProjects, // โครงการที่เข้าชมบ่อย
-      country: 'Thailand', // ใช้ค่าเริ่มต้น
-      city: 'ไม่ทราบ',
-      region: 'ไม่ทราบ',
-      isp: 'ไม่ทราบ',
+      devices: [...new Set(devices)], // Remove duplicates
+      browsers: [...new Set(browsers)],
+      operatingSystems: [...new Set(osList)],
+      topUrls: topUrls,
+      hourlyStats: hourlyStats,
+      country: stats?.country || 'Unknown',
+      city: stats?.city || 'Unknown',
+      region: stats?.region || 'Unknown',
+      isp: stats?.isp || 'Unknown',
       isPrivate: isPrivateIP(ip)
     };
 
@@ -212,8 +253,7 @@ router.get('/ip-details/:ip', async (req, res) => {
       ip: ip,
       totalRequests: responseData.totalRequests,
       projectAccessCount: responseData.projectAccessCount,
-      userAgentsCount: responseData.userAgents.length,
-      topProjectsCount: responseData.topProjects.length
+      userAgentsCount: responseData.userAgents.length
     });
 
     res.json(responseData);

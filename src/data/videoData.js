@@ -11,6 +11,40 @@ import {
 // ตั้งค่า axios
 axios.defaults.timeout = 10000;
 
+// ใน videoData.js - เพิ่มฟังก์ชันดึงยอดวิว real-time
+export const fetchRealTimeViews = async (videoIds) => {
+  try {
+    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
+      return {};
+    }
+
+    const validVideoIds = videoIds.filter(id => id != null && id !== '');
+    
+    if (validVideoIds.length === 0) {
+      return {};
+    }
+
+    const response = await fetch('/backend-api/views/get', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ video_ids: validVideoIds }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const viewsData = await response.json();
+    console.log('📊 ยอดวิว real-time ที่ดึงได้:', viewsData);
+    return viewsData;
+  } catch (error) {
+    console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+    return {};
+  }
+};
+
 // ฟังชันช่วยในการลองใหม่
 const retry = async (fn, maxRetries = 2) => {
   for (let i = 0; i < maxRetries; i++) {
@@ -815,39 +849,5 @@ export const getActorVideoStats = async () => {
       totalActorsInVideos: 0,
       actorsWithProfile: 0
     };
-  }
-};
-
-// ใน videoData.js - เพิ่มฟังก์ชันดึงยอดวิว real-time
-export const fetchRealTimeViews = async (videoIds) => {
-  try {
-    if (!videoIds || !Array.isArray(videoIds) || videoIds.length === 0) {
-      return {};
-    }
-
-    const validVideoIds = videoIds.filter(id => id != null && id !== '');
-    
-    if (validVideoIds.length === 0) {
-      return {};
-    }
-
-    const response = await fetch('/backend-api/views/get', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ video_ids: validVideoIds }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const viewsData = await response.json();
-    console.log('📊 ยอดวิว real-time ที่ดึงได้:', viewsData);
-    return viewsData;
-  } catch (error) {
-    console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
-    return {};
   }
 };
