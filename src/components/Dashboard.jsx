@@ -7,7 +7,7 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-  const [isFooterVisible, setIsFooterVisible] = useState(true); // State สำหรับ Footer
+  const [isFooterVisible, setIsFooterVisible] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const [currentCategory, setCurrentCategory] = useState(null);
   const lastScrollY = useRef(0);
@@ -19,6 +19,9 @@ const Dashboard = () => {
   const isSearchPage = location.pathname === '/search';
   const isProfilePage = location.pathname.startsWith('/profile');
   const isCategoryPage = location.pathname.startsWith('/category/');
+  // ✅ เพิ่มเงื่อนไขสำหรับหน้า VideoManagement
+  const isVideoManagementPage = location.pathname.startsWith('/video-management') || 
+                               location.pathname.includes('pricing');
 
   // อัพเดทหมวดหมู่ปัจจุบันเมื่อเปลี่ยนหน้า
   useEffect(() => {
@@ -89,7 +92,7 @@ const Dashboard = () => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      if (isVideoPage && isLargeScreen) {
+      if ((isVideoPage && isLargeScreen) || isVideoManagementPage) {
         setIsHeaderVisible(true);
         setIsFooterVisible(true);
         return;
@@ -120,7 +123,7 @@ const Dashboard = () => {
         clearTimeout(searchTimeout.current);
       }
     };
-  }, [isVideoPage, isProfilePage, isLargeScreen]);
+  }, [isVideoPage, isProfilePage, isLargeScreen, isVideoManagementPage]);
 
   useEffect(() => {
     const handleHeaderToggle = (e) => {
@@ -141,7 +144,8 @@ const Dashboard = () => {
         isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'
       }`}
     >
-      {!isProfilePage && (!isVideoPage || (isVideoPage && isLargeScreen)) && (
+      {/* ✅ ซ่อน Header ในหน้า VideoManagement */}
+      {!isProfilePage && !isVideoManagementPage && (!isVideoPage || (isVideoPage && isLargeScreen)) && (
         <Header
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}

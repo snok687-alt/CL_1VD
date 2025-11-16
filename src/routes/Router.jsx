@@ -14,6 +14,8 @@ import Login from '../Admin/Login';
 import ProtectedRoute from './ProtectedRoute'; 
 import GameDashboard from '../game/GameDashboard'
 import Addlinks from '../Admin/Addlinks'
+import VideoManagement from '../pages/VideoManagement';
+import EnhancedPriceSetting from '../pages/EnhancedPriceSetting';
 
 // ✅ หมวดหมู่เดิม
 const categories = [
@@ -58,6 +60,10 @@ const Router = () => {
           <Route path="search" element={<SearchResults />} />
           <Route path="profile" element={<ProfilePageWrapper />} />
           <Route path="profile/:profileName" element={<ProfilePageWrapper />} />
+          
+          {/* ✅ เพิ่ม Route สำหรับระบบจัดการวิดีโอ */}
+          <Route path="video-management" element={<VideoManagement />} />
+          <Route path="video/:videoId/pricing" element={<EnhancedPriceSetting />} />
         </Route>
 
         <Route path="/upload" element={<ImagesUploadForm />} />
@@ -76,7 +82,7 @@ const Router = () => {
           }
         />
 
-        <Route path="/GmaeDashboard" element={<GameDashboard/>} />
+        <Route path="/GameDashboard" element={<GameDashboard/>} />
         <Route path="/Addlinks" element={<Addlinks/>} />
 
         {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
