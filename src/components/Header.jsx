@@ -1,14 +1,16 @@
 // Header.jsx
 import React from 'react';
 import { IoChevronBack } from 'react-icons/io5';
+import { MdSupportAgent } from "react-icons/md";
+import { FiGift } from "react-icons/fi";
 import { useNavigate, useLocation } from 'react-router-dom';
 import Cat from '../../public/you.jpg';
 import Navbar from './Navbar';
 import SearchBox from './SearchBox';
 import ProfileCarousel from '../helpers/ProfileCarousel';
-import Game from '../game/Game'
+import Game from '../game/Game';
 
-const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible, currentCategory }) => {
+const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible, currentCategory, openGiftModal }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showRightIcons, setShowRightIcons] = React.useState(true);
@@ -87,6 +89,29 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
           {showRightIcons ? (
             <div className="flex items-center gap-x-3 md:gap-x-6">
               <button
+                onClick={openGiftModal}
+                className={`p-2 rounded-full transition-all duration-200 ${isDarkMode
+                  ? 'bg-gray-700 text-yellow-300 hover:bg-gray-600 hover:scale-110'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-110'
+                  }`}
+                aria-label="ของขวัญ"
+              >
+                <FiGift className="w-7 h-7" />
+              </button>
+              <button
+                onClick={() => {
+                  window.location.href = "http://93.xqhgl.cn/chat/index?noCanClose=1&token=a56f40cbf8f70d588389cfe12a6b1ed6";
+                }}
+                className={`p-2 rounded-full transition-all duration-200 ${isDarkMode
+                  ? 'bg-gray-700 text-yellow-300 hover:bg-gray-600 hover:scale-110'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-110'
+                  }`}
+                aria-label="ติดต่อเรา"
+              >
+                <MdSupportAgent className="w-7 h-7" />
+              </button>
+
+              <button
                 onClick={toggleTheme}
                 className={`p-2 rounded-full transition-all duration-200 ${isDarkMode
                   ? 'bg-gray-700 text-yellow-300 hover:bg-gray-600 hover:scale-110'
@@ -108,12 +133,14 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
               </button>
             </div>
           ) : (
+
             <button
               className="pr-2 mr-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-150"
               onClick={() => setShowRightIcons(true)}
               title="แสดงไอคอนด้านขวา"
             >
               <IoChevronBack className="w-6 h-6 text-gray-500 hover:text-red-500" />
+
             </button>
 
           )}

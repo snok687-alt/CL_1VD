@@ -31,4 +31,6 @@ router.get('/users', authMiddleware, UserController.getAllUsers);
 // ลบผู้ใช้ (ต้องมี auth)
 router.delete('/users/:id', authMiddleware, UserController.deleteUser);
 
+router.post('/check-profile', UserController.checkProfile);
+
 module.exports = router;

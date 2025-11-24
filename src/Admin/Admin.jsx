@@ -163,7 +163,7 @@ const Admin = () => {
     { id: 'ip', label: 'IP管理', icon: Globe, path: '/ip' },
     { id: 'videos', label: '视频管理', icon: MonitorPlay, path: '/video-management' },
     { id: 'videos_links', label: '新视频链接', icon: LinkIcon, path: '/Addlinks' },
-    { id: 'games', label: '游戏管理', icon: Gamepad2, path: '/GameDashboard' },
+    { id: 'games', label: '游戏管理', icon: Gamepad2, path: 'http://47.238.3.148/game/admin' },
   ];
 
   const fetchDashboardData = async () => {
@@ -385,11 +385,17 @@ const Admin = () => {
                 return (
                   <li key={item.id}>
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         setActiveMenuItem(item.id);
                         setIsMobileMenuOpen(false);
-                        navigate(item.path);
+
+                        if (item.path.startsWith("http")) {
+                          window.open(item.path, "_blank");
+                        } else {
+                          navigate(item.path);
+                        }
                       }}
+
                       className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
                           ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border-r-4 border-blue-500 shadow-sm'
@@ -550,12 +556,12 @@ const Admin = () => {
                               >
                                 <div className="flex items-start gap-2 sm:gap-3">
                                   <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${notif.type === 'login'
-                                      ? 'bg-green-100 text-green-600'
-                                      : notif.type === 'security'
-                                        ? 'bg-red-100 text-red-600'
-                                        : notif.type === 'activity'
-                                          ? 'bg-blue-100 text-blue-600'
-                                          : 'bg-gray-100 text-gray-600'
+                                    ? 'bg-green-100 text-green-600'
+                                    : notif.type === 'security'
+                                      ? 'bg-red-100 text-red-600'
+                                      : notif.type === 'activity'
+                                        ? 'bg-blue-100 text-blue-600'
+                                        : 'bg-gray-100 text-gray-600'
                                     }`}>
                                     {getNotificationIcon(notif.type)}
                                   </div>

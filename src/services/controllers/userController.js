@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secretkey123';
 // ✅ ฟังก์ชันช่วยดึงข้อมูล device จาก user-agent
 function parseUserAgent(userAgent) {
   const ua = userAgent || '';
-  
+
   let device = 'Desktop';
   let browser = 'Unknown';
   let os = 'Unknown';
@@ -55,17 +55,17 @@ const UserController = {
       const hashed = await bcrypt.hash(password, 10);
       await UserModel.createUser(name, hashed, role || 'user', imagePath);
 
-      res.json({ 
+      res.json({
         message: 'ສະໝັກສຳເລັດ',
-        image: imagePath 
+        image: imagePath
       });
     } catch (error) {
       console.error('Register error:', error);
-      
+
       if (req.file) {
         fs.unlinkSync(req.file.path);
       }
-      
+
       res.status(500).json({ message: 'ຜິດພາດໃນການສະໝັກ' });
     }
   },
@@ -123,9 +123,9 @@ const UserController = {
       res.json({
         message: 'ເຂົ້າລະບົບສຳເລັດ',
         token,
-        user: { 
-          id: user.id, 
-          name: user.name, 
+        user: {
+          id: user.id,
+          name: user.name,
           role: user.role,
           image: user.image,
           lastLogin: new Date()
@@ -142,11 +142,11 @@ const UserController = {
     try {
       const userId = req.user.id;
       const user = await UserModel.findById(userId);
-      
+
       if (!user) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'ບໍ່ພົບຜູ້ໃຊ້' 
+        return res.status(404).json({
+          success: false,
+          message: 'ບໍ່ພົບຜູ້ໃຊ້'
         });
       }
 
@@ -167,9 +167,9 @@ const UserController = {
       });
     } catch (error) {
       console.error('Get current user error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'ຜິດພາດໃນການດຶງຂໍ້ມູນ' 
+      res.status(500).json({
+        success: false,
+        message: 'ຜິດພາດໃນການດຶງຂໍ້ມູນ'
       });
     }
   },
@@ -191,9 +191,9 @@ const UserController = {
       });
     } catch (error) {
       console.error('Get notifications error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'ຜິດພາດໃນການດຶງການແຈ້ງເຕືອນ' 
+      res.status(500).json({
+        success: false,
+        message: 'ຜິດພາດໃນການດຶງການແຈ້ງເຕືອນ'
       });
     }
   },
@@ -212,9 +212,9 @@ const UserController = {
       });
     } catch (error) {
       console.error('Mark notification error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'ຜິດພາດໃນການອັບເດດການແຈ້ງເຕືອນ' 
+      res.status(500).json({
+        success: false,
+        message: 'ຜິດພາດໃນການອັບເດດການແຈ້ງເຕືອນ'
       });
     }
   },
@@ -231,9 +231,9 @@ const UserController = {
       });
     } catch (error) {
       console.error('Mark all notifications error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'ຜິດພາດໃນການອັບເດດການແຈ້ງເຕືອນ' 
+      res.status(500).json({
+        success: false,
+        message: 'ຜິດພາດໃນການອັບເດດການແຈ້ງເຕືອນ'
       });
     }
   },
@@ -253,9 +253,9 @@ const UserController = {
       });
     } catch (error) {
       console.error('Get login history error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'ຜິດພາດໃນການດຶງປະຫວັດການເຂົ້າລະບົບ' 
+      res.status(500).json({
+        success: false,
+        message: 'ຜິດພາດໃນການດຶງປະຫວັດການເຂົ້າລະບົບ'
       });
     }
   },
@@ -274,20 +274,61 @@ const UserController = {
     try {
       const { id } = req.params;
       const imagePath = await UserModel.deleteUser(id);
-      
+
       if (imagePath) {
         const fullPath = path.join(__dirname, '..', imagePath);
         if (fs.existsSync(fullPath)) {
           fs.unlinkSync(fullPath);
         }
       }
-      
+
       res.json({ message: 'ລົບສຳເລັດ' });
     } catch (error) {
       console.error('Delete user error:', error);
       res.status(500).json({ message: 'ຜິດພາດໃນການລົບ' });
     }
+  },
+async checkProfile(req, res) {
+  try {
+    const username =
+      req.body.username ||
+      req.body.name ||
+      req.body.user ||
+      null;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: "username is required"
+      });
+    }
+
+    const user = await UserModel.findByName(username);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "ບໍ່ພົບຊື່ນີ້" 
+      });
+    }
+
+    return res.json({
+      success: true,
+      name: user.name,
+      profile_image: user.image || null
+    });
+
+  } catch (error) {
+    console.error("🔥 /check-profile ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
   }
+}
+
+
 };
 
 module.exports = UserController;

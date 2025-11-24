@@ -7,21 +7,21 @@ import '../style/star.css';
 
 const VideoManagement = ({ isDarkMode }) => {
   const navigate = useNavigate();
-  
+
   const [categories, setCategories] = useState([]);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceFilter, setPriceFilter] = useState('all');
   const [selectedVideos, setSelectedVideos] = useState(new Set());
   const [bulkAction, setBulkAction] = useState('');
   const [loadingVideos, setLoadingVideos] = useState({});
-  
+
   const loadingRef = useRef(false);
   const VIDEOS_PER_PAGE = 18;
 
@@ -49,7 +49,7 @@ const VideoManagement = ({ isDarkMode }) => {
 
     try {
       console.log(`📥 กำลังโหลดวิดีโอจากหมวดหมู่: ${selectedCategory}`);
-      
+
       const result = await getMoreVideosInCategory(
         selectedCategory,
         [],
@@ -65,7 +65,7 @@ const VideoManagement = ({ isDarkMode }) => {
               checkVideoPriceStatus(video.id),
               fetchRatingData(video.id)
             ]);
-            
+
             return {
               ...video,
               hasPricing: priceStatus.hasPricing,
@@ -113,7 +113,7 @@ const VideoManagement = ({ isDarkMode }) => {
 
     try {
       console.log(`📥 กำลังโหลดหน้าที่ ${nextPage}...`);
-      
+
       const result = await getMoreVideosInCategory(
         selectedCategory,
         videos.map(v => v.id),
@@ -130,7 +130,7 @@ const VideoManagement = ({ isDarkMode }) => {
                 checkVideoPriceStatus(video.id),
                 fetchRatingData(video.id)
               ]);
-              
+
               return {
                 ...video,
                 hasPricing: priceStatus.hasPricing,
@@ -197,11 +197,11 @@ const VideoManagement = ({ isDarkMode }) => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       const matchTitle = video.title.toLowerCase().includes(searchLower);
-      const matchActor = video.actors && video.actors.some(actor => 
+      const matchActor = video.actors && video.actors.some(actor =>
         actor.toLowerCase().includes(searchLower)
       );
       const matchId = video.id.toString().includes(searchTerm);
-      
+
       if (!matchTitle && !matchActor && !matchId) return false;
     }
 
@@ -247,14 +247,19 @@ const VideoManagement = ({ isDarkMode }) => {
 
   // ✅ ไปหน้าการตั้งราคาวิดีโอทั้งหมด
   const handleAllVideosPricing = () => {
-    navigate('/all-videos-pricing');
+    navigate('/enhanced-price-setting/all', {
+      state: {
+        autoOpenBulkTab: true
+      }
+    });
   };
 
+  // ✅ เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้
   // ✅ เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้
   const handleEnableAllVideos = async () => {
     try {
       const currentPageVideoIds = filteredVideos.map(video => video.id);
-      
+
       if (currentPageVideoIds.length === 0) {
         Swal.fire('提示', '当前页面没有视频', 'warning');
         return;
@@ -287,15 +292,25 @@ const VideoManagement = ({ isDarkMode }) => {
         // ✅ เปิดใช้งานการชำระเงินสำหรับทุกวิดีโอในหน้านี้
         for (const videoId of currentPageVideoIds) {
           try {
-            await fetch('/backend-api/video/toggle-paid', {
+            const response = await fetch('/backend-api/video/pricing/toggle-paid', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                video_id: videoId, 
-                enable: true 
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                video_id: videoId,
+                enable: true
               })
             });
-            successCount++;
+
+            const resultData = await response.json();
+
+            if (response.ok && resultData.success) {
+              successCount++;
+            } else {
+              throw new Error(resultData.message || '启用失败');
+            }
           } catch (error) {
             console.error(`启用视频 ${videoId} 付费失败:`, error);
             failCount++;
@@ -319,11 +334,11 @@ const VideoManagement = ({ isDarkMode }) => {
           icon: successCount > 0 ? 'success' : 'error',
           title: '操作完成',
           html: `
-            <div>
-              <p>成功启用: ${successCount} 个视频</p>
-              ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
-            </div>
-          `,
+          <div>
+            <p>成功启用: ${successCount} 个视频</p>
+            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
+          </div>
+        `,
           confirmButtonText: '确定'
         });
       }
@@ -333,51 +348,55 @@ const VideoManagement = ({ isDarkMode }) => {
     }
   };
 
-  // ✅ สลับสถานะการชำระเงิน
-  const handleTogglePaidStatus = async (video) => {
-    try {
-      const result = await Swal.fire({
-        title: video.hasPricing ? '禁用付费' : '启用付费',
-        text: video.hasPricing 
-          ? `确定要禁用 "${video.title}" 的付费功能吗？` 
-          : `确定要启用 "${video.title}" 的付费功能吗？`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '确定',
-        cancelButtonText: '取消'
+// ✅ ฟังก์ชันสลับสถานะการชำระเงิน - แบบง่ายๆ
+const handleTogglePaidStatus = async (videoId, enable) => {
+  try {
+    const token = localStorage.getItem('token');
+    
+    console.log('🔄 Sending toggle request:', { videoId, enable });
+
+    const response = await fetch('/backend-api/video/pricing/toggle-paid', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        video_id: parseInt(videoId),
+        enable: enable
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      Swal.fire({
+        icon: 'success',
+        title: enable ? '付费功能已启用' : '付费功能已禁用',
+        text: result.message,
+        confirmButtonText: '确定'
       });
+      
+      // ✅ อัพเดทสถานะใน state
+      setVideos(prev => prev.map(video => 
+        video.id === videoId 
+          ? { ...video, hasPricing: enable }
+          : video
+      ));
 
-      if (result.isConfirmed) {
-        setLoadingVideos(prev => ({ ...prev, [video.id]: true }));
-        
-        const response = await fetch('/backend-api/video/toggle-paid', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            video_id: video.id,
-            enable: !video.hasPricing
-          })
-        });
-
-        if (response.ok) {
-          setVideos(prev => prev.map(v => 
-            v.id === video.id 
-              ? { ...v, hasPricing: !v.hasPricing }
-              : v
-          ));
-          
-          Swal.fire('成功', `付费功能已${!video.hasPricing ? '启用' : '禁用'}`, 'success');
-        } else {
-          throw new Error('操作失败');
-        }
-      }
-    } catch (error) {
-      console.error('切换付费状态错误:', error);
-      Swal.fire('错误', '操作失败', 'error');
-    } finally {
-      setLoadingVideos(prev => ({ ...prev, [video.id]: false }));
+    } else {
+      throw new Error(result.message || '操作失败');
     }
-  };
+  } catch (error) {
+    console.error('❌ 切换付费状态错误:', error);
+    Swal.fire({
+      icon: 'error',
+      title: '操作失败',
+      text: '切换付费状态时发生错误',
+      confirmButtonText: '确定'
+    });
+  }
+};
 
   // ✅ เลือก/ยกเลิกเลือกวิดีโอ
   const handleSelectVideo = (videoId) => {
@@ -431,7 +450,7 @@ const VideoManagement = ({ isDarkMode }) => {
 
       if (result.isConfirmed) {
         const videoIds = Array.from(selectedVideos);
-        
+
         const progressSwal = Swal.fire({
           title: '处理中...',
           html: `正在处理 ${videoIds.length} 个视频...`,
@@ -447,20 +466,25 @@ const VideoManagement = ({ isDarkMode }) => {
 
         for (const videoId of videoIds) {
           try {
-            if (bulkAction === 'enable') {
-              await fetch('/backend-api/video/toggle-paid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ video_id: videoId, enable: true })
-              });
-            } else if (bulkAction === 'disable') {
-              await fetch('/backend-api/video/toggle-paid', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ video_id: videoId, enable: false })
-              });
+            const response = await fetch('/backend-api/video/pricing/toggle-paid', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                video_id: videoId,
+                enable: bulkAction === 'enable'
+              })
+            });
+
+            const resultData = await response.json();
+
+            if (response.ok && resultData.success) {
+              successCount++;
+            } else {
+              throw new Error(resultData.message || '操作失败');
             }
-            successCount++;
           } catch (error) {
             failCount++;
           }
@@ -482,11 +506,11 @@ const VideoManagement = ({ isDarkMode }) => {
           icon: successCount > 0 ? 'success' : 'error',
           title: '操作完成',
           html: `
-            <div>
-              <p>成功: ${successCount} 个视频</p>
-              ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
-            </div>
-          `,
+          <div>
+            <p>成功: ${successCount} 个视频</p>
+            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
+          </div>
+        `,
           confirmButtonText: '确定'
         });
 
@@ -570,7 +594,7 @@ const VideoManagement = ({ isDarkMode }) => {
         </span>
       );
     }
-    
+
     if (video.hasPricing) {
       return (
         <span className="px-2 py-1 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full">
@@ -640,11 +664,10 @@ const VideoManagement = ({ isDarkMode }) => {
               {/* ปุ่มเปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้ */}
               <button
                 onClick={handleEnableAllVideos}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                  isDarkMode 
-                    ? 'bg-purple-700 hover:bg-purple-600 text-white' 
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
+                    ? 'bg-purple-700 hover:bg-purple-600 text-white'
                     : 'bg-purple-600 hover:bg-purple-700 text-white'
-                }`}
+                  }`}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -655,25 +678,23 @@ const VideoManagement = ({ isDarkMode }) => {
               {/* ปุ่มตั้งราคาวิดีโอทั้งหมด */}
               <button
                 onClick={handleAllVideosPricing}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                  isDarkMode 
-                    ? 'bg-green-700 hover:bg-green-600 text-white' 
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
+                    ? 'bg-green-700 hover:bg-green-600 text-white'
                     : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
+                  }`}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 所有视频定价
               </button>
-              
+
               <button
                 onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  isDarkMode 
-                    ? 'bg-gray-700 hover:bg-gray-600' 
+                className={`px-4 py-2 rounded-lg transition-colors ${isDarkMode
+                    ? 'bg-gray-700 hover:bg-gray-600'
                     : 'bg-white hover:bg-gray-200 border'
-                }`}
+                  }`}
               >
                 返回首页
               </button>
@@ -690,11 +711,10 @@ const VideoManagement = ({ isDarkMode }) => {
                 <select
                   value={bulkAction}
                   onChange={(e) => setBulkAction(e.target.value)}
-                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
+                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                      ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300'
-                  }`}
+                    }`}
                 >
                   <option value="">选择操作</option>
                   <option value="enable">启用付费</option>
@@ -731,11 +751,10 @@ const VideoManagement = ({ isDarkMode }) => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="输入视频标题、演员或ID..."
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               />
             </div>
 
@@ -745,11 +764,10 @@ const VideoManagement = ({ isDarkMode }) => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               >
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
@@ -765,11 +783,10 @@ const VideoManagement = ({ isDarkMode }) => {
               <select
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
+                    ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               >
                 <option value="all">全部视频</option>
                 <option value="paid">付费视频</option>
@@ -821,11 +838,9 @@ const VideoManagement = ({ isDarkMode }) => {
               return (
                 <div
                   key={video.id}
-                  className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${
-                    isDarkMode ? 'bg-white' : 'bg-white'
-                  } ${video.hasPricing ? 'ring-2 ring-green-500' : ''} ${
-                    selectedVideos.has(video.id) ? 'ring-2 ring-blue-500' : ''
-                  }`}
+                  className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${isDarkMode ? 'bg-white' : 'bg-white'
+                    } ${video.hasPricing ? 'ring-2 ring-green-500' : ''} ${selectedVideos.has(video.id) ? 'ring-2 ring-blue-500' : ''
+                    }`}
                 >
                   {/* Selection Checkbox */}
                   <div className="absolute top-2 left-2 z-10">
@@ -838,7 +853,7 @@ const VideoManagement = ({ isDarkMode }) => {
                   </div>
 
                   {/* Thumbnail Section */}
-                  <div 
+                  <div
                     className="relative aspect-[6/4] bg-gray-700 overflow-hidden group"
                     onClick={() => handleSelectVideo(video.id)}
                   >
@@ -864,11 +879,10 @@ const VideoManagement = ({ isDarkMode }) => {
                     {viewData.isPopular && (
                       <div className="absolute top-1 right-1">
                         <div
-                          className={`flex items-center pr-0 rounded-full text-xs font-semibold ${
-                            viewData.level === 'mega'
+                          className={`flex items-center pr-0 rounded-full text-xs font-semibold ${viewData.level === 'mega'
                               ? 'bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white border-purple-300/30'
                               : ''
-                          }`}
+                            }`}
                         >
                           <div className="-mr-1 -mt-1 fire-icon-container">
                             <FireIcon />
@@ -904,17 +918,15 @@ const VideoManagement = ({ isDarkMode }) => {
                   {/* Video Info Section */}
                   <div className="px-2 py-1">
                     <p
-                      className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${
-                        isDarkMode ? 'text-gray-900' : 'text-black'
-                      }`}
+                      className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${isDarkMode ? 'text-gray-900' : 'text-black'
+                        }`}
                       title={video.title}
                     >
                       {video.title}
                     </p>
                     <div
-                      className={`flex items-center justify-between text-xs ${
-                        isDarkMode ? 'text-gray-900' : 'text-gray-600'
-                      }`}
+                      className={`flex items-center justify-between text-xs ${isDarkMode ? 'text-gray-900' : 'text-gray-600'
+                        }`}
                     >
                       <div className="flex items-center">
                         {viewData.isPopular && (
@@ -923,15 +935,14 @@ const VideoManagement = ({ isDarkMode }) => {
                           </div>
                         )}
                         <span
-                          className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''} ${
-                            viewData.level === 'mega'
+                          className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''} ${viewData.level === 'mega'
                               ? 'text-purple-400'
                               : viewData.level === 'popular'
-                              ? 'text-orange-400'
-                              : isDarkMode
-                              ? 'text-gray-900'
-                              : 'text-gray-600'
-                          }`}
+                                ? 'text-orange-400'
+                                : isDarkMode
+                                  ? 'text-gray-900'
+                                  : 'text-gray-600'
+                            }`}
                         >
                           {viewData.text}
                         </span>
@@ -949,30 +960,22 @@ const VideoManagement = ({ isDarkMode }) => {
                           handleManagePricing(video);
                         }}
                         disabled={loadingVideos[video.id]}
-                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${
-                          video.hasPricing
+                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${video.hasPricing
                             ? 'bg-blue-600 hover:bg-blue-700 text-white'
                             : 'bg-gray-600 hover:bg-gray-700 text-white'
-                        } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         {video.hasPricing ? '管理价格' : '设置价格'}
                       </button>
-                      
+
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTogglePaidStatus(video);
-                        }}
-                        disabled={loadingVideos[video.id] || !video.priceStatusLoaded}
-                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${
-                          video.hasPricing
-                            ? 'bg-red-600 hover:bg-red-700 text-white'
-                            : 'bg-green-600 hover:bg-green-700 text-white'
-                        } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => handleTogglePaidStatus(video.id, !video.pricing_enabled)}
+                        className={`px-3 py-1 rounded text-xs font-medium ${video.pricing_enabled
+                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            : 'bg-gray-500 hover:bg-gray-600 text-white'
+                          }`}
                       >
-                        {loadingVideos[video.id] ? '处理中...' : 
-                         !video.priceStatusLoaded ? '加载中...' :
-                         video.hasPricing ? '禁用付费' : '启用付费'}
+                        {video.pricing_enabled ? '禁用付费' : '启用付费'}
                       </button>
                     </div>
                   </div>
@@ -1011,11 +1014,10 @@ const VideoManagement = ({ isDarkMode }) => {
           <div className="flex justify-center mb-6">
             <button
               onClick={loadMoreVideos}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${isDarkMode
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
+                }`}
             >
               加载更多视频
             </button>

@@ -37,6 +37,8 @@ const adminRoutes = require('./routes/admin');
 const ipRoutes = require('./routes/ip');
 const userRoutes = require('./routes/userRoutes');
 const linkRoutes = require('./routes/linkRoutes');
+const videoPricingRoutes = require('./routes/videoPricingRoutes');
+const usersCustomGiftRoutes = require('./routes/usersCustomGift.routes');
 
 app.use('/backend-api', viewRoutes);
 app.use('/backend-api', starRoute);
@@ -47,6 +49,8 @@ app.use('/backend-api/admin', ipRoutes);
 app.use('/backend-api/user', userRoutes);
 app.use('/backend-api', logRoutes);
 app.use('/backend-api', linkRoutes);
+app.use('/backend-api/video', videoPricingRoutes);
+app.use('/backend-api', usersCustomGiftRoutes);
 
 app.get('/backend-api/test', (req, res) => {
   res.json({
@@ -59,7 +63,6 @@ app.post('/backend-api/notify-update', (req, res) => {
   io.emit('dashboard_update', { message: 'Dashboard updated' });
   res.json({ success: true });
 });
-
 
 initializeDatabase();
 

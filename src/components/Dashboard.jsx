@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
+import GiftModal from "../ci/GiftModal";
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,14 +15,17 @@ const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const searchTimeout = useRef(null);
+  const [giftOpen, setGiftOpen] = useState(false);
 
   const isVideoPage = location.pathname.startsWith('/watch');
   const isSearchPage = location.pathname === '/search';
   const isProfilePage = location.pathname.startsWith('/profile');
   const isCategoryPage = location.pathname.startsWith('/category/');
   // ✅ เพิ่มเงื่อนไขสำหรับหน้า VideoManagement
-  const isVideoManagementPage = location.pathname.startsWith('/video-management') || 
-                               location.pathname.includes('pricing');
+  const isVideoManagementPage = location.pathname.startsWith('/video-management') ||
+    location.pathname.includes('pricing') ||
+    location.pathname.includes('enhanced-price-setting/all')
+    ;
 
   // อัพเดทหมวดหมู่ปัจจุบันเมื่อเปลี่ยนหน้า
   useEffect(() => {
@@ -45,30 +49,30 @@ const Dashboard = () => {
 
     searchTimeout.current = setTimeout(() => {
       if (term.trim() !== '') {
-        const navigateState = { 
+        const navigateState = {
           searchTerm: term,
           fromCategory: currentCategory || (isCategoryPage ? location.pathname.split('/').pop() : null)
         };
 
         if (isSearchPage) {
-          window.dispatchEvent(new CustomEvent('searchUpdated', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('searchUpdated', {
+            detail: {
               searchTerm: term,
               fromCategory: currentCategory
-            } 
+            }
           }));
         } else {
           navigate('/search', { state: navigateState });
         }
       } else {
         if (isSearchPage) {
-          window.dispatchEvent(new CustomEvent('searchUpdated', { 
-            detail: { 
+          window.dispatchEvent(new CustomEvent('searchUpdated', {
+            detail: {
               searchTerm: '',
               fromCategory: currentCategory
-            } 
+            }
           }));
-          
+
           if (currentCategory) {
             navigate(`/category/${currentCategory}`);
           } else {
@@ -91,27 +95,27 @@ const Dashboard = () => {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       if ((isVideoPage && isLargeScreen) || isVideoManagementPage) {
         setIsHeaderVisible(true);
         setIsFooterVisible(true);
         return;
       }
-      
+
       if (isProfilePage) {
         return;
       }
-      
+
       // Logic สำหรับ Header และ Footer
       if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
         setIsHeaderVisible(false);
         setIsFooterVisible(false);
-      } 
+      }
       else if (currentScrollY < lastScrollY.current) {
         setIsHeaderVisible(true);
         setIsFooterVisible(true);
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
 
@@ -140,29 +144,35 @@ const Dashboard = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-colors duration-500 ${
-        isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'
-      }`}
+      className={`min-h-screen flex flex-col transition-colors duration-500 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'
+        }`}
     >
       {/* ✅ ซ่อน Header ในหน้า VideoManagement */}
       {!isProfilePage && !isVideoManagementPage && (!isVideoPage || (isVideoPage && isLargeScreen)) && (
         <Header
+          className={`header ${isHeaderVisible ? 'visible' : 'hidden'}`}
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
           isDarkMode={isDarkMode}
           toggleTheme={toggleTheme}
           isVisible={isHeaderVisible}
           currentCategory={currentCategory}
+          openGiftModal={() => setGiftOpen(true)}
         />
       )}
 
       <main className={`flex-grow ${isVideoPage ? 'pt-0' : ''} ${!isFooterVisible ? 'mb-16' : ''}`}>
-        <Outlet context={{ 
-          searchTerm, 
-          isDarkMode, 
+        <Outlet context={{
+          searchTerm,
+          isDarkMode,
           setSearchTerm,
-          currentCategory 
+          currentCategory
         }} />
+        <GiftModal
+          isOpen={giftOpen}
+          onClose={() => setGiftOpen(false)}
+          isDarkMode={isDarkMode}
+        />
       </main>
     </div>
   );
