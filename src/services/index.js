@@ -15,8 +15,8 @@ const logRequest = require('./middlewares/logMiddleware');
 const logRoutes = require('./routes/logRoutes');
 
 const app = express();
+app.set("trust proxy", true);
 const server = http.createServer(app);
-
 
 // JWT 密钥配置
 const JWT_SECRET = process.env.JWT_SECRET; // ✅ 确保有 JWT 密钥
@@ -54,13 +54,13 @@ app.use('/backend-api', usersCustomGiftRoutes);
 
 app.get('/backend-api/test', (req, res) => {
   res.json({
-    message: 'API is working!',
+    message: 'API 正常工作!',
     timestamp: new Date().toISOString(),
   });
 });
 
 app.post('/backend-api/notify-update', (req, res) => {
-  io.emit('dashboard_update', { message: 'Dashboard updated' });
+  io.emit('dashboard_update', { message: '仪表板已更新' });
   res.json({ success: true });
 });
 
@@ -68,5 +68,5 @@ initializeDatabase();
 
 const PORT = process.env.PORT || 80;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+  console.log(`🚀 服务器运行在 http://0.0.0.0:${PORT}`);
 });

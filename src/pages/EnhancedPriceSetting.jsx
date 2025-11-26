@@ -59,8 +59,8 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           await loadBulkPriceSettings();
         }
       } catch (error) {
-        console.error('❌ 加载数据错误:', error);
-        Swal.fire('错误', '加载数据失败', 'error');
+        console.error('❌ ข้อผิดพลาดในการโหลดข้อมูล:', error);
+        Swal.fire('ข้อผิดพลาด', 'โหลดข้อมูลล้มเหลว', 'error');
       } finally {
         setLoading(false);
       }
@@ -90,13 +90,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             setBasePrices(data.basePrices);
           }
           
-          console.log('✅ Loaded pricing settings from database:', data.basePrices);
+          console.log('✅ โหลดการตั้งค่าราคาจากฐานข้อมูลเรียบร้อยแล้ว:', data.basePrices);
         }
       } else {
-        throw new Error('Failed to load price settings');
+        throw new Error('โหลดการตั้งค่าราคาล้มเหลว');
       }
     } catch (error) {
-      console.error('❌ 加载价格设置错误:', error);
+      console.error('❌ ข้อผิดพลาดในการโหลดการตั้งค่าราคา:', error);
       // หากโหลดไม่สำเร็จ ให้ใช้ค่าเริ่มต้น
       if (videoId) {
         await loadVideoInfo(videoId);
@@ -115,7 +115,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error('Load video info error:', error);
+      console.error('ข้อผิดพลาดในการโหลดข้อมูลวิดีโอ:', error);
     }
   };
 
@@ -127,13 +127,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         const data = await response.json();
         if (data.success && data.bulkPricing) {
           setBulkPricing(data.bulkPricing);
-          console.log('✅ Loaded bulk pricing settings:', data.bulkPricing);
+          console.log('✅ โหลดการตั้งค่าราคาแบบกลุ่มเรียบร้อยแล้ว:', data.bulkPricing);
         }
       } else {
-        throw new Error('Failed to load bulk settings');
+        throw new Error('โหลดการตั้งค่าแบบกลุ่มล้มเหลว');
       }
     } catch (error) {
-      console.error('❌ 加载批量价格设置错误:', error);
+      console.error('❌ ข้อผิดพลาดในการโหลดการตั้งค่าราคาแบบกลุ่ม:', error);
     }
   };
 
@@ -199,9 +199,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         if (!videoId) {
           Swal.fire({
             icon: 'error',
-            title: '保存失败',
-            text: '视频ID不完整，无法保存设置',
-            confirmButtonText: '确定'
+            title: 'บันทึกล้มเหลว',
+            text: 'ไอดีวิดีโอไม่สมบูรณ์ ไม่สามารถบันทึกการตั้งค่า',
+            confirmButtonText: 'ตกลง'
           });
           return;
         }
@@ -214,7 +214,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           basePrices: basePrices
         };
 
-        console.log('📤 Sending single video settings:', settingsData);
+        console.log('📤 ส่งการตั้งค่าวิดีโอเดียว:', settingsData);
       } else {
         // ✅ ข้อมูลสำหรับแบบกลุ่ม (6 ราคาเท่านั้น)
         settingsData = {
@@ -226,7 +226,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           }
         };
 
-        console.log('📤 Sending bulk pricing settings:', settingsData);
+        console.log('📤 ส่งการตั้งค่าราคาแบบกลุ่ม:', settingsData);
       }
 
       const response = await fetch('/backend-api/video/pricing/save-all', {
@@ -243,24 +243,24 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       if (result.success) {
         await Swal.fire({
           icon: 'success',
-          title: '保存成功',
+          title: 'บันทึกสำเร็จ',
           text: activeTab === 'single' 
-            ? '视频价格设置已成功保存' 
-            : `批量价格设置已成功应用到 ${result.totalVideos || '所有'} 个视频`,
-          confirmButtonText: '确定'
+            ? 'บันทึกการตั้งค่าราคาวิดีโอเรียบร้อยแล้ว' 
+            : `บันทึกการตั้งค่าราคาแบบกลุ่มเรียบร้อยแล้ว ใช้กับวิดีโอ ${result.totalVideos || 'ทั้งหมด'} รายการ`,
+          confirmButtonText: 'ตกลง'
         });
         
-        console.log('✅ Save successful:', result);
+        console.log('✅ บันทึกสำเร็จ:', result);
       } else {
-        throw new Error(result.message || '保存失败');
+        throw new Error(result.message || 'บันทึกล้มเหลว');
       }
     } catch (error) {
-      console.error('❌ 保存设置错误:', error);
+      console.error('❌ ข้อผิดพลาดในการบันทึกการตั้งค่า:', error);
       Swal.fire({
         icon: 'error',
-        title: '保存失败',
-        text: error.message || '保存设置时发生错误',
-        confirmButtonText: '确定'
+        title: 'บันทึกล้มเหลว',
+        text: error.message || 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า',
+        confirmButtonText: 'ตกลง'
       });
     } finally {
       setSaving(false);
@@ -285,7 +285,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       const result = await response.json();
       
       if (result.success) {
-        // Create and download JSON file
+        // สร้างและดาวน์โหลดไฟล์ JSON
         const dataStr = JSON.stringify(result, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
@@ -297,13 +297,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         
-        Swal.fire('导出成功', '价格设置已导出为JSON文件', 'success');
+        Swal.fire('ส่งออกสำเร็จ', 'ส่งออกการตั้งค่าราคาเป็นไฟล์ JSON เรียบร้อยแล้ว', 'success');
       } else {
-        throw new Error(result.message || '导出失败');
+        throw new Error(result.message || 'ส่งออกล้มเหลว');
       }
     } catch (error) {
-      console.error('Export error:', error);
-      Swal.fire('导出失败', error.message, 'error');
+      console.error('ข้อผิดพลาดในการส่งออก:', error);
+      Swal.fire('ส่งออกล้มเหลว', error.message, 'error');
     }
   };
 
@@ -318,12 +318,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         const importedSettings = JSON.parse(e.target.result);
         
         Swal.fire({
-          title: '确认导入',
-          text: `确定要导入价格设置吗？`,
+          title: 'ยืนยันการนำเข้า',
+          text: `แน่ใจหรือไม่ที่จะนำเข้าการตั้งค่าราคา?`,
           icon: 'warning',
           showCancelButton: true,
-          confirmButtonText: '确定导入',
-          cancelButtonText: '取消'
+          confirmButtonText: 'นำเข้า',
+          cancelButtonText: 'ยกเลิก'
         }).then((result) => {
           if (result.isConfirmed) {
             if (importedSettings.settingType === 'single') {
@@ -332,11 +332,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             } else if (importedSettings.bulkPricing) {
               setBulkPricing(importedSettings.bulkPricing);
             }
-            Swal.fire('已导入', '价格设置已成功导入', 'success');
+            Swal.fire('นำเข้าแล้ว', 'นำเข้าการตั้งค่าราคาเรียบร้อยแล้ว', 'success');
           }
         });
       } catch (error) {
-        Swal.fire('错误', '导入文件格式不正确', 'error');
+        Swal.fire('ข้อผิดพลาด', 'รูปแบบไฟล์นำเข้าไม่ถูกต้อง', 'error');
       }
     };
     reader.readAsText(file);
@@ -349,7 +349,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className={`mt-4 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
-            {activeTab === 'single' ? '正在加载视频价格设置...' : '正在加载批量设置...'}
+            {activeTab === 'single' ? 'กำลังโหลดการตั้งค่าราคาวิดีโอ...' : 'กำลังโหลดการตั้งค่าแบบกลุ่ม...'}
           </p>
         </div>
       </div>
@@ -371,7 +371,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              返回视频管理
+              กลับไปจัดการวิดีโอ
             </button>
             
             <div className="flex space-x-3">
@@ -384,7 +384,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                导出设置
+                ส่งออกการตั้งค่า
               </button>
               
               <label className={`flex items-center px-4 py-2 rounded-lg transition-colors cursor-pointer ${
@@ -393,7 +393,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
-                导入设置
+                นำเข้าข้อมูล
                 <input
                   type="file"
                   accept=".json"
@@ -419,25 +419,25 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>视频ID:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ไอดีวิดีโอ:</span>
                       <span className="ml-2 font-mono">{video.id}</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>分类:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>หมวดหมู่:</span>
                       <span className="ml-2">{video.category}</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>付费状态:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>สถานะการชำระเงิน:</span>
                       <span className={`ml-2 px-2 py-1 rounded text-xs ${
                         pricingEnabled 
                           ? 'bg-green-500 text-white' 
                           : 'bg-gray-500 text-white'
                       }`}>
-                        {pricingEnabled ? '已启用' : '未启用'}
+                        {pricingEnabled ? 'เปิดใช้งานแล้ว' : 'ยังไม่ได้เปิดใช้งาน'}
                       </span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>最后更新:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>อัพเดตล่าสุด:</span>
                       <span className="ml-2 text-sm">
                         {new Date().toLocaleDateString('th-TH')}
                       </span>
@@ -458,22 +458,22 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-2">所有视频定价设置</h1>
+                  <h1 className="text-2xl font-bold mb-2">การตั้งค่าราคาวิดีโอทั้งหมด</h1>
                   <p className={`text-lg mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    为系统中的所有视频设置统一的6种价格方案
+                    ตั้งค่าแผนราคา 6 แบบแบบ統一สำหรับวิดีโอทั้งหมดในระบบ
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>应用范围:</span>
-                      <span className="ml-2 font-semibold text-green-600">所有视频</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ขอบเขตการใช้งาน:</span>
+                      <span className="ml-2 font-semibold text-green-600">วิดีโอทั้งหมด</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>价格方案:</span>
-                      <span className="ml-2">6种固定价格</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>แผนราคา:</span>
+                      <span className="ml-2">6 ราคาแบบตายตัว</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>自动应用:</span>
-                      <span className="ml-2 text-green-600">是（包括新视频）</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ใช้งานอัตโนมัติ:</span>
+                      <span className="ml-2 text-green-600">ใช่ (รวมถึงวิดีโอใหม่)</span>
                     </div>
                   </div>
                 </div>
@@ -497,7 +497,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                单个视频定价
+                ตั้งค่าราคาวิดีโอเดียว
               </button>
               <button
                 onClick={() => setActiveTab('bulk')}
@@ -510,22 +510,22 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                所有视频定价
+                ตั้งค่าราคาวิดีโอทั้งหมด
               </button>
             </nav>
           </div>
 
           <div className="p-6">
-            {/* Tab 1: 单个视频定价 - 6 ราคาเท่านั้น */}
+            {/* Tab 1: ตั้งค่าราคาวิดีโอเดียว - 6 ราคาเท่านั้น */}
             {activeTab === 'single' && (
               <div>
                 {/* Main Switch สำหรับวิดีโอเดียว */}
                 <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold">启用付费功能</h3>
+                      <h3 className="text-lg font-semibold">เปิดใช้งานฟังก์ชันการชำระเงิน</h3>
                       <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        启用后用户需要购买套餐才能观看此视频
+                        เมื่อเปิดใช้งาน ผู้ใช้จะต้องซื้อแพ็กเกจเพื่อดูวิดีโอนี้
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -547,13 +547,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 {pricingEnabled && (
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold">6种价格套餐设置</h3>
+                      <h3 className="text-xl font-semibold">การตั้งค่าแพ็กเกจราคา 6 แบบ</h3>
                       <span className="px-3 py-1 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
-                        固定6种价格方案
+                        แผนราคา 6 แบบแบบตายตัว
                       </span>
                     </div>
                     <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      为此视频设置6种不同的价格套餐，数据将从数据库加载并可以更新
+                      ตั้งค่าแพ็กเกจราคา 6 แบบที่แตกต่างกันสำหรับวิดีโอนี้ ข้อมูลจะถูกโหลดจากฐานข้อมูลและสามารถอัพเดตได้
                     </p>
 
                     {/* ✅ 6 ราคาแบบตายตัว */}
@@ -580,12 +580,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_1.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              1 天套餐
+                              แพ็กเกจ 1 วัน
                             </span>
                           </div>
                           {basePrices.price_1.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -593,7 +593,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_1.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_1.amount}
@@ -608,7 +608,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_1.days}
@@ -647,12 +647,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_7.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              7 天套餐
+                              แพ็กเกจ 7 วัน
                             </span>
                           </div>
                           {basePrices.price_7.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -660,7 +660,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_7.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_7.amount}
@@ -675,7 +675,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_7.days}
@@ -714,12 +714,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_30.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              30 天套餐
+                              แพ็กเกจ 30 วัน
                             </span>
                           </div>
                           {basePrices.price_30.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -727,7 +727,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_30.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_30.amount}
@@ -742,7 +742,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_30.days}
@@ -781,12 +781,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_90.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              90 天套餐
+                              แพ็กเกจ 90 วัน
                             </span>
                           </div>
                           {basePrices.price_90.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -794,7 +794,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_90.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_90.amount}
@@ -809,7 +809,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_90.days}
@@ -848,12 +848,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_180.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              180 天套餐
+                              แพ็กเกจ 180 วัน
                             </span>
                           </div>
                           {basePrices.price_180.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -861,7 +861,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_180.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_180.amount}
@@ -876,7 +876,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_180.days}
@@ -915,12 +915,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                             </label>
                             <span className={`font-medium ${basePrices.price_365.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              365 天套餐
+                              แพ็กเกจ 365 วัน
                             </span>
                           </div>
                           {basePrices.price_365.enabled && (
                             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              已启用
+                              เปิดใช้งานแล้ว
                             </span>
                           )}
                         </div>
@@ -928,7 +928,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {basePrices.price_365.enabled && (
                           <div className="space-y-3">
                             <div>
-                              <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                               <input
                                 type="number"
                                 value={basePrices.price_365.amount}
@@ -943,7 +943,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-medium mb-2">天数</label>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                               <input
                                 type="number"
                                 value={basePrices.price_365.days}
@@ -963,7 +963,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
                     {/* Summary */}
                     <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <h4 className="font-semibold mb-2">价格设置摘要</h4>
+                      <h4 className="font-semibold mb-2">สรุปการตั้งค่าราคา</h4>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
                         {Object.entries(basePrices).map(([key, price]) => (
                           <div key={key} className={`text-center p-2 rounded ${
@@ -971,8 +971,8 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
                               : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                           }`}>
-                            <div className="font-medium">{price.days} 天</div>
-                            <div>{price.enabled ? `฿${price.amount}` : '未启用'}</div>
+                            <div className="font-medium">{price.days} วัน</div>
+                            <div>{price.enabled ? `฿${price.amount}` : 'ยังไม่ได้เปิดใช้งาน'}</div>
                           </div>
                         ))}
                       </div>
@@ -982,7 +982,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               </div>
             )}
 
-            {/* Tab 2: 所有视频定价 - 6 ราคาเท่านั้น */}
+            {/* Tab 2: ตั้งค่าราคาวิดีโอทั้งหมด - 6 ราคาเท่านั้น */}
             {activeTab === 'bulk' && (
               <div>
                 <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
@@ -993,10 +993,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">所有视频定价设置</h3>
+                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">การตั้งค่าราคาวิดีโอทั้งหมด</h3>
                       <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        此设置将应用到系统中的所有视频，包括现有视频和未来新增的视频。
-                        操作不可逆，请谨慎设置。系统使用6种固定价格方案。
+                        การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ รวมถึงวิดีโอที่มีอยู่และวิดีโอใหม่ที่เพิ่มในอนาคต
+                        การดำเนินการนี้ไม่สามารถย้อนกลับได้ โปรดตั้งค่าอย่างระมัดระวัง ระบบใช้แผนราคา 6 แบบแบบตายตัว
                       </p>
                     </div>
                   </div>
@@ -1006,13 +1006,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   <div>
                     <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">全局6种价格模板</h3>
+                        <h3 className="text-xl font-semibold">เทมเพลตราคาแบบรวม 6 แบบ</h3>
                         <span className="px-3 py-1 text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
-                          固定6种价格方案
+                          แผนราคา 6 แบบแบบตายตัว
                         </span>
                       </div>
                       <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        为所有视频设置统一的6种价格套餐
+                        ตั้งค่าแพ็กเกจราคา 6 แบบแบบ統一สำหรับวิดีโอทั้งหมด
                       </p>
 
                       {/* ✅ 6 ราคาแบบตายตัวสำหรับแบบกลุ่ม */}
@@ -1039,12 +1039,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_1.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                1 天套餐
+                                แพ็กเกจ 1 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_1.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1052,7 +1052,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_1.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_1.amount}
@@ -1067,7 +1067,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_1.days}
@@ -1106,12 +1106,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_7.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                7 天套餐
+                                แพ็กเกจ 7 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_7.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1119,7 +1119,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_7.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_7.amount}
@@ -1134,7 +1134,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_7.days}
@@ -1173,12 +1173,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_30.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                30 天套餐
+                                แพ็กเกจ 30 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_30.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1186,7 +1186,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_30.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_30.amount}
@@ -1201,7 +1201,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_30.days}
@@ -1240,12 +1240,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_90.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                90 天套餐
+                                แพ็กเกจ 90 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_90.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1253,7 +1253,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_90.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_90.amount}
@@ -1268,7 +1268,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_90.days}
@@ -1307,12 +1307,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_180.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                180 天套餐
+                                แพ็กเกจ 180 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_180.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1320,7 +1320,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_180.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_180.amount}
@@ -1335,7 +1335,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_180.days}
@@ -1374,12 +1374,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
                               </label>
                               <span className={`font-medium ${bulkPricing.priceTemplates.template_365.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                365 天套餐
+                                แพ็กเกจ 365 วัน
                               </span>
                             </div>
                             {bulkPricing.priceTemplates.template_365.enabled && (
                               <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                已启用
+                                เปิดใช้งานแล้ว
                               </span>
                             )}
                           </div>
@@ -1387,7 +1387,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                           {bulkPricing.priceTemplates.template_365.enabled && (
                             <div className="space-y-3">
                               <div>
-                                <label className="block text-sm font-medium mb-2">价格 (บาท)</label>
+                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_365.amount}
@@ -1402,7 +1402,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                                 />
                               </div>
                               <div>
-                                <label className="block text-sm font-medium mb-2">天数</label>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
                                 <input
                                   type="number"
                                   value={bulkPricing.priceTemplates.template_365.days}
@@ -1421,13 +1421,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                       </div>
 
                       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">应用范围说明</h4>
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">คำอธิบายขอบเขตการใช้งาน</h4>
                         <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                          <li>• 此设置将应用到当前所有视频</li>
-                          <li>• 未来新增的视频也会自动应用此价格设置</li>
-                          <li>• 系统使用6种固定价格方案，无法添加或删除</li>
-                          <li>• 单个视频的独立设置将被覆盖</li>
-                          <li>• 如需为特定视频设置不同价格，请在"单个视频定价"中设置</li>
+                          <li>• การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในปัจจุบัน</li>
+                          <li>• วิดีโอใหม่ที่เพิ่มในอนาคตจะถูกนำการตั้งค่าราคานี้ไปใช้โดยอัตโนมัติ</li>
+                          <li>• ระบบใช้แผนราคา 6 แบบแบบตายตัว ไม่สามารถเพิ่มหรือลบได้</li>
+                          <li>• การตั้งค่าเฉพาะวิดีโอแต่ละรายการจะถูกเขียนทับ</li>
+                          <li>• หากต้องการตั้งค่าราคาที่แตกต่างสำหรับวิดีโอเฉพาะ กรุณาตั้งค่าใน "ตั้งค่าราคาวิดีโอเดียว"</li>
                         </ul>
                       </div>
                     </div>
@@ -1458,12 +1458,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  保存中...
+                  กำลังบันทึก...
                 </span>
               ) : activeTab === 'single' ? (
-                '保存单个视频设置'
+                'บันทึกการตั้งค่าวิดีโอเดียว'
               ) : (
-                '保存所有视频价格设置'
+                'บันทึกการตั้งค่าราคาวิดีโอทั้งหมด'
               )}
             </button>
             
@@ -1475,7 +1475,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
-              返回管理
+              กลับไปจัดการ
             </button>
           </div>
         </div>

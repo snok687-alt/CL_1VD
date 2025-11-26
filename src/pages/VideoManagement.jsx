@@ -94,9 +94,9 @@ const VideoManagement = ({ isDarkMode }) => {
       console.error('❌ โหลดข้อมูลไม่สำเร็จ:', error);
       Swal.fire({
         icon: 'error',
-        title: '加载失败',
-        text: '无法加载视频数据，请刷新页面重试',
-        confirmButtonText: '确定'
+        title: 'โหลดข้อมูลล้มเหลว',
+        text: 'ไม่สามารถโหลดข้อมูลวิดีโอได้ กรุณารีเฟรชหน้าเว็บและลองอีกครั้ง',
+        confirmButtonText: 'ตกลง'
       });
     } finally {
       setLoading(false);
@@ -221,7 +221,7 @@ const VideoManagement = ({ isDarkMode }) => {
       }
       return { hasPricing: false, isPaid: false };
     } catch (error) {
-      console.error('检查价格状态错误:', error);
+      console.error('ตรวจสอบสถานะราคาผิดพลาด:', error);
       return { hasPricing: false, isPaid: false };
     }
   };
@@ -235,7 +235,7 @@ const VideoManagement = ({ isDarkMode }) => {
       }
       return null;
     } catch (error) {
-      console.error('加载评分数据错误:', error);
+      console.error('โหลดข้อมูลเรตติ้งผิดพลาด:', error);
       return null;
     }
   };
@@ -255,30 +255,29 @@ const VideoManagement = ({ isDarkMode }) => {
   };
 
   // ✅ เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้
-  // ✅ เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้
   const handleEnableAllVideos = async () => {
     try {
       const currentPageVideoIds = filteredVideos.map(video => video.id);
 
       if (currentPageVideoIds.length === 0) {
-        Swal.fire('提示', '当前页面没有视频', 'warning');
+        Swal.fire('แจ้งเตือน', 'ไม่มีวิดีโอในหน้าปัจจุบัน', 'warning');
         return;
       }
 
       const result = await Swal.fire({
-        title: '启用所有视频付费',
-        text: `确定要启用当前页面 ${currentPageVideoIds.length} 个视频的付费功能吗？`,
+        title: 'เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมด',
+        text: `คุณแน่ใจหรือไม่ที่จะเปิดใช้งานการชำระเงินสำหรับวิดีโอ ${currentPageVideoIds.length} รายการในหน้านี้?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: '确定启用',
-        cancelButtonText: '取消',
+        confirmButtonText: 'เปิดใช้งาน',
+        cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#3085d6',
       });
 
       if (result.isConfirmed) {
         const progressSwal = Swal.fire({
-          title: '处理中...',
-          html: `正在启用 ${currentPageVideoIds.length} 个视频的付费功能...`,
+          title: 'กำลังดำเนินการ...',
+          html: `กำลังเปิดใช้งานการชำระเงินสำหรับ ${currentPageVideoIds.length} วิดีโอ...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -309,10 +308,10 @@ const VideoManagement = ({ isDarkMode }) => {
             if (response.ok && resultData.success) {
               successCount++;
             } else {
-              throw new Error(resultData.message || '启用失败');
+              throw new Error(resultData.message || 'เปิดใช้งานไม่สำเร็จ');
             }
           } catch (error) {
-            console.error(`启用视频 ${videoId} 付费失败:`, error);
+            console.error(`เปิดใช้งานวิดีโอ ${videoId} ไม่สำเร็จ:`, error);
             failCount++;
           }
         }
@@ -332,71 +331,71 @@ const VideoManagement = ({ isDarkMode }) => {
 
         Swal.fire({
           icon: successCount > 0 ? 'success' : 'error',
-          title: '操作完成',
+          title: 'ดำเนินการเสร็จสิ้น',
           html: `
           <div>
-            <p>成功启用: ${successCount} 个视频</p>
-            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
+            <p>เปิดใช้งานสำเร็จ: ${successCount} วิดีโอ</p>
+            ${failCount > 0 ? `<p style="color: red;">ล้มเหลว: ${failCount} วิดีโอ</p>` : ''}
           </div>
         `,
-          confirmButtonText: '确定'
+          confirmButtonText: 'ตกลง'
         });
       }
     } catch (error) {
-      console.error('启用所有视频付费错误:', error);
-      Swal.fire('错误', '操作失败', 'error');
+      console.error('เปิดใช้งานการชำระเงินทั้งหมดผิดพลาด:', error);
+      Swal.fire('ข้อผิดพลาด', 'ดำเนินการไม่สำเร็จ', 'error');
     }
   };
 
-// ✅ ฟังก์ชันสลับสถานะการชำระเงิน - แบบง่ายๆ
-const handleTogglePaidStatus = async (videoId, enable) => {
-  try {
-    const token = localStorage.getItem('token');
-    
-    console.log('🔄 Sending toggle request:', { videoId, enable });
-
-    const response = await fetch('/backend-api/video/pricing/toggle-paid', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        video_id: parseInt(videoId),
-        enable: enable
-      })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      Swal.fire({
-        icon: 'success',
-        title: enable ? '付费功能已启用' : '付费功能已禁用',
-        text: result.message,
-        confirmButtonText: '确定'
-      });
+  // ✅ ฟังก์ชันสลับสถานะการชำระเงิน
+  const handleTogglePaidStatus = async (videoId, enable) => {
+    try {
+      const token = localStorage.getItem('token');
       
-      // ✅ อัพเดทสถานะใน state
-      setVideos(prev => prev.map(video => 
-        video.id === videoId 
-          ? { ...video, hasPricing: enable }
-          : video
-      ));
+      console.log('🔄 ส่งคำขอสลับสถานะ:', { videoId, enable });
 
-    } else {
-      throw new Error(result.message || '操作失败');
+      const response = await fetch('/backend-api/video/pricing/toggle-paid', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          video_id: parseInt(videoId),
+          enable: enable
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        Swal.fire({
+          icon: 'success',
+          title: enable ? 'เปิดใช้งานการชำระเงินแล้ว' : 'ปิดใช้งานการชำระเงินแล้ว',
+          text: result.message,
+          confirmButtonText: 'ตกลง'
+        });
+        
+        // ✅ อัพเดทสถานะใน state
+        setVideos(prev => prev.map(video => 
+          video.id === videoId 
+            ? { ...video, hasPricing: enable }
+            : video
+        ));
+
+      } else {
+        throw new Error(result.message || 'ดำเนินการไม่สำเร็จ');
+      }
+    } catch (error) {
+      console.error('❌ สลับสถานะการชำระเงินผิดพลาด:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'ดำเนินการไม่สำเร็จ',
+        text: 'เกิดข้อผิดพลาดในการสลับสถานะการชำระเงิน',
+        confirmButtonText: 'ตกลง'
+      });
     }
-  } catch (error) {
-    console.error('❌ 切换付费状态错误:', error);
-    Swal.fire({
-      icon: 'error',
-      title: '操作失败',
-      text: '切换付费状态时发生错误',
-      confirmButtonText: '确定'
-    });
-  }
-};
+  };
 
   // ✅ เลือก/ยกเลิกเลือกวิดีโอ
   const handleSelectVideo = (videoId) => {
@@ -429,31 +428,31 @@ const handleTogglePaidStatus = async (videoId, enable) => {
   // ✅ จัดการแบบกลุ่ม
   const handleBulkAction = async () => {
     if (selectedVideos.size === 0) {
-      Swal.fire('提示', '请先选择视频', 'warning');
+      Swal.fire('แจ้งเตือน', 'กรุณาเลือกวิดีโอก่อน', 'warning');
       return;
     }
 
     if (!bulkAction) {
-      Swal.fire('提示', '请选择要执行的操作', 'warning');
+      Swal.fire('แจ้งเตือน', 'กรุณาเลือกการดำเนินการ', 'warning');
       return;
     }
 
     try {
       const result = await Swal.fire({
-        title: '确认操作',
-        text: `确定要对 ${selectedVideos.size} 个视频执行"${getBulkActionText(bulkAction)}"吗？`,
+        title: 'ยืนยันการดำเนินการ',
+        text: `คุณแน่ใจหรือไม่ที่จะดำเนินการ "${getBulkActionText(bulkAction)}" กับ ${selectedVideos.size} วิดีโอ?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: '确定',
-        cancelButtonText: '取消'
+        confirmButtonText: 'ดำเนินการ',
+        cancelButtonText: 'ยกเลิก'
       });
 
       if (result.isConfirmed) {
         const videoIds = Array.from(selectedVideos);
 
         const progressSwal = Swal.fire({
-          title: '处理中...',
-          html: `正在处理 ${videoIds.length} 个视频...`,
+          title: 'กำลังดำเนินการ...',
+          html: `กำลังประมวลผล ${videoIds.length} วิดีโอ...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -483,7 +482,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
             if (response.ok && resultData.success) {
               successCount++;
             } else {
-              throw new Error(resultData.message || '操作失败');
+              throw new Error(resultData.message || 'ดำเนินการไม่สำเร็จ');
             }
           } catch (error) {
             failCount++;
@@ -504,29 +503,29 @@ const handleTogglePaidStatus = async (videoId, enable) => {
 
         Swal.fire({
           icon: successCount > 0 ? 'success' : 'error',
-          title: '操作完成',
+          title: 'ดำเนินการเสร็จสิ้น',
           html: `
           <div>
-            <p>成功: ${successCount} 个视频</p>
-            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
+            <p>สำเร็จ: ${successCount} วิดีโอ</p>
+            ${failCount > 0 ? `<p style="color: red;">ล้มเหลว: ${failCount} วิดีโอ</p>` : ''}
           </div>
         `,
-          confirmButtonText: '确定'
+          confirmButtonText: 'ตกลง'
         });
 
         setSelectedVideos(new Set());
         setBulkAction('');
       }
     } catch (error) {
-      console.error('批量操作错误:', error);
-      Swal.fire('错误', '操作失败', 'error');
+      console.error('ดำเนินการแบบกลุ่มผิดพลาด:', error);
+      Swal.fire('ข้อผิดพลาด', 'ดำเนินการไม่สำเร็จ', 'error');
     }
   };
 
   const getBulkActionText = (action) => {
     switch (action) {
-      case 'enable': return '启用付费';
-      case 'disable': return '禁用付费';
+      case 'enable': return 'เปิดใช้งานการชำระเงิน';
+      case 'disable': return 'ปิดใช้งานการชำระเงิน';
       default: return '';
     }
   };
@@ -536,20 +535,20 @@ const handleTogglePaidStatus = async (videoId, enable) => {
     const viewCount = views || 0;
     if (viewCount >= 1000000) {
       return {
-        text: `${(viewCount / 1000000).toFixed(1)}M 看`,
+        text: `${(viewCount / 1000000).toFixed(1)}M ดู`,
         isPopular: true,
         level: 'mega'
       };
     }
     if (viewCount >= 1000) {
       return {
-        text: `${(viewCount / 1000).toFixed(0)}K 看`,
+        text: `${(viewCount / 1000).toFixed(0)}K ดู`,
         isPopular: true,
         level: 'popular'
       };
     }
     return {
-      text: `${viewCount} 看`,
+      text: `${viewCount} ดู`,
       isPopular: false,
       level: 'normal'
     };
@@ -590,7 +589,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
     if (!video.priceStatusLoaded) {
       return (
         <span className="px-2 py-1 text-xs bg-gray-400 text-white rounded-full animate-pulse">
-          加载中...
+          กำลังโหลด...
         </span>
       );
     }
@@ -598,13 +597,13 @@ const handleTogglePaidStatus = async (videoId, enable) => {
     if (video.hasPricing) {
       return (
         <span className="px-2 py-1 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full">
-          付费视频
+          วิดีโอแบบชำระเงิน
         </span>
       );
     }
     return (
       <span className="px-2 py-1 text-xs bg-gray-500 text-white rounded-full">
-        免费视频
+        วิดีโอฟรี
       </span>
     );
   };
@@ -632,9 +631,9 @@ const handleTogglePaidStatus = async (videoId, enable) => {
       <div className={`min-h-screen py-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">视频观看定价管理</h1>
+            <h1 className="text-3xl font-bold mb-2">จัดการราคาการดูวิดีโอ</h1>
             <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              正在加载视频数据...
+              กำลังโหลดข้อมูลวิดีโอ...
             </p>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -654,10 +653,10 @@ const handleTogglePaidStatus = async (videoId, enable) => {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">视频观看定价管理</h1>
+              <h1 className="text-3xl font-bold mb-2">จัดการราคาการดูวิดีโอ</h1>
               <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                管理所有视频的付费设置 • 共 {videos.length} 个视频
-                {selectedVideos.size > 0 && ` • 已选择 ${selectedVideos.size} 个视频`}
+                จัดการการตั้งค่าการชำระเงินสำหรับวิดีโอทั้งหมด • ทั้งหมด {videos.length} วิดีโอ
+                {selectedVideos.size > 0 && ` • เลือกแล้ว ${selectedVideos.size} วิดีโอ`}
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex space-x-3">
@@ -672,7 +671,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                启用本页所有视频付费
+                เปิดใช้งานการชำระเงินทั้งหมดในหน้านี้
               </button>
 
               {/* ปุ่มตั้งราคาวิดีโอทั้งหมด */}
@@ -686,7 +685,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                所有视频定价
+                ตั้งราคาวิดีโอทั้งหมด
               </button>
 
               <button
@@ -696,7 +695,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                     : 'bg-white hover:bg-gray-200 border'
                   }`}
               >
-                返回首页
+                กลับไปหน้าแรก
               </button>
             </div>
           </div>
@@ -707,7 +706,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
           <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'}`}>
             <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
               <div className="flex items-center space-x-3">
-                <span className="font-semibold">批量操作:</span>
+                <span className="font-semibold">ดำเนินการแบบกลุ่ม:</span>
                 <select
                   value={bulkAction}
                   onChange={(e) => setBulkAction(e.target.value)}
@@ -716,24 +715,24 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                       : 'bg-white border-gray-300'
                     }`}
                 >
-                  <option value="">选择操作</option>
-                  <option value="enable">启用付费</option>
-                  <option value="disable">禁用付费</option>
+                  <option value="">เลือกการดำเนินการ</option>
+                  <option value="enable">เปิดใช้งานการชำระเงิน</option>
+                  <option value="disable">ปิดใช้งานการชำระเงิน</option>
                 </select>
                 <button
                   onClick={handleBulkAction}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  执行
+                  ดำเนินการ
                 </button>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-sm">{selectedVideos.size} 个视频已选择</span>
+                <span className="text-sm">เลือกแล้ว {selectedVideos.size} วิดีโอ</span>
                 <button
                   onClick={handleDeselectAll}
                   className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                 >
-                  取消选择
+                  ยกเลิกการเลือกทั้งหมด
                 </button>
               </div>
             </div>
@@ -745,12 +744,12 @@ const handleTogglePaidStatus = async (videoId, enable) => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
             <div>
-              <label className="block text-sm font-medium mb-2">搜索视频</label>
+              <label className="block text-sm font-medium mb-2">ค้นหาวิดีโอ</label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="输入视频标题、演员或ID..."
+                placeholder="ป้อนชื่อวิดีโอ, นักแสดง หรือ ID..."
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
@@ -760,7 +759,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
 
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2">分类</label>
+              <label className="block text-sm font-medium mb-2">หมวดหมู่</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -779,7 +778,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
 
             {/* Price Status Filter */}
             <div>
-              <label className="block text-sm font-medium mb-2">付费状态</label>
+              <label className="block text-sm font-medium mb-2">สถานะการชำระเงิน</label>
               <select
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value)}
@@ -788,19 +787,19 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                     : 'bg-white border-gray-300'
                   }`}
               >
-                <option value="all">全部视频</option>
-                <option value="paid">付费视频</option>
-                <option value="free">免费视频</option>
+                <option value="all">วิดีโอทั้งหมด</option>
+                <option value="paid">วิดีโอแบบชำระเงิน</option>
+                <option value="free">วิดีโอฟรี</option>
               </select>
             </div>
 
             {/* Stats */}
             <div>
-              <label className="block text-sm font-medium mb-2">统计信息</label>
+              <label className="block text-sm font-medium mb-2">สถิติ</label>
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div>总视频: {videos.length} 个</div>
-                <div>付费: {videos.filter(v => v.hasPricing).length} 个</div>
-                <div>免费: {videos.filter(v => !v.hasPricing).length} 个</div>
+                <div>วิดีโอทั้งหมด: {videos.length} รายการ</div>
+                <div>แบบชำระเงิน: {videos.filter(v => v.hasPricing).length} รายการ</div>
+                <div>ฟรี: {videos.filter(v => !v.hasPricing).length} รายการ</div>
               </div>
             </div>
           </div>
@@ -812,18 +811,18 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                 onClick={handleSelectAll}
                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
-                选择本页全部
+                เลือกทั้งหมดในหน้านี้
               </button>
               <button
                 onClick={handleDeselectAll}
                 className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
               >
-                取消选择全部
+                ยกเลิกการเลือกทั้งหมด
               </button>
             </div>
             <div className="text-sm text-gray-500">
-              显示 {filteredVideos.length} 个视频
-              {hasMore && ' • 滚动加载更多'}
+              แสดง {filteredVideos.length} วิดีโอ
+              {hasMore && ' • เลื่อนเพื่อโหลดเพิ่ม'}
             </div>
           </div>
         </div>
@@ -871,7 +870,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                       {maxStar > 0 ? (
                         renderStars(maxStar)
                       ) : (
-                        <span className="text-gray-300">暂无评分</span>
+                        <span className="text-gray-300">ยังไม่มีเรตติ้ง</span>
                       )}
                     </div>
 
@@ -909,7 +908,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-white text-xs text-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-1"></div>
-                          处理中...
+                          กำลังดำเนินการ...
                         </div>
                       </div>
                     )}
@@ -965,7 +964,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                             : 'bg-gray-600 hover:bg-gray-700 text-white'
                           } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {video.hasPricing ? '管理价格' : '设置价格'}
+                        {video.hasPricing ? 'ปรับราคา' : 'ตั้งราคา'}
                       </button>
 
                       <button
@@ -975,7 +974,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                             : 'bg-gray-500 hover:bg-gray-600 text-white'
                           }`}
                       >
-                        {video.pricing_enabled ? '禁用付费' : '启用付费'}
+                        {video.pricing_enabled ? 'ปิดการชำระเงิน' : 'เปิดการชำระเงิน'}
                       </button>
                     </div>
                   </div>
@@ -990,8 +989,8 @@ const handleTogglePaidStatus = async (videoId, enable) => {
               <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-lg">未找到匹配的视频</p>
-              <p className="text-sm mt-2">尝试调整搜索条件或筛选器</p>
+              <p className="text-lg">ไม่พบวิดีโอที่ตรงกับเงื่อนไข</p>
+              <p className="text-sm mt-2">ลองปรับเปลี่ยนเงื่อนไขการค้นหาหรือตัวกรอง</p>
             </div>
           )}
 
@@ -999,7 +998,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
           {loadingMore && (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-3 text-gray-500">正在加载更多视频...</span>
+              <span className="ml-3 text-gray-500">กำลังโหลดวิดีโอเพิ่มเติม...</span>
             </div>
           )}
 
@@ -1019,7 +1018,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
             >
-              加载更多视频
+              โหลดวิดีโอเพิ่มเติม
             </button>
           </div>
         )}
@@ -1028,7 +1027,7 @@ const handleTogglePaidStatus = async (videoId, enable) => {
         {!hasMore && filteredVideos.length > 0 && (
           <div className="text-center py-6">
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              🎉 已显示所有视频 ({filteredVideos.length} 个)
+              🎉 แสดงวิดีโอทั้งหมดแล้ว ({filteredVideos.length} รายการ)
             </p>
           </div>
         )}

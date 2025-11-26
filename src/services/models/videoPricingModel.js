@@ -210,7 +210,7 @@ async togglePaidStatus(videoId, enable) {
 },
 
   // ✅ ดึงการตั้งค่าราคาแบบกลุ่ม (6 ราคาเท่านั้น)
-  async getGlobalPricingSettings() {
+  async getGlobalPricingSettings() {  
     try {
       const [rows] = await pool.query(
         "SELECT * FROM global_pricing_settings WHERE setting_name = 'default_global_pricing'"

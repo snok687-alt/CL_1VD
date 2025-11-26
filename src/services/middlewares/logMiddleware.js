@@ -1,13 +1,30 @@
 const { pool } = require('../config/db');
+const geoip = require('geoip-lite');
+
+function getGeoFromIP(ip) {
+  if (!ip) return { country: null, city: null, region: null };
+  const geo = geoip.lookup(ip);
+  if (!geo) return { country: null, city: null, region: null };
+  return {
+    country: geo.country || null,
+    city: geo.city || null,
+    region: geo.region || null
+  };
+}
 
 async function logRequest(req, res, next) {
   const start = Date.now();
-
-  // ✅ ยกเว้น path ที่ไม่ต้องการเก็บ log
-  const excludedPaths = ['/CL_____/Admin', '/backend-api/admin'];
-  if (excludedPaths.some(path => req.originalUrl.startsWith(path))) {
-    return next();
-  }
+  const excludedPaths = [
+    '/CL_____________________________________________________________________________________******_/Admin',
+    '/Addlinks',
+    '/GameDashboard',
+    '/gaming',
+    '/upload',
+    '/Login',
+    '/Ip',
+    '/backend-api/admin'
+  ];
+  if (excludedPaths.some(path => req.originalUrl.startsWith(path))) return next();
 
   res.on('finish', async () => {
     try {
@@ -15,27 +32,14 @@ async function logRequest(req, res, next) {
       const userAgentInfo = parseUserAgent(req.headers['user-agent']);
       const responseTime = Date.now() - start;
 
-      // ✅ ตรวจสอบว่ามี IP นี้อยู่แล้วหรือยัง
-      const [existing] = await pool.query(
-        `SELECT id FROM access_logs WHERE ip = ? LIMIT 1`,
-        [clientIP]
-      );
+      const geo = getGeoFromIP(clientIP);
 
-      if (existing.length > 0) {
-        // ✅ ถ้ามีอยู่แล้ว → ไม่ต้องบันทึกซ้ำ
-        console.log(`⚠️  Skipped duplicate IP log: ${clientIP}`);
-        return;
-      }
-
-      // ✅ ถ้าไม่มี ให้บันทึกข้อมูลใหม่
       await pool.query(
-        `
-        INSERT INTO access_logs (
+        `INSERT INTO access_logs (
           ip, method, url, status, user_agent, device, browser, os,
-          referrer, hits, response_time, user_country, last_access
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, NOW())
-        `,
+          referrer, hits, response_time, user_country, city, region, last_access
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE hits = hits + 1, last_access = NOW()`,
         [
           clientIP,
           req.method,
@@ -47,12 +51,13 @@ async function logRequest(req, res, next) {
           userAgentInfo.os,
           (req.headers['referer'] || req.headers['referrer'] || '').substring(0, 500),
           responseTime,
-          req.headers['cf-ipcountry'] || null
+          geo.country,
+          geo.city,
+          geo.region
         ]
       );
 
-      console.log(`✅ New IP logged: ${clientIP}`);
-
+      console.log(`✅ Logged: ${clientIP} (${geo.country}, ${geo.region}, ${geo.city})`);
     } catch (err) {
       console.error('❌ Error saving access log:', err.message);
     }
@@ -61,56 +66,32 @@ async function logRequest(req, res, next) {
   next();
 }
 
-// 🧩 Helper Functions
 function getClientIP(req) {
-  const headersToCheck = [
-    'cf-connecting-ip', 'x-client-ip', 'x-forwarded-for',
-    'x-real-ip', 'x-cluster-client-ip', 'forwarded-for', 'forwarded'
-  ];
+  if (req.headers["cf-connecting-ip"]) return cleanIP(req.headers["cf-connecting-ip"]);
+  if (req.headers["x-forwarded-for"]) return cleanIP(req.headers["x-forwarded-for"].split(",")[0].trim());
+  if (req.headers["x-real-ip"]) return cleanIP(req.headers["x-real-ip"]);
+  return cleanIP(req.ip);
+}
 
-  for (const header of headersToCheck) {
-    const value = req.headers[header];
-    if (value) return value.split(',')[0].trim();
-  }
-
-  let ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
-  if (ip.startsWith('::ffff:')) ip = ip.slice(7);
-  if (ip.includes(':')) ip = ip.split(':')[0];
-  return ip;
+function cleanIP(ip) {
+  if (!ip) return null;
+  return ip.replace("::ffff:", "").split(":")[0];
 }
 
 function parseUserAgent(ua) {
   if (!ua) return { device: 'Unknown', browser: 'Unknown', os: 'Unknown', raw: 'Unknown' };
   ua = ua.toLowerCase();
-
-  let device = /mobile|android|iphone|phone/i.test(ua)
-    ? 'Mobile'
-    : /tablet|ipad/i.test(ua)
-    ? 'Tablet'
-    : 'Desktop';
-
-  let browser = /chrome/i.test(ua)
-    ? 'Chrome'
-    : /firefox/i.test(ua)
-    ? 'Firefox'
-    : /safari/i.test(ua)
-    ? 'Safari'
-    : /edge/i.test(ua)
-    ? 'Edge'
-    : 'Other';
-
-  let os = /windows/i.test(ua)
-    ? 'Windows'
-    : /mac/i.test(ua)
-    ? 'macOS'
-    : /android/i.test(ua)
-    ? 'Android'
-    : /linux/i.test(ua)
-    ? 'Linux'
-    : /iphone|ipad/i.test(ua)
-    ? 'iOS'
-    : 'Other';
-
+  const device = /mobile|android|iphone|phone/i.test(ua) ? 'Mobile' :
+                 /tablet|ipad/i.test(ua) ? 'Tablet' : 'Desktop';
+  const browser = /chrome/i.test(ua) ? 'Chrome' :
+                  /firefox/i.test(ua) ? 'Firefox' :
+                  /safari/i.test(ua) ? 'Safari' :
+                  /edge/i.test(ua) ? 'Edge' : 'Other';
+  const os = /windows/i.test(ua) ? 'Windows' :
+             /mac os|macintosh/i.test(ua) ? 'macOS' :
+             /android/i.test(ua) ? 'Android' :
+             /linux/i.test(ua) ? 'Linux' :
+             /iphone|ipad/i.test(ua) ? 'iOS' : 'Other';
   return { device, browser, os, raw: ua.substring(0, 500) };
 }
 
