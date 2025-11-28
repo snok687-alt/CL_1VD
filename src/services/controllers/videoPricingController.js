@@ -2,139 +2,120 @@ const VideoPricingModel = require('../models/videoPricingModel');
 
 const VideoPricingController = {
 
-  // ✅ ดึงการตั้งค่าราคาของวิดีโอ
-  async getPricingSettings(req, res) {
-    try {
-      const { videoId } = req.params;
+// ✅ แก้ไข method getPricingSettings
+async getPricingSettings(req, res) {
+  try {
+    const { videoId } = req.params;
 
-      const settings = await VideoPricingModel.getPricingSettings(videoId);
+    const settings = await VideoPricingModel.getPricingSettings(videoId);
 
-      if (!settings) {
-        return res.json({
-          success: true,
-          videoInfo: null,
-          pricingEnabled: false,
-          useGlobalPricing: true,
-          pricingType: 'none',
-          basePrices: {
-            price_1: { amount: 1, days: 1, enabled: false },
-            price_7: { amount: 7, days: 7, enabled: false },
-            price_30: { amount: 30, days: 30, enabled: false },
-            price_90: { amount: 90, days: 90, enabled: false },
-            price_180: { amount: 180, days: 180, enabled: false },
-            price_365: { amount: 365, days: 365, enabled: false }
-          }
-        });
-      }
-
-      const isGlobalPricing = settings.pricing_type === 'global';
-
-      const response = {
+    if (!settings) {
+      return res.json({
         success: true,
-        videoInfo: {
-          id: settings.video_id,
-          title: settings.video_title,
-          thumbnail: settings.video_thumbnail,
-          category: settings.video_category
-        },
-        pricingEnabled: settings.pricing_enabled === 1,
-        useGlobalPricing: isGlobalPricing,
-        pricingType: settings.pricing_type,
+        videoInfo: { id: parseInt(videoId) }, // ✅ ใช้เฉพาะ video_id
+        pricingEnabled: false,
+        useGlobalPricing: true,
+        pricingType: 'none',
         basePrices: {
-          price_1: {
-            amount: parseFloat(isGlobalPricing ? settings.template_1_amount : settings.price_1_amount || 1),
-            days: isGlobalPricing ? settings.template_1_days : settings.price_1_days || 1,
-            enabled: isGlobalPricing ? settings.template_1_enabled === 1 : settings.price_1_enabled === 1
-          },
-          price_7: {
-            amount: parseFloat(isGlobalPricing ? settings.template_7_amount : settings.price_7_amount || 7),
-            days: isGlobalPricing ? settings.template_7_days : settings.price_7_days || 7,
-            enabled: isGlobalPricing ? settings.template_7_enabled === 1 : settings.price_7_enabled === 1
-          },
-          price_30: {
-            amount: parseFloat(isGlobalPricing ? settings.template_30_amount : settings.price_30_amount || 30),
-            days: isGlobalPricing ? settings.template_30_days : settings.price_30_days || 30,
-            enabled: isGlobalPricing ? settings.template_30_enabled === 1 : settings.price_30_enabled === 1
-          },
-          price_90: {
-            amount: parseFloat(isGlobalPricing ? settings.template_90_amount : settings.price_90_amount || 90),
-            days: isGlobalPricing ? settings.template_90_days : settings.price_90_days || 90,
-            enabled: isGlobalPricing ? settings.template_90_enabled === 1 : settings.price_90_enabled === 1
-          },
-          price_180: {
-            amount: parseFloat(isGlobalPricing ? settings.template_180_amount : settings.price_180_amount || 180),
-            days: isGlobalPricing ? settings.template_180_days : settings.price_180_days || 180,
-            enabled: isGlobalPricing ? settings.template_180_enabled === 1 : settings.price_180_enabled === 1
-          },
-          price_365: {
-            amount: parseFloat(isGlobalPricing ? settings.template_365_amount : settings.price_365_amount || 365),
-            days: isGlobalPricing ? settings.template_365_days : settings.price_365_days || 365,
-            enabled: isGlobalPricing ? settings.template_365_enabled === 1 : settings.price_365_enabled === 1
-          }
+          price_1: { amount: 1, days: 1, enabled: false },
+          price_7: { amount: 7, days: 7, enabled: false },
+          price_30: { amount: 30, days: 30, enabled: false },
+          price_90: { amount: 90, days: 90, enabled: false },
+          price_180: { amount: 180, days: 180, enabled: false },
+          price_365: { amount: 365, days: 365, enabled: false }
         }
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error('Get pricing settings error:', error);
-      res.status(500).json({
-        success: false,
-        message: '获取价格设置失败'
       });
     }
-  },
+
+    const isGlobalPricing = settings.pricing_type === 'global';
+
+    const response = {
+      success: true,
+      videoInfo: {
+        id: settings.video_id,
+        // ✅ ไม่มี title, thumbnail, category
+      },
+      pricingEnabled: settings.pricing_enabled === 1,
+      useGlobalPricing: isGlobalPricing,
+      pricingType: settings.pricing_type,
+      basePrices: {
+        price_1: {
+          amount: parseFloat(isGlobalPricing ? settings.template_1_amount : settings.price_1_amount || 1),
+          days: isGlobalPricing ? settings.template_1_days : settings.price_1_days || 1,
+          enabled: isGlobalPricing ? settings.template_1_enabled === 1 : settings.price_1_enabled === 1
+        },
+        // ... basePrices อื่นๆ ...
+      }
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Get pricing settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取价格设置失败'
+    });
+  }
+},
+
   // ✅ บันทึกการตั้งค่าราคา
-  async saveAllSettings(req, res) {
-    try {
-      const { settingType, video_id, pricingEnabled, basePrices, bulkPricing, useGlobalPricing } = req.body;
+async saveAllSettings(req, res) {
+  try {
+    const { settingType, video_id, pricingEnabled, basePrices, bulkPricing, useGlobalPricing } = req.body;
 
-      console.log('📦 Received save request:', { settingType, video_id, pricingEnabled, useGlobalPricing });
+    console.log('📦 Received save request:', { settingType, video_id, pricingEnabled, useGlobalPricing });
 
-      if (settingType === 'single') {
-        if (!video_id) {
-          return res.status(400).json({
-            success: false,
-            message: '缺少视频ID'
-          });
-        }
-
-        // ✅ บันทึกราคาสำหรับวิดีโอเดียว
-        await VideoPricingModel.savePricingSettings(video_id, {
-          pricingEnabled,
-          basePrices,
-          useGlobalPricing
-        });
-
-        res.json({
-          success: true,
-          message: useGlobalPricing ? '已设置为使用全局价格' : '单个视频价格设置已保存'
-        });
-
-      } else if (settingType === 'bulk') {
-        // ✅ บันทึกการตั้งค่าแบบกลุ่ม
-        await VideoPricingModel.saveGlobalPricingSettings(bulkPricing);
-
-        res.json({
-          success: true,
-          message: '全局价格设置已保存并激活'
-        });
-
-      } else {
-        res.status(400).json({
+    if (settingType === 'single') {
+      if (!video_id) {
+        return res.status(400).json({
           success: false,
-          message: '无效的设置类型'
+          message: '缺少视频ID'
         });
       }
 
-    } catch (error) {
-      console.error('❌ Save settings error:', error);
-      res.status(500).json({
+      // ✅ บันทึกราคาสำหรับวิดีโอเดียว - สำคัญ!
+      const result = await VideoPricingModel.savePricingSettings(video_id, {
+        pricingEnabled,
+        basePrices,
+        useGlobalPricing: useGlobalPricing || false // ✅ ตั้งค่าให้ชัดเจน
+      });
+
+      res.json({
+        success: true,
+        message: useGlobalPricing ? '已设置为使用全局价格' : '单个视频价格设置已保存',
+        data: result
+      });
+
+    } else if (settingType === 'bulk') {
+      // ✅ บันทึกการตั้งค่าแบบกลุ่ม
+      await VideoPricingModel.saveGlobalPricingSettings(bulkPricing);
+
+      // ✅ นำการตั้งค่าแบบกลุ่มไปใช้กับวิดีโอทั้งหมด (ถ้า applyToAll เป็น true)
+      if (bulkPricing.applyToAll) {
+        await VideoPricingModel.applyGlobalPricingToAllVideos();
+      }
+
+      res.json({
+        success: true,
+        message: '全局价格设置已保存并激活'
+      });
+
+    } else {
+      res.status(400).json({
         success: false,
-        message: '保存设置失败',
-        error: error.message
+        message: '无效的设置类型'
       });
     }
-  },
+
+  } catch (error) {
+    console.error('❌ Save settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: '保存设置失败',
+      error: error.message
+    });
+  }
+},
 
   // ✅ ตรวจสอบสถานะราคาของวิดีโอ
   async checkPriceStatus(req, res) {
@@ -156,7 +137,9 @@ const VideoPricingController = {
       });
     }
   },
-// ✅ สลับสถานะการชำระเงิน - ตอบสำเร็จเสมอ
+
+// ✅ แก้ไข method togglePaidStatus ให้จัดการ error ดีขึ้น
+// ✅ แก้ไข method togglePaidStatus
 async togglePaidStatus(req, res) {
   try {
     const { video_id, enable } = req.body;
@@ -170,21 +153,28 @@ async togglePaidStatus(req, res) {
       });
     }
 
-    // ✅ เรียกใช้ Model method - ไม่สนใจ error
-    await VideoPricingModel.togglePaidStatus(video_id, enable);
+    // ✅ เรียกใช้ Model method โดยไม่ต้องตรวจสอบ video existence
+    const result = await VideoPricingModel.togglePaidStatus(video_id, enable);
 
-    // ✅ ตอบสำเร็จเสมอ
-    res.json({
-      success: true,
-      message: enable ? '付费功能已启用' : '付费功能已禁用'
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        message: enable ? 'เปิดใช้งานการชำระเงินแล้ว' : 'ปิดใช้งานการชำระเงินแล้ว',
+        data: result
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.message || '操作失败',
+        error: result.error
+      });
+    }
 
   } catch (error) {
     console.error('❌ Toggle paid status error:', error);
-    // ✅ แม้มี error ก็ตอบสำเร็จ
-    res.json({
-      success: true,
-      message: '操作完成'
+    res.status(500).json({
+      success: false,
+      message: '服务器错误: ' + error.message
     });
   }
 },
@@ -278,7 +268,51 @@ async togglePaidStatus(req, res) {
         message: '获取视频列表失败'
       });
     }
+  },
+
+  // ✅ เปิดการชำระเงินทั้งหมดในระบบ
+async enableAllPaid(req, res) {
+  try {
+    console.log('🚀 Enabling paid status for all videos in system');
+
+    // ดึงวิดีโอทั้งหมด
+    const [videos] = await pool.query('SELECT id FROM videos');
+    
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const video of videos) {
+      try {
+        // ✅ ใช้ method togglePaidStatus ที่แก้ไขแล้ว
+        const result = await VideoPricingModel.togglePaidStatus(video.id, true);
+        
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`Enable paid for video ${video.id} error:`, error);
+        failCount++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `เปิดใช้งานการชำระเงินสำเร็จสำหรับ ${successCount} วิดีโอ`,
+      totalVideos: videos.length,
+      successCount,
+      failCount
+    });
+
+  } catch (error) {
+    console.error('❌ Enable all paid error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เปิดใช้งานการชำระเงินทั้งหมดไม่สำเร็จ'
+    });
   }
+}
 };
 
 module.exports = VideoPricingController;

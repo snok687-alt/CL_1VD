@@ -1,8 +1,8 @@
-// Dashboard.jsx (ส่วนที่เพิ่ม)
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
-import GiftModal from "../ci/GiftModal";
+import GiftModal from "../ci/GiftModal"; // ✅ นำเข้า GiftModal
+import useTotle from "../ci/useTotle"; // ✅ นำเข้า Hook
 
 const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +16,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const searchTimeout = useRef(null);
   const [giftOpen, setGiftOpen] = useState(false);
+  const { reset } = useTotle(); // ✅ ใช้ Hook
 
   const isVideoPage = location.pathname.startsWith('/watch');
   const isSearchPage = location.pathname === '/search';
@@ -157,7 +158,7 @@ const Dashboard = () => {
           toggleTheme={toggleTheme}
           isVisible={isHeaderVisible}
           currentCategory={currentCategory}
-          openGiftModal={() => setGiftOpen(true)}
+          openGiftModal={() => setGiftOpen(true)} // ✅ เปิด GiftModal จาก Header
         />
       )}
 
@@ -168,10 +169,13 @@ const Dashboard = () => {
           setSearchTerm,
           currentCategory
         }} />
+        
+        {/* ✅ Gift Modal */}
         <GiftModal
           isOpen={giftOpen}
           onClose={() => setGiftOpen(false)}
           isDarkMode={isDarkMode}
+          onLoginSuccess={reset} // ✅ รีเซ็ต counter เมื่อ login สำเร็จ
         />
       </main>
     </div>

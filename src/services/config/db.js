@@ -165,39 +165,72 @@ CREATE TABLE IF NOT EXISTS users_custom_gift (
           ON DELETE CASCADE ON UPDATE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-      -- ✅ ตารางการตั้งค่าราคาวิดีโอ
-      CREATE TABLE IF NOT EXISTS video_pricing (
-        id BIGINT AUTO_INCREMENT PRIMARY KEY,
-        video_id INT NOT NULL,
-        pricing_enabled BOOLEAN DEFAULT FALSE,
-        price_1_amount DECIMAL(10,2) DEFAULT 1.00,
-        price_1_days INT DEFAULT 1,
-        price_1_enabled BOOLEAN DEFAULT FALSE,
-        price_7_amount DECIMAL(10,2) DEFAULT 7.00,
-        price_7_days INT DEFAULT 7,
-        price_7_enabled BOOLEAN DEFAULT FALSE,
-        price_30_amount DECIMAL(10,2) DEFAULT 30.00,
-        price_30_days INT DEFAULT 30,
-        price_30_enabled BOOLEAN DEFAULT FALSE,
-        price_90_amount DECIMAL(10,2) DEFAULT 90.00,
-        price_90_days INT DEFAULT 90,
-        price_90_enabled BOOLEAN DEFAULT FALSE,
-        price_180_amount DECIMAL(10,2) DEFAULT 180.00,
-        price_180_days INT DEFAULT 180,
-        price_180_enabled BOOLEAN DEFAULT FALSE,
-        price_365_amount DECIMAL(10,2) DEFAULT 365.00,
-        price_365_days INT DEFAULT 365,
-        price_365_enabled BOOLEAN DEFAULT FALSE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        use_global_pricing BOOLEAN DEFAULT TRUE,
-        custom_pricing_enabled BOOLEAN DEFAULT FALSE,
+-- ✅ ตารางการตั้งค่าราคาวิดีโอ
+CREATE TABLE IF NOT EXISTS video_pricing (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  video_id INT NOT NULL,
+  pricing_enabled BOOLEAN DEFAULT FALSE,
+  price_1_amount DECIMAL(10,2) DEFAULT 1.00,
+  price_1_days INT DEFAULT 1,
+  price_1_enabled BOOLEAN DEFAULT FALSE,
+  price_7_amount DECIMAL(10,2) DEFAULT 7.00,
+  price_7_days INT DEFAULT 7,
+  price_7_enabled BOOLEAN DEFAULT FALSE,
+  price_30_amount DECIMAL(10,2) DEFAULT 30.00,
+  price_30_days INT DEFAULT 30,
+  price_30_enabled BOOLEAN DEFAULT FALSE,
+  price_90_amount DECIMAL(10,2) DEFAULT 90.00,
+  price_90_days INT DEFAULT 90,
+  price_90_enabled BOOLEAN DEFAULT FALSE,
+  price_180_amount DECIMAL(10,2) DEFAULT 180.00,
+  price_180_days INT DEFAULT 180,
+  price_180_enabled BOOLEAN DEFAULT FALSE,
+  price_365_amount DECIMAL(10,2) DEFAULT 365.00,
+  price_365_days INT DEFAULT 365,
+  price_365_enabled BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  use_global_pricing BOOLEAN DEFAULT TRUE,
+  custom_pricing_enabled BOOLEAN DEFAULT FALSE,
 
-        UNIQUE KEY unique_video_pricing (video_id),
-        FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
-        INDEX idx_pricing_enabled (pricing_enabled),
-        INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  UNIQUE KEY unique_video_pricing (video_id),
+  INDEX idx_pricing_enabled (pricing_enabled),
+  INDEX idx_use_global_pricing (use_global_pricing),
+  INDEX idx_custom_pricing_enabled (custom_pricing_enabled),
+  INDEX idx_created_at (created_at),
+  INDEX idx_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS video_pricing_simple (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  video_id INT NOT NULL,
+  pricing_enabled BOOLEAN DEFAULT FALSE,
+  price_1_amount DECIMAL(10,2) DEFAULT 1.00,
+  price_1_days INT DEFAULT 1,
+  price_1_enabled BOOLEAN DEFAULT FALSE,
+  price_7_amount DECIMAL(10,2) DEFAULT 7.00,
+  price_7_days INT DEFAULT 7,
+  price_7_enabled BOOLEAN DEFAULT FALSE,
+  price_30_amount DECIMAL(10,2) DEFAULT 30.00,
+  price_30_days INT DEFAULT 30,
+  price_30_enabled BOOLEAN DEFAULT FALSE,
+  price_90_amount DECIMAL(10,2) DEFAULT 90.00,
+  price_90_days INT DEFAULT 90,
+  price_90_enabled BOOLEAN DEFAULT FALSE,
+  price_180_amount DECIMAL(10,2) DEFAULT 180.00,
+  price_180_days INT DEFAULT 180,
+  price_180_enabled BOOLEAN DEFAULT FALSE,
+  price_365_amount DECIMAL(10,2) DEFAULT 365.00,
+  price_365_days INT DEFAULT 365,
+  price_365_enabled BOOLEAN DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  UNIQUE KEY unique_video_pricing_simple (video_id),
+  INDEX idx_pricing_enabled (pricing_enabled),
+  INDEX idx_created_at (created_at),
+  INDEX idx_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
       -- ✅ ตารางการตั้งค่าราคาแบบกลุ่ม (Global Settings)
       CREATE TABLE IF NOT EXISTS global_pricing_settings (

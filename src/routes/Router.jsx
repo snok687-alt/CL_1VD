@@ -16,6 +16,7 @@ import GameDashboard from '../game/GameDashboard'
 import Addlinks from '../Admin/Addlinks'
 import VideoManagement from '../pages/VideoManagement';
 import EnhancedPriceSetting from '../pages/EnhancedPriceSetting';
+import P from '../mod/Payment_modal';
 
 // ✅ หมวดหมู่เดิม
 const categories = [
@@ -85,6 +86,7 @@ const Router = () => {
 
         <Route path="/GameDashboard" element={<GameDashboard/>} />
         <Route path="/Addlinks" element={<Addlinks/>} />
+        <Route path="/P" element={<P/>} />
 
 
         {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}

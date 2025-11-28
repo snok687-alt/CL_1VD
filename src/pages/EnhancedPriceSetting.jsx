@@ -15,39 +15,40 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     location.state?.autoOpenBulkTab ? 'bulk' : 'single'
   );
   
-  // ✅ 6 ราคาแบบตายตัวเท่านั้น
   const [pricingEnabled, setPricingEnabled] = useState(false);
+  
+  // กำหนด 6 แพ็กเกจเริ่มต้น
   const [basePrices, setBasePrices] = useState({
-    price_1: { amount: 1, days: 1, enabled: false },
-    price_7: { amount: 7, days: 7, enabled: false },
-    price_30: { amount: 30, days: 30, enabled: false },
-    price_90: { amount: 90, days: 90, enabled: false },
-    price_180: { amount: 180, days: 180, enabled: false },
-    price_365: { amount: 365, days: 365, enabled: false }
+    price_1: { amount: 1, days: 1, enabled: true },
+    price_7: { amount: 7, days: 7, enabled: true },
+    price_30: { amount: 30, days: 30, enabled: true },
+    price_90: { amount: 90, days: 90, enabled: true },
+    price_180: { amount: 180, days: 180, enabled: true },
+    price_365: { amount: 365, days: 365, enabled: true }
   });
 
-  // ✅ 6 ราคาแบบตายตัวสำหรับการตั้งค่าแบบกลุ่ม
   const [bulkPricing, setBulkPricing] = useState({
     enabled: false,
     priceTemplates: {
-      template_1: { amount: 1, days: 1, enabled: false },
-      template_7: { amount: 7, days: 7, enabled: false },
-      template_30: { amount: 30, days: 30, enabled: false },
-      template_90: { amount: 90, days: 90, enabled: false },
-      template_180: { amount: 180, days: 180, enabled: false },
-      template_365: { amount: 365, days: 365, enabled: false }
+      template_1: { amount: 1, days: 1, enabled: true },
+      template_7: { amount: 7, days: 7, enabled: true },
+      template_30: { amount: 30, days: 30, enabled: true },
+      template_90: { amount: 90, days: 90, enabled: true },
+      template_180: { amount: 180, days: 180, enabled: true },
+      template_365: { amount: 365, days: 365, enabled: true }
     },
     applyToAll: true
   });
 
+  const [originalPrices, setOriginalPrices] = useState(null);
+  const [usingBulkPricing, setUsingBulkPricing] = useState(false);
+
   useEffect(() => {
     if (location.state?.autoOpenBulkTab) {
       setActiveTab('bulk');
-      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
-  // ✅ โหลดข้อมูลเมื่อเปลี่ยน tab หรือ videoId
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -59,8 +60,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           await loadBulkPriceSettings();
         }
       } catch (error) {
-        console.error('❌ ข้อผิดพลาดในการโหลดข้อมูล:', error);
-        Swal.fire('ข้อผิดพลาด', 'โหลดข้อมูลล้มเหลว', 'error');
+        console.error('ข้อผิดพลาดในการโหลดข้อมูล:', error);
+        if (activeTab === 'single' && videoId) {
+          await loadVideoInfo(videoId);
+        }
       } finally {
         setLoading(false);
       }
@@ -69,42 +72,46 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     loadData();
   }, [videoId, activeTab]);
 
-  // ✅ โหลดการตั้งค่าราคาจากฐานข้อมูล
   const loadPriceSettings = async (id) => {
     try {
       const response = await fetch(`/backend-api/video/pricing/settings/${id}`);
+      
       if (response.ok) {
         const data = await response.json();
         
         if (data.success) {
-          // ✅ ตั้งค่าข้อมูลวิดีโอ
           if (data.videoInfo) {
             setVideo(data.videoInfo);
           }
-          
-          // ✅ ตั้งค่าสถานะการเปิดใช้งาน
           setPricingEnabled(data.pricingEnabled || false);
           
-          // ✅ ตั้งค่าราคาจากฐานข้อมูล (6 ราคาเท่านั้น)
-          if (data.basePrices) {
-            setBasePrices(data.basePrices);
+          if (data.originalPrices) {
+            setOriginalPrices(data.originalPrices);
+            setUsingBulkPricing(data.usingBulkPricing || false);
           }
           
-          console.log('✅ โหลดการตั้งค่าราคาจากฐานข้อมูลเรียบร้อยแล้ว:', data.basePrices);
+          if (data.basePrices) {
+            // ตรวจสอบว่ามีข้อมูลครบ 6 แพ็กเกจหรือไม่
+            const loadedPrices = { ...basePrices };
+            Object.keys(data.basePrices).forEach(key => {
+              if (loadedPrices[key]) {
+                loadedPrices[key] = data.basePrices[key];
+              }
+            });
+            setBasePrices(loadedPrices);
+          }
+          return;
         }
-      } else {
-        throw new Error('โหลดการตั้งค่าราคาล้มเหลว');
       }
+      
+      await loadVideoInfo(id);
+      
     } catch (error) {
-      console.error('❌ ข้อผิดพลาดในการโหลดการตั้งค่าราคา:', error);
-      // หากโหลดไม่สำเร็จ ให้ใช้ค่าเริ่มต้น
-      if (videoId) {
-        await loadVideoInfo(videoId);
-      }
+      console.error('ข้อผิดพลาดในการโหลดการตั้งค่าราคา:', error);
+      await loadVideoInfo(id);
     }
   };
 
-  // ✅ โหลดข้อมูลวิดีโอ
   const loadVideoInfo = async (id) => {
     try {
       const response = await fetch(`/backend-api/videos/${id}`);
@@ -119,7 +126,6 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }
   };
 
-  // ✅ โหลดการตั้งค่าราคาแบบกลุ่ม
   const loadBulkPriceSettings = async () => {
     try {
       const response = await fetch('/backend-api/video/pricing/bulk-settings');
@@ -127,17 +133,46 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         const data = await response.json();
         if (data.success && data.bulkPricing) {
           setBulkPricing(data.bulkPricing);
-          console.log('✅ โหลดการตั้งค่าราคาแบบกลุ่มเรียบร้อยแล้ว:', data.bulkPricing);
         }
-      } else {
-        throw new Error('โหลดการตั้งค่าแบบกลุ่มล้มเหลว');
       }
     } catch (error) {
-      console.error('❌ ข้อผิดพลาดในการโหลดการตั้งค่าราคาแบบกลุ่ม:', error);
+      console.error('ข้อผิดพลาดในการโหลดการตั้งค่าการตั้งค่าราคารวม:', error);
     }
   };
 
-  // ✅ จัดการการเปิด/ปิดราคา (6 ราคาเท่านั้น)
+  // ฟังก์ชันเปิด/ปิดการใช้งานราคาทั้ง 6 แบบพร้อมกัน
+  const toggleAllPrices = (enabled) => {
+    const updatedPrices = { ...basePrices };
+    Object.keys(updatedPrices).forEach(key => {
+      updatedPrices[key] = {
+        ...updatedPrices[key],
+        enabled: enabled
+      };
+    });
+    setBasePrices(updatedPrices);
+  };
+
+  // ฟังก์ชันตั้งค่าราคาให้เท่ากับจำนวนวัน
+  const setPriceEqualToDays = () => {
+    const updatedPrices = { ...basePrices };
+    Object.keys(updatedPrices).forEach(key => {
+      const price = updatedPrices[key];
+      updatedPrices[key] = {
+        ...price,
+        amount: price.days,
+        enabled: true
+      };
+    });
+    setBasePrices(updatedPrices);
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'ตั้งค่าสำเร็จ',
+      text: 'ตั้งค่าราคาแพ็กเกจทั้งหมดให้เท่ากับจำนวนวันแล้ว',
+      confirmButtonText: 'ตกลง'
+    });
+  };
+
   const handleBasePriceToggle = (priceKey) => {
     setBasePrices(prev => ({
       ...prev,
@@ -148,18 +183,18 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }));
   };
 
-  // ✅ จัดการการเปลี่ยนแปลงราคา (6 ราคาเท่านั้น)
   const handleBasePriceChange = (priceKey, field, value) => {
+    const newValue = field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0;
+    
     setBasePrices(prev => ({
       ...prev,
       [priceKey]: {
         ...prev[priceKey],
-        [field]: field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0
+        [field]: newValue
       }
     }));
   };
 
-  // ✅ จัดการการเปิด/ปิดราคาแบบกลุ่ม (6 ราคาเท่านั้น)
   const handleBulkTemplateToggle = (templateKey) => {
     setBulkPricing(prev => ({
       ...prev,
@@ -173,21 +208,21 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }));
   };
 
-  // ✅ จัดการการเปลี่ยนแปลงราคาแบบกลุ่ม (6 ราคาเท่านั้น)
   const handleBulkTemplateChange = (templateKey, field, value) => {
+    const newValue = field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0;
+    
     setBulkPricing(prev => ({
       ...prev,
       priceTemplates: {
         ...prev.priceTemplates,
         [templateKey]: {
           ...prev.priceTemplates[templateKey],
-          [field]: field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0
+          [field]: newValue
         }
       }
     }));
   };
 
-  // ✅ บันทึกการตั้งค่าทั้งหมด (6 ราคาเท่านั้น)
   const handleSaveAllSettings = async () => {
     try {
       setSaving(true);
@@ -199,24 +234,21 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         if (!videoId) {
           Swal.fire({
             icon: 'error',
-            title: 'บันทึกล้มเหลว',
-            text: 'ไอดีวิดีโอไม่สมบูรณ์ ไม่สามารถบันทึกการตั้งค่า',
+            title: 'บันทึกไม่สำเร็จ',
+            text: 'รหัสวิดีโอไม่สมบูรณ์',
             confirmButtonText: 'ตกลง'
           });
           return;
         }
 
-        // ✅ ข้อมูลสำหรับวิดีโอเดียว (6 ราคาเท่านั้น)
         settingsData = {
           settingType: 'single',
           video_id: parseInt(videoId),
           pricingEnabled: pricingEnabled,
-          basePrices: basePrices
+          basePrices: basePrices,
+          useGlobalPricing: false
         };
-
-        console.log('📤 ส่งการตั้งค่าวิดีโอเดียว:', settingsData);
       } else {
-        // ✅ ข้อมูลสำหรับแบบกลุ่ม (6 ราคาเท่านั้น)
         settingsData = {
           settingType: 'bulk',
           bulkPricing: {
@@ -225,8 +257,6 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             applyToAll: true
           }
         };
-
-        console.log('📤 ส่งการตั้งค่าราคาแบบกลุ่ม:', settingsData);
       }
 
       const response = await fetch('/backend-api/video/pricing/save-all', {
@@ -246,19 +276,31 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           title: 'บันทึกสำเร็จ',
           text: activeTab === 'single' 
             ? 'บันทึกการตั้งค่าราคาวิดีโอเรียบร้อยแล้ว' 
-            : `บันทึกการตั้งค่าราคาแบบกลุ่มเรียบร้อยแล้ว ใช้กับวิดีโอ ${result.totalVideos || 'ทั้งหมด'} รายการ`,
+            : 'บันทึกการตั้งค่าราคารวมเรียบร้อยแล้ว',
           confirmButtonText: 'ตกลง'
         });
         
-        console.log('✅ บันทึกสำเร็จ:', result);
+        if (activeTab === 'single' && pricingEnabled) {
+          await fetch('/backend-api/video/pricing/toggle-paid', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              video_id: parseInt(videoId),
+              enable: true
+            })
+          });
+        }
       } else {
-        throw new Error(result.message || 'บันทึกล้มเหลว');
+        throw new Error(result.message || 'บันทึกไม่สำเร็จ');
       }
     } catch (error) {
-      console.error('❌ ข้อผิดพลาดในการบันทึกการตั้งค่า:', error);
+      console.error('ข้อผิดพลาดในการบันทึกการตั้งค่า:', error);
       Swal.fire({
         icon: 'error',
-        title: 'บันทึกล้มเหลว',
+        title: 'บันทึกไม่สำเร็จ',
         text: error.message || 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า',
         confirmButtonText: 'ตกลง'
       });
@@ -267,80 +309,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }
   };
 
-  // ✅ ส่งออกการตั้งค่า
-  const handleExportSettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/backend-api/video/pricing/export', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          videoIds: activeTab === 'single' && videoId ? [parseInt(videoId)] : []
-        })
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        // สร้างและดาวน์โหลดไฟล์ JSON
-        const dataStr = JSON.stringify(result, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pricing-settings-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        Swal.fire('ส่งออกสำเร็จ', 'ส่งออกการตั้งค่าราคาเป็นไฟล์ JSON เรียบร้อยแล้ว', 'success');
-      } else {
-        throw new Error(result.message || 'ส่งออกล้มเหลว');
-      }
-    } catch (error) {
-      console.error('ข้อผิดพลาดในการส่งออก:', error);
-      Swal.fire('ส่งออกล้มเหลว', error.message, 'error');
-    }
-  };
-
-  // ✅ นำเข้าข้อมูล
-  const handleImportSettings = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const importedSettings = JSON.parse(e.target.result);
-        
-        Swal.fire({
-          title: 'ยืนยันการนำเข้า',
-          text: `แน่ใจหรือไม่ที่จะนำเข้าการตั้งค่าราคา?`,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'นำเข้า',
-          cancelButtonText: 'ยกเลิก'
-        }).then((result) => {
-          if (result.isConfirmed) {
-            if (importedSettings.settingType === 'single') {
-              setPricingEnabled(importedSettings.pricingEnabled);
-              setBasePrices(importedSettings.basePrices);
-            } else if (importedSettings.bulkPricing) {
-              setBulkPricing(importedSettings.bulkPricing);
-            }
-            Swal.fire('นำเข้าแล้ว', 'นำเข้าการตั้งค่าราคาเรียบร้อยแล้ว', 'success');
-          }
-        });
-      } catch (error) {
-        Swal.fire('ข้อผิดพลาด', 'รูปแบบไฟล์นำเข้าไม่ถูกต้อง', 'error');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
+  const calculateTotalPrice = (prices) => {
+    return Object.values(prices).reduce((total, price) => {
+      return price.enabled ? total + price.amount : total;
+    }, 0);
   };
 
   if (loading) {
@@ -349,7 +321,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className={`mt-4 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
-            {activeTab === 'single' ? 'กำลังโหลดการตั้งค่าราคาวิดีโอ...' : 'กำลังโหลดการตั้งค่าแบบกลุ่ม...'}
+            {activeTab === 'single' ? 'กำลังโหลดการตั้งค่าราคาวิดีโอ...' : 'กำลังโหลดการตั้งค่าราคารวม...'}
           </p>
         </div>
       </div>
@@ -359,7 +331,6 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   return (
     <div className={`min-h-screen py-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <button 
@@ -373,38 +344,8 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               </svg>
               กลับไปจัดการวิดีโอ
             </button>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={handleExportSettings}
-                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
-                  isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600 text-white'
-                }`}
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                ส่งออกการตั้งค่า
-              </button>
-              
-              <label className={`flex items-center px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-200 border'
-              }`}>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                นำเข้าข้อมูล
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportSettings}
-                  className="hidden"
-                />
-              </label>
-            </div>
           </div>
           
-          {/* Video Info - แสดงเฉพาะในโหมดวิดีโอเดียว */}
           {activeTab === 'single' && video && (
             <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <div className="flex items-start space-x-6">
@@ -419,7 +360,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ไอดีวิดีโอ:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>รหัสวิดีโอ:</span>
                       <span className="ml-2 font-mono">{video.id}</span>
                     </div>
                     <div>
@@ -436,19 +377,51 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         {pricingEnabled ? 'เปิดใช้งานแล้ว' : 'ยังไม่ได้เปิดใช้งาน'}
                       </span>
                     </div>
-                    <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>อัพเดตล่าสุด:</span>
-                      <span className="ml-2 text-sm">
-                        {new Date().toLocaleDateString('th-TH')}
-                      </span>
-                    </div>
+                    {originalPrices && (
+                      <div>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>กำลังใช้:</span>
+                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                          usingBulkPricing 
+                            ? 'bg-purple-500 text-white' 
+                            : 'bg-blue-500 text-white'
+                        }`}>
+                          {usingBulkPricing ? 'ราคารวม' : 'ราคาแบบกำหนดเอง'}
+                        </span>
+                      </div>
+                    )}
                   </div>
+                  
+                  {originalPrices && (
+                    <div className={`mt-4 p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-medium">
+                            {usingBulkPricing ? 'ราคารวมที่กำลังใช้อยู่' : 'ราคาแบบกำหนดเองที่กำลังใช้อยู่'}
+                          </span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {Object.entries(originalPrices).map(([key, price]) => (
+                              price.enabled && (
+                                <span key={key} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
+                                  {price.days} วัน: ฿{price.amount}
+                                </span>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-medium">ราคารวม: </span>
+                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            ฿{calculateTotalPrice(originalPrices)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Header สำหรับโหมด Bulk */}
           {activeTab === 'bulk' && (
             <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <div className="flex items-start space-x-6">
@@ -458,31 +431,16 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-2">การตั้งค่าราคาวิดีโอทั้งหมด</h1>
+                  <h1 className="text-2xl font-bold mb-2">ตั้งค่าราคาวิดีโอแบบรวม</h1>
                   <p className={`text-lg mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    ตั้งค่าแผนราคา 6 แบบแบบ統一สำหรับวิดีโอทั้งหมดในระบบ
+                    ตั้งค่าแผนราคาแบบเดียวกันสำหรับวิดีโอทั้งหมดในระบบ
                   </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ขอบเขตการใช้งาน:</span>
-                      <span className="ml-2 font-semibold text-green-600">วิดีโอทั้งหมด</span>
-                    </div>
-                    <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>แผนราคา:</span>
-                      <span className="ml-2">6 ราคาแบบตายตัว</span>
-                    </div>
-                    <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ใช้งานอัตโนมัติ:</span>
-                      <span className="ml-2 text-green-600">ใช่ (รวมถึงวิดีโอใหม่)</span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Tabs */}
         <div className={`mb-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
@@ -494,10 +452,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                ตั้งค่าราคาวิดีโอเดียว
+                ตั้งค่าราคาวิดีโอแบบเดี่ยว
               </button>
               <button
                 onClick={() => setActiveTab('bulk')}
@@ -507,25 +462,20 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <svg className="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                ตั้งค่าราคาวิดีโอทั้งหมด
+                ตั้งค่าราคาวิดีโอแบบรวม
               </button>
             </nav>
           </div>
 
           <div className="p-6">
-            {/* Tab 1: ตั้งค่าราคาวิดีโอเดียว - 6 ราคาเท่านั้น */}
             {activeTab === 'single' && (
               <div>
-                {/* Main Switch สำหรับวิดีโอเดียว */}
                 <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold">เปิดใช้งานฟังก์ชันการชำระเงิน</h3>
                       <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        เมื่อเปิดใช้งาน ผู้ใช้จะต้องซื้อแพ็กเกจเพื่อดูวิดีโอนี้
+                        เมื่อเปิดใช้งานแล้ว ผู้ใช้จะต้องซื้อแพ็กเกจเพื่อดูวิดีโอนี้
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -546,443 +496,114 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
                 {pricingEnabled && (
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-semibold">การตั้งค่าแพ็กเกจราคา 6 แบบ</h3>
-                      <span className="px-3 py-1 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
-                        แผนราคา 6 แบบแบบตายตัว
-                      </span>
+                    {/* ปุ่มควบคุมทั้งหมด */}
+                    <div className="flex items-center justify-between mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <div>
+                        <h3 className="text-xl font-semibold">การตั้งค่าแพ็กเกจราคา</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                          ตั้งค่า 6 แพ็กเกจราคาที่แตกต่างกัน ผู้ใช้สามารถเลือกซื้อตามความต้องการ
+                        </p>
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => toggleAllPrices(true)}
+                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                        >
+                          เปิดใช้งานทั้งหมด
+                        </button>
+                        <button
+                          onClick={() => toggleAllPrices(false)}
+                          className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                        >
+                          ปิดใช้งานทั้งหมด
+                        </button>
+                        <button
+                          onClick={setPriceEqualToDays}
+                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                        >
+                          ราคา=จำนวนวัน
+                        </button>
+                      </div>
                     </div>
-                    <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      ตั้งค่าแพ็กเกจราคา 6 แบบที่แตกต่างกันสำหรับวิดีโอนี้ ข้อมูลจะถูกโหลดจากฐานข้อมูลและสามารถอัพเดตได้
-                    </p>
 
-                    {/* ✅ 6 ราคาแบบตายตัว */}
+                    {/* แสดงทั้ง 6 แพ็กเกจ */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {/* ราคาที่ 1: 1 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_1.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_1.enabled}
-                                onChange={() => handleBasePriceToggle('price_1')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_1.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_1.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 1 วัน
-                            </span>
+                      {Object.entries(basePrices).map(([key, price]) => (
+                        <div key={key} className={`p-4 rounded-lg border transition-all ${
+                          price.enabled 
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                            : 'border-gray-200 dark:border-gray-600'
+                        }`}>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={price.enabled}
+                                  onChange={() => handleBasePriceToggle(key)}
+                                  className="sr-only peer"
+                                />
+                                <div className={`w-11 h-6 rounded-full peer ${
+                                  price.enabled 
+                                    ? 'bg-blue-600' 
+                                    : 'bg-gray-200 dark:bg-gray-600'
+                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                              </label>
+                              <span className={`font-medium ${price.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
+                                แพ็กเกจ {price.days} วัน
+                              </span>
+                            </div>
+                            {price.enabled && (
+                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
+                                เปิดใช้งานแล้ว
+                              </span>
+                            )}
                           </div>
-                          {basePrices.price_1.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
+
+                          {price.enabled && (
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium mb-2">ราคา (฿)</label>
+                                <input
+                                  type="number"
+                                  value={price.amount}
+                                  onChange={(e) => handleBasePriceChange(key, 'amount', e.target.value)}
+                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                                    isDarkMode 
+                                      ? 'bg-gray-600 border-gray-500 text-white' 
+                                      : 'bg-white border-gray-300'
+                                  }`}
+                                  min="0"
+                                  step="0.01"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
+                                <input
+                                  type="number"
+                                  value={price.days}
+                                  onChange={(e) => handleBasePriceChange(key, 'days', e.target.value)}
+                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                                    isDarkMode 
+                                      ? 'bg-gray-600 border-gray-500 text-white' 
+                                      : 'bg-white border-gray-300'
+                                  }`}
+                                  min="1"
+                                />
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                <div>ราคาเฉลี่ยต่อวัน: ฿{(price.amount / price.days).toFixed(2)}/วัน</div>
+                              </div>
+                            </div>
                           )}
                         </div>
-
-                        {basePrices.price_1.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_1.amount}
-                                onChange={(e) => handleBasePriceChange('price_1', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_1.days}
-                                onChange={(e) => handleBasePriceChange('price_1', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ราคาที่ 2: 7 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_7.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_7.enabled}
-                                onChange={() => handleBasePriceToggle('price_7')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_7.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_7.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 7 วัน
-                            </span>
-                          </div>
-                          {basePrices.price_7.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {basePrices.price_7.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_7.amount}
-                                onChange={(e) => handleBasePriceChange('price_7', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_7.days}
-                                onChange={(e) => handleBasePriceChange('price_7', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ราคาที่ 3: 30 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_30.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_30.enabled}
-                                onChange={() => handleBasePriceToggle('price_30')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_30.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_30.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 30 วัน
-                            </span>
-                          </div>
-                          {basePrices.price_30.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {basePrices.price_30.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_30.amount}
-                                onChange={(e) => handleBasePriceChange('price_30', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_30.days}
-                                onChange={(e) => handleBasePriceChange('price_30', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ราคาที่ 4: 90 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_90.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_90.enabled}
-                                onChange={() => handleBasePriceToggle('price_90')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_90.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_90.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 90 วัน
-                            </span>
-                          </div>
-                          {basePrices.price_90.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {basePrices.price_90.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_90.amount}
-                                onChange={(e) => handleBasePriceChange('price_90', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_90.days}
-                                onChange={(e) => handleBasePriceChange('price_90', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ราคาที่ 5: 180 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_180.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_180.enabled}
-                                onChange={() => handleBasePriceToggle('price_180')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_180.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_180.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 180 วัน
-                            </span>
-                          </div>
-                          {basePrices.price_180.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {basePrices.price_180.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_180.amount}
-                                onChange={(e) => handleBasePriceChange('price_180', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_180.days}
-                                onChange={(e) => handleBasePriceChange('price_180', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ราคาที่ 6: 365 วัน */}
-                      <div className={`p-4 rounded-lg border transition-all ${
-                        basePrices.price_365.enabled 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={basePrices.price_365.enabled}
-                                onChange={() => handleBasePriceToggle('price_365')}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                basePrices.price_365.enabled 
-                                  ? 'bg-blue-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${basePrices.price_365.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ 365 วัน
-                            </span>
-                          </div>
-                          {basePrices.price_365.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {basePrices.price_365.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_365.amount}
-                                onChange={(e) => handleBasePriceChange('price_365', 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={basePrices.price_365.days}
-                                onChange={(e) => handleBasePriceChange('price_365', 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Summary */}
-                    <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <h4 className="font-semibold mb-2">สรุปการตั้งค่าราคา</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
-                        {Object.entries(basePrices).map(([key, price]) => (
-                          <div key={key} className={`text-center p-2 rounded ${
-                            price.enabled 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
-                              : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                          }`}>
-                            <div className="font-medium">{price.days} วัน</div>
-                            <div>{price.enabled ? `฿${price.amount}` : 'ยังไม่ได้เปิดใช้งาน'}</div>
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Tab 2: ตั้งค่าราคาวิดีโอทั้งหมด - 6 ราคาเท่านั้น */}
             {activeTab === 'bulk' && (
               <div>
                 <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
@@ -993,444 +614,123 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                       </svg>
                     </div>
                     <div className="ml-3">
-                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">การตั้งค่าราคาวิดีโอทั้งหมด</h3>
+                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">การตั้งค่าราคาแบบรวม</h3>
                       <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ รวมถึงวิดีโอที่มีอยู่และวิดีโอใหม่ที่เพิ่มในอนาคต
-                        การดำเนินการนี้ไม่สามารถย้อนกลับได้ โปรดตั้งค่าอย่างระมัดระวัง ระบบใช้แผนราคา 6 แบบแบบตายตัว
+                        การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ รวมถึงวิดีโอที่มีอยู่และวิดีโอที่เพิ่มในอนาคต
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xl font-semibold">เทมเพลตราคาแบบรวม 6 แบบ</h3>
-                        <span className="px-3 py-1 text-sm bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">
-                          แผนราคา 6 แบบแบบตายตัว
-                        </span>
-                      </div>
-                      <p className={`text-sm mb-6 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        ตั้งค่าแพ็กเกจราคา 6 แบบแบบ統一สำหรับวิดีโอทั้งหมด
-                      </p>
-
-                      {/* ✅ 6 ราคาแบบตายตัวสำหรับแบบกลุ่ม */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {/* Template 1: 1 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_1.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_1.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_1')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_1.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_1.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 1 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_1.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_1.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_1.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_1', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_1.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_1', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Template 2: 7 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_7.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_7.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_7')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_7.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_7.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 7 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_7.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_7.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_7.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_7', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_7.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_7', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Template 3: 30 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_30.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_30.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_30')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_30.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_30.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 30 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_30.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_30.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_30.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_30', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_30.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_30', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Template 4: 90 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_90.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_90.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_90')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_90.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_90.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 90 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_90.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_90.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_90.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_90', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_90.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_90', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Template 5: 180 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_180.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_180.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_180')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_180.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_180.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 180 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_180.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_180.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_180.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_180', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_180.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_180', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Template 6: 365 วัน */}
-                        <div className={`p-4 rounded-lg border transition-all ${
-                          bulkPricing.priceTemplates.template_365.enabled 
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={bulkPricing.priceTemplates.template_365.enabled}
-                                  onChange={() => handleBulkTemplateToggle('template_365')}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  bulkPricing.priceTemplates.template_365.enabled 
-                                    ? 'bg-green-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${bulkPricing.priceTemplates.template_365.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ 365 วัน
-                              </span>
-                            </div>
-                            {bulkPricing.priceTemplates.template_365.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {bulkPricing.priceTemplates.template_365.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (บาท)</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_365.amount}
-                                  onChange={(e) => handleBulkTemplateChange('template_365', 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={bulkPricing.priceTemplates.template_365.days}
-                                  onChange={(e) => handleBulkTemplateChange('template_365', 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">คำอธิบายขอบเขตการใช้งาน</h4>
-                        <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                          <li>• การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในปัจจุบัน</li>
-                          <li>• วิดีโอใหม่ที่เพิ่มในอนาคตจะถูกนำการตั้งค่าราคานี้ไปใช้โดยอัตโนมัติ</li>
-                          <li>• ระบบใช้แผนราคา 6 แบบแบบตายตัว ไม่สามารถเพิ่มหรือลบได้</li>
-                          <li>• การตั้งค่าเฉพาะวิดีโอแต่ละรายการจะถูกเขียนทับ</li>
-                          <li>• หากต้องการตั้งค่าราคาที่แตกต่างสำหรับวิดีโอเฉพาะ กรุณาตั้งค่าใน "ตั้งค่าราคาวิดีโอเดียว"</li>
-                        </ul>
-                      </div>
+                <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-semibold">เทมเพลตราคาแบบรวม</h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const updatedTemplates = { ...bulkPricing.priceTemplates };
+                          Object.keys(updatedTemplates).forEach(key => {
+                            updatedTemplates[key].enabled = true;
+                            updatedTemplates[key].amount = updatedTemplates[key].days;
+                          });
+                          setBulkPricing(prev => ({
+                            ...prev,
+                            priceTemplates: updatedTemplates
+                          }));
+                        }}
+                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors"
+                      >
+                        เปิดใช้งานทั้งหมด (ราคา=จำนวนวัน)
+                      </button>
+                      <button
+                        onClick={() => {
+                          const updatedTemplates = { ...bulkPricing.priceTemplates };
+                          Object.keys(updatedTemplates).forEach(key => {
+                            updatedTemplates[key].enabled = false;
+                          });
+                          setBulkPricing(prev => ({
+                            ...prev,
+                            priceTemplates: updatedTemplates
+                          }));
+                        }}
+                        className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                      >
+                        ปิดใช้งานทั้งหมด
+                      </button>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Object.entries(bulkPricing.priceTemplates).map(([key, template]) => (
+                      <div key={key} className={`p-4 rounded-lg border transition-all ${
+                        template.enabled 
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                          : 'border-gray-200 dark:border-gray-600'
+                      }`}>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={template.enabled}
+                                onChange={() => handleBulkTemplateToggle(key)}
+                                className="sr-only peer"
+                              />
+                              <div className={`w-11 h-6 rounded-full peer ${
+                                template.enabled 
+                                  ? 'bg-green-600' 
+                                  : 'bg-gray-200 dark:bg-gray-600'
+                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                            </label>
+                            <span className={`font-medium ${template.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
+                              แพ็กเกจ {template.days} วัน
+                            </span>
+                          </div>
+                          {template.enabled && (
+                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
+                              เปิดใช้งานแล้ว
+                            </span>
+                          )}
+                        </div>
+
+                        {template.enabled && (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">ราคา (฿)</label>
+                              <input
+                                type="number"
+                                value={template.amount}
+                                onChange={(e) => handleBulkTemplateChange(key, 'amount', e.target.value)}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                                  isDarkMode 
+                                    ? 'bg-gray-600 border-gray-500 text-white' 
+                                    : 'bg-white border-gray-300'
+                                }`}
+                                min="0"
+                                step="0.01"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
+                              <input
+                                type="number"
+                                value={template.days}
+                                onChange={(e) => handleBulkTemplateChange(key, 'days', e.target.value)}
+                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
+                                  isDarkMode 
+                                    ? 'bg-gray-600 border-gray-500 text-white' 
+                                    : 'bg-white border-gray-300'
+                                }`}
+                                min="1"
+                              />
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              <div>ราคาเฉลี่ยต่อวัน: ฿{(template.amount / template.days).toFixed(2)}/วัน</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1438,7 +738,6 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           </div>
         </div>
 
-        {/* Save Button */}
         <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
@@ -1461,9 +760,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   กำลังบันทึก...
                 </span>
               ) : activeTab === 'single' ? (
-                'บันทึกการตั้งค่าวิดีโอเดียว'
+                'บันทึกการตั้งค่าวิดีโอเดี่ยว'
               ) : (
-                'บันทึกการตั้งค่าราคาวิดีโอทั้งหมด'
+                'บันทึกการตั้งค่าแบบรวม'
               )}
             </button>
             

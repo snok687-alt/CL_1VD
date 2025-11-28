@@ -17,10 +17,37 @@ router.get('/pricing/bulk-settings', VideoPricingController.getBulkSettings);
 // ดึงวิดีโอทั้งหมดพร้อมสถานะราคา
 router.get('/pricing/all-videos', authMiddleware, VideoPricingController.getAllVideosWithPricing);
 
-// ✅ แก้ไข path ให้ถูกต้อง - ใช้ video/pricing/toggle-paid
+// ✅ สลับสถานะการชำระเงิน
 router.post('/pricing/toggle-paid', authMiddleware, VideoPricingController.togglePaidStatus);
 
-// ✅ เพิ่ม route สำหรับบันทึกการตั้งค่า
+// ✅ เปิดการชำระเงินทั้งหมดในระบบ
+router.post('/pricing/enable-all-paid', authMiddleware, VideoPricingController.enableAllPaid);
+
+// ✅ บันทึกการตั้งค่าราคา
 router.post('/pricing/save-all', authMiddleware, VideoPricingController.saveAllSettings);
+
+// ✅ เพิ่ม route ใหม่ใน videoPricingRoutes.js
+router.get('/videos/:videoId/exists', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    
+    const [video] = await pool.query(
+      'SELECT id, title FROM videos WHERE id = ?',
+      [videoId]
+    );
+
+    res.json({
+      success: true,
+      exists: video.length > 0,
+      video: video[0] || null
+    });
+  } catch (error) {
+    console.error('Check video existence error:', error);
+    res.status(500).json({
+      success: false,
+      message: '检查视频存在性失败'
+    });
+  }
+});
 
 module.exports = router;

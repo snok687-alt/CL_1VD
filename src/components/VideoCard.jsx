@@ -5,6 +5,8 @@ import Swal from 'sweetalert2';
 import FireIcon from '../hook/Fire_Icon';
 import '../style/star.css';
 import ImageSelector from '../uploads/ImageSelector';
+import useTotle from '../ci/useTotle';
+import GiftModal from '../ci/GiftModal'; // ✅ นำเข้า GiftModal
 
 const VideoCard = ({ video, onClick, isDarkMode }) => {
   const navigate = useNavigate();
@@ -13,27 +15,44 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [selectedFaceImage, setSelectedFaceImage] = useState(null);
   const [isSwapping, setIsSwapping] = useState(false);
-  
+
   // ✅ State สำหรับยอดวิว real-time
   const [currentViews, setCurrentViews] = useState(video.views || 0);
   const [loadingViews, setLoadingViews] = useState(false);
 
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  // ✅ ใช้ Hook โดยส่ง video.id เพื่อแยก state เป็นรายวิดีโอ
+  const { viewCount, locked, increment, reset } = useTotle(video.id);
+
   const handleVideoClick = () => {
-    if (onClick) {
-      onClick(video);
-    } else {
-      navigate(`/watch/${video.id}`);
+    // ❗ ถ้าถูกล็อก → เด้งให้ Login
+    if (locked) {
+      setShowGiftModal(true);
+      return;
     }
+
+    // เพิ่มจำนวนครั้ง
+    const justLocked = increment();
+
+    // ถ้าเพิ่งครบ 3 → ล็อก + เด้ง GiftModal
+    if (justLocked) {
+      setShowGiftModal(true);
+      return;
+    }
+
+    // ปกติ → ไปดูวีดีโอ
+    if (onClick) onClick(video);
+    else navigate(`/watch/${video.id}`);
   };
 
   // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
   const fetchRealTimeViews = async () => {
     if (!video?.id) return;
-    
+
     try {
       setLoadingViews(true);
       // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
-      
+
       const response = await fetch('/backend-api/views/get', {
         method: 'POST',
         headers: {
@@ -45,7 +64,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       if (response.ok) {
         const viewsData = await response.json();
         const latestViews = viewsData[video.id] || currentViews;
-        
+
         // ✅ อัปเดต state เฉพาะยอดวิว
         setCurrentViews(latestViews);
         // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
@@ -63,17 +82,17 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const fetchRatingAndViews = async () => {
     try {
       setLoadingRating(true);
-      
+
       // ดึง rating
       const ratingRes = await fetch(`/backend-api/rating/${video.id}`);
       if (ratingRes.ok) {
         const ratingData = await ratingRes.json();
         setRatingData(ratingData);
       }
-      
+
       // ดึงยอดวิวล่าสุด
       await fetchRealTimeViews();
-      
+
     } catch (err) {
       console.error('Error fetching rating and views:', err);
       setRatingData(null);
@@ -131,9 +150,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     e.target.src = '';
   };
 
-  // ✅ ใช้ currentViews สำหรับการแสดงผล
-  // const viewData = formatViews(currentViews);
-
   const getMaxStar = () => {
     if (!ratingData) return 0;
     const stars = [ratingData.star_1, ratingData.star_2, ratingData.star_3, ratingData.star_4, ratingData.star_5];
@@ -189,7 +205,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
     try {
       setIsSwapping(true);
-      
+
       let progressInterval;
       const progressSwal = Swal.fire({
         title: '正在换脸...',
@@ -209,17 +225,17 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           progressInterval = setInterval(() => {
             progress += Math.random() * 8 + 2; // 2-10% per second
             if (progress > 85) progress = 85; // หยุดที่ 85% รอผลลัพธ์จริง
-            
+
             const progressBar = document.querySelector('.progress-bar');
             const progressText = document.querySelector('.progress-text');
             if (progressBar && progressText) {
               progressBar.style.width = `${progress}%`;
-              
+
               let statusText = '';
               if (progress < 30) statusText = 'กำลังดาวน์โหลดวิดีโอ...';
               else if (progress < 60) statusText = 'กำลังประมวลผลใบหน้า...';
               else statusText = 'กำลังสร้างวิดีโอใหม่...';
-              
+
               progressText.textContent = `${Math.round(progress)}% - ${statusText}`;
             }
           }, 1000);
@@ -236,12 +252,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
       clearInterval(progressInterval);
       setIsSwapping(false);
-      
+
       await progressSwal.close();
 
       if (res.data.success && res.data.outputUrl) {
         const processingTime = res.data.processingTime || 45;
-        
+
         Swal.fire({
           icon: 'success',
           title: '换脸完成! 🎉',
@@ -269,11 +285,11 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     } catch (err) {
       console.error("ข้อผิดพลาดในการแปลงหน้า:", err);
       setIsSwapping(false);
-      
+
       if (Swal.isVisible()) {
         Swal.close();
       }
-      
+
       let errorMessage = 'เกิดข้อผิดพลาดในการแปลงหน้า';
       if (err.code === 'ERR_NETWORK') {
         errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
@@ -282,7 +298,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       } else if (err.message.includes('timeout')) {
         errorMessage = 'การประมวลผลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง';
       }
-      
+
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
@@ -303,9 +319,8 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   return (
     <>
       <div
-        className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 animate-fadeInUp ${
-          isDarkMode ? 'bg-white' : 'bg-white'
-        }`}
+        className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 animate-fadeInUp ${isDarkMode ? 'bg-white' : 'bg-white'
+          }`}
         onClick={handleVideoClick}
       >
         <div className="relative aspect-[6/4] bg-gray-700 overflow-hidden group">
@@ -318,17 +333,21 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
             onError={handleImageError}
           />
 
-          {/* ✅ Loading indicator สำหรับยอดวิว */}
-          {/* {loadingViews && (
-            <div className="absolute top-1 left-10 bg-black bg-opacity-70 rounded px-1 py-0.5">
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                <span className="text-white text-xs">更新中...</span>
+          {/* ✅ แสดงจำนวนครั้งที่ดูแล้ว */}
+          <div className="absolute top-1 left-1 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+            <span>{viewCount}/1</span> {/* ✅ แสดงจำนวนครั้งจริง */}
+          </div>
+
+          {/* ✅ แสดงสถานะล็อก */}
+          {locked && (
+            <div className="absolute inset-0 flex items-start justify-end p-2 pointer-events-none">
+              <div className=" text-white text-xs px-2 py-1 rounded">
+                🔒 {/* ✅ แสดง 1/1 เมื่อล็อก */}
               </div>
             </div>
-          )} */}
+          )}
 
-          <div className="absolute top-1 left-1 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
+          <div className="absolute top-1 left-10 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
             {loadingRating ? (
               <span className="text-gray-200">...</span>
             ) : maxStar > 0 ? (
@@ -341,11 +360,10 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           {viewData.isPopular && (
             <div className="absolute top-1 right-1">
               <div
-                className={`flex items-center pr-0 rounded-full text-xs font-semibold ${
-                  viewData.level === 'mega'
-                    ? 'bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white border-purple-300/30'
-                    : ''
-                }`}
+                className={`flex items-center pr-0 rounded-full text-xs font-semibold ${viewData.level === 'mega'
+                  ? 'bg-gradient-to-r from-purple-500/80 to-pink-500/80 text-white border-purple-300/30'
+                  : ''
+                  }`}
               >
                 <div className="-mr-1 -mt-1 fire-icon-container">
                   <FireIcon />
@@ -357,13 +375,13 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
           {/* <button
             onClick={handleFaceClick}
-            className={`absolute bottom-2 right-2 p-1 text-2xl font-semibold transition-all transform hover:scale-110 flex items-center gap-1 w-10 h-10 justify-center rounded-full bg-opacity-80 text-white`}
+            className={`absolute bottom-2 right-2 p-1 text-2xl font-semibold transition-all transform hover:scale-110 flex items-center gap-1 w-10 h-10 justify-center rounded-full bg-opacity-80 text-white ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
             title={isSwapping ? 'กำลังแปลงหน้า...' : selectedFaceImage ? 'เปลี่ยนรูปหน้า' : 'เลือกรูปหน้า'}
-            disabled={isSwapping}
+            disabled={isSwapping || locked}
           >
             {isSwapping ? '⏳' : '🎭'}
           </button> */}
-          
+
           {isSwapping && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="text-white text-xs text-center">
@@ -376,17 +394,15 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
         <div className="px-2 py-1">
           <p
-            className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${
-              isDarkMode ? 'text-gray-900 ' : 'text-black'
-            }`}
+            className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${isDarkMode ? 'text-gray-900 ' : 'text-black'
+              }`}
             title={video.title}
           >
             {video.title}
           </p>
           <div
-            className={`flex items-center justify-between text-xs ${
-              isDarkMode ? 'text-gray-900' : 'text-gray-600'
-            }`}
+            className={`flex items-center justify-between text-xs ${isDarkMode ? 'text-gray-900' : 'text-gray-600'
+              }`}
           >
             <div className="flex items-center">
               {viewData.isPopular && (
@@ -395,15 +411,14 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                 </div>
               )}
               <span
-                className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''} ${
-                  viewData.level === 'mega'
-                    ? 'text-purple-400'
-                    : viewData.level === 'popular'
+                className={`text-xs ${viewData.isPopular ? 'font-semibold' : ''} ${viewData.level === 'mega'
+                  ? 'text-purple-400'
+                  : viewData.level === 'popular'
                     ? 'text-orange-400'
                     : isDarkMode
-                    ? 'text-gray-900'
-                    : 'text-gray-600'
-                }`}
+                      ? 'text-gray-900'
+                      : 'text-gray-600'
+                  }`}
               >
                 {/* ✅ แสดงยอดวิว real-time */}
                 {loadingViews ? (
@@ -413,7 +428,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                 )}
               </span>
             </div>
-            {/* <span className="text-xs opacity-50">ID: {video.id}</span> */}
             <span className="text-xs">{video.uploadDate}</span>
           </div>
         </div>
@@ -439,6 +453,20 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ✅ Gift Modal */}
+      {showGiftModal && (
+        <GiftModal
+          isOpen={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          isDarkMode={isDarkMode}
+          onLoginSuccess={() => {
+            // ปลดล็อกหลังจาก login สำเร็จ
+            reset();
+            setShowGiftModal(false);
+          }}
+        />
       )}
     </>
   );

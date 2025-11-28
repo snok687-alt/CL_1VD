@@ -15,21 +15,21 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
+const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
   if (!isOpen) return null;
 
-  // ຕົວແປຫຼັກ
+  // ตัวแปรหลัก
   const [points, setPoints] = useState(0);
   const [lastClaimDate, setLastClaimDate] = useState(null);
   const [canClaimToday, setCanClaimToday] = useState(true);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0 });
 
-  // ຂໍ້ມູນຜູ້ໃຊ້
+  // ข้อมูลผู้ใช้
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // ສະຖານະ UI
+  // สถานะ UI
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +37,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-  // ຟັງຊັນຊ່ວຍເຫຼືອ: ດຶງຂໍ້ມູນຈາກ API
+  // ฟังก์ชันช่วยเหลือ: ดึงข้อมูลจาก API
   const apiFetch = async (url, opts = {}) => {
     try {
       const res = await fetch(url, opts);
@@ -59,7 +59,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ລີເຊັດສະຖານະເມື່ອປິດ Modal
+  // รีเซ็ตสถานะเมื่อปิด Modal
   // ============================================================
   const resetStates = () => {
     setPoints(0);
@@ -78,7 +78,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ປິດ Modal (ລີເຊັດ + callback)
+  // ปิด Modal (รีเซ็ต + callback)
   // ============================================================
   const handleClose = () => {
     resetStates();
@@ -86,7 +86,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ປຸ່ມປິດ: ອອກຈາກລະບົບຖ້າເຊັບຢູ່
+  // ปุ่มปิด: ออกจากระบบถ้าเข้าสู่ระบบอยู่
   // ============================================================
   const handleCloseButton = (e) => {
     e?.preventDefault();
@@ -95,11 +95,11 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
     handleClose();
   };
 
-  // ປ້ອງກັນການຄລິກໃນ Modal ຈະປິດ Modal ແມ່
+  // ป้องกันการคลิกใน Modal จะปิด Modal แม่
   const handleModalClick = (e) => e.stopPropagation();
 
   // ============================================================
-  // ດຶງສະຖານະການຮັບຂອງຂວັນ
+  // ดึงสถานะการรับของขวัญ
   // ============================================================
   const loadClaimStatus = async (token = null) => {
     try {
@@ -123,11 +123,11 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
       
       console.log("🔍 Status loaded:", data);
       
-      // ຕັ້ງຄ່າສະຖານະຕາມຂໍ້ມູນຈາກ backend
+      // ตั้งค่าสถานะตามข้อมูลจาก backend
       setPoints(data.amount_gift || 0);
       setLastClaimDate(data.last_claim_date || null);
       
-      // ໃຊ້ claimedRecently ຈາກ backend
+      // ใช้ claimedRecently จาก backend
       setCanClaimToday(!data.claimedRecently);
 
       if (data.claimedRecently && data.time_left) {
@@ -145,7 +145,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // effect: ເມື່ອເປີດ Modal, ກວດສອບ token ແລະ ດຶງສະຖານະ
+  // effect: เมื่อเปิด Modal, ตรวจสอบ token และ ดึงสถานะ
   // ============================================================
   useEffect(() => {
     if (!isOpen) return;
@@ -162,7 +162,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   }, [isOpen]);
 
   // ============================================================
-  // ປຸ່ມຟື້ນຟີວ
+  // ปุ่มรีเฟรช
   // ============================================================
   const handleRefresh = async () => {
     const token = localStorage.getItem("gift_token");
@@ -172,7 +172,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ເຂົ້າສູ່ລະບົບ
+  // เข้าสู่ระบบ
   // ============================================================
   const handleLogin = async (e) => {
     e?.preventDefault();
@@ -198,7 +198,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
           setIsLoggedIn(true);
           setPoints(data.user.amount_gift || 0);
           setMessage("✅ 登录成功!");
-          // ສຳຄັນ: ໂຫຼດສະຖານະໃໝ່ໂດຍໃຊ້ token
+          
+          // ✅ สำคัญ: รีเซ็ต counter การดูวิดีโอ
+          if (onLoginSuccess) {
+            onLoginSuccess();
+          }
+          
+          // โหลดสถานะใหม่
           setTimeout(() => loadClaimStatus(data.token), 500);
         } else {
           setMessage(data.message || "❌ 用户名或密码错误");
@@ -213,7 +219,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ລົງທະບຽນ
+  // ลงทะเบียน
   // ============================================================
   const handleRegister = async (e) => {
     e?.preventDefault();
@@ -265,7 +271,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ຮັບຂອງຂວັນປະຈຳວັນ
+  // รับของขวัญประจำวัน
   // ============================================================
   const claimDailyGift = async () => {
     try {
@@ -305,7 +311,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
         setCanClaimToday(false);
         setMessage(`✅ 领取礼物成功! 总计: ${data.amount_gift} 元`);
         
-        // ໂຫຼດສະຖານະໃໝ່ເພື່ອສະແດງເວລາທີ່ເຫຼືອ
+        // โหลดสถานะใหม่เพื่อแสดงเวลาที่เหลือ
         setTimeout(() => loadClaimStatus(token), 1000);
       } else {
         setMessage(data.message || "❌ 发生错误");
@@ -323,7 +329,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
   };
 
   // ============================================================
-  // ອອກຈາກລະບົບ (ລຶບ token)
+  // ออกจากระบบ (ลบ token)
   // ============================================================
   const handleLogout = () => {
     localStorage.removeItem("gift_token");
@@ -333,7 +339,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
     resetStates();
   };
 
-  // ປຸ່ມ Escape ປິດ Modal
+  // ปุ่ม Escape ปิด Modal
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') handleClose();
@@ -359,7 +365,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
         }`}
         onClick={handleModalClick}
       >
-        {/* ປຸ່ມປິດ (ອອກຈາກລະບົບດ້ວຍ) */}
+        {/* ปุ่มปิด (ออกจากระบบด้วย) */}
         <button
           onClick={handleCloseButton}
           className="absolute top-4 right-4 text-red-500 w-10 h-10 flex items-center justify-center z-50 pointer-events-auto hover:bg-red-100/20 rounded-full transition"
@@ -370,7 +376,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
         </button>
 
         <div className="relative z-10 p-8">
-          {/* ສ່ວນຫົວ */}
+          {/* ส่วนหัว */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="w-28 h-28 rounded-full overflow-hidden shadow-xl ring-4 ring-purple-500/30 animate-pulse">
@@ -390,7 +396,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
             </p>
           </div>
 
-          {/* ແບບຟອມເຂົ້າສູ່ລະບົບ */}
+          {/* แบบฟอร์มเข้าสู่ระบบ */}
           {!isLoggedIn && !showRegister && (
             <div className="space-y-4">
               <div className="relative">
@@ -446,7 +452,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
             </div>
           )}
 
-          {/* ແບບຟອມລົງທະບຽນ */}
+          {/* แบบฟอร์มลงทะเบียน */}
           {!isLoggedIn && showRegister && (
             <div className="space-y-4">
               <div className="relative">
@@ -520,7 +526,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
             </div>
           )}
 
-          {/* ມຸມມອງຫຼັງເຂົ້າສູ່ລະບົບ */}
+          {/* มุมมองหลังเข้าสู่ระบบ */}
           {isLoggedIn && (
             <div className="space-y-5">
               <div className="p-6 rounded-2xl bg-purple-100 border border-purple-200">
@@ -584,7 +590,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode }) => {
             </div>
           )}
 
-          {/* ຂໍ້ຄວາມ */}
+          {/* ข้อความ */}
           {message && (
             <div className={`mt-6 p-3.5 rounded-xl border text-center text-sm ${
               message.includes('✅') || message.includes('👋') || message.includes('成功')
