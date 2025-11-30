@@ -6,7 +6,8 @@ import FireIcon from '../hook/Fire_Icon';
 import '../style/star.css';
 import ImageSelector from '../uploads/ImageSelector';
 import useTotle from '../ci/useTotle';
-import GiftModal from '../ci/GiftModal'; // ✅ นำเข้า GiftModal
+import GiftModal from '../ci/GiftModal';
+import PaymentModal from '../mod/Payment_modal';
 
 const VideoCard = ({ video, onClick, isDarkMode }) => {
   const navigate = useNavigate();
@@ -21,12 +22,60 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const [loadingViews, setLoadingViews] = useState(false);
 
   const [showGiftModal, setShowGiftModal] = useState(false);
-  // ✅ ใช้ Hook โดยส่ง video.id เพื่อแยก state เป็นรายวิดีโอ
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [hasPricing, setHasPricing] = useState(false);
+  const [pricingLoading, setPricingLoading] = useState(false);
+
+  // ✅ ใช้ Hook โดยใช้ video.id เพื่อแยก state เป็นรายวิดีโอ
   const { viewCount, locked, increment, reset } = useTotle(video.id);
 
+  // ✅ ตรวจสอบว่าวิดีโอนี้มีการเปิดชำระเงินหรือไม่
+  useEffect(() => {
+    checkVideoPricingStatus();
+  }, [video.id]);
+
+  // ✅ ฟังก์ชันรีเฟรชสถานะล็อกจาก localStorage
+  const refreshLockStatus = () => {
+    // อ่านค่า locked จาก localStorage โดยตรงเพื่อให้ได้ค่าล่าสุด
+    const savedLocked = localStorage.getItem("totle_locked_global");
+    const isCurrentlyLocked = savedLocked === "true";
+    
+    // ใช้ force update เพื่อให้ component เรนเดอร์ใหม่
+    // โดยการเปลี่ยน state เล็กน้อยเพื่อ trigger re-render
+    setCurrentViews(prev => prev); // เปลี่ยนค่าเล็กน้อยเพื่อ trigger re-render
+  };
+
+  const checkVideoPricingStatus = async () => {
+    try {
+      setPricingLoading(true);
+      const response = await fetch(`/backend-api/video/prices/status/${video.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setHasPricing(data.isPaid === true);
+      } else {
+        setHasPricing(false);
+      }
+    } catch (error) {
+      console.error('❌ ข้อผิดพลาดในการตรวจสอบสถานะการชำระเงิน:', error);
+      setHasPricing(false);
+    } finally {
+      setPricingLoading(false);
+    }
+  };
+
   const handleVideoClick = () => {
+    // ✅ ถ้าวิดีโอนี้มีการเปิดชำระเงิน → แสดง PaymentModal
+    if (hasPricing) {
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // ✅ อ่านค่า locked จาก localStorage โดยตรงเพื่อตรวจสอบสถานะล่าสุด
+    const savedLocked = localStorage.getItem("totle_locked_global");
+    const isCurrentlyLocked = savedLocked === "true";
+    
     // ❗ ถ้าถูกล็อก → เด้งให้ Login
-    if (locked) {
+    if (isCurrentlyLocked) {
       setShowGiftModal(true);
       return;
     }
@@ -45,54 +94,57 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     else navigate(`/watch/${video.id}`);
   };
 
-  // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
-  const fetchRealTimeViews = async () => {
-    if (!video?.id) return;
+    // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
+  // const fetchRealTimeViews = async () => {
+  //   if (!video?.id) return;
 
-    try {
-      setLoadingViews(true);
-      // console.log(`🔄 ดึงยอดวิว real-time สำหรับ video_id: ${video.id}`);
+  //   try {
+  //     setLoadingViews(true);
+  //     const response = await fetch('/backend-api/views/get', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: JSON.stringify({ video_ids: [video.id] }),
+  //     });
 
-      const response = await fetch('/backend-api/views/get', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ video_ids: [video.id] }),
-      });
+  //     if (response.ok) {
+  //       const viewsData = await response.json();
+  //       const latestViews = viewsData[video.id] || currentViews;
+  //       setCurrentViews(latestViews);
+  //     } else {
+  //       // console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
+  //     }
+  //   } catch (error) {
+  //     console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
+  //   } finally {
+  //     setLoadingViews(false);
+  //   }
+  // }; 
 
-      if (response.ok) {
-        const viewsData = await response.json();
-        const latestViews = viewsData[video.id] || currentViews;
 
-        // ✅ อัปเดต state เฉพาะยอดวิว
-        setCurrentViews(latestViews);
-        // console.log(`✅ อัปเดตยอดวิว real-time: ${video.id} -> ${latestViews}`);
-      } else {
-        console.error('❌ ไม่สามารถดึงยอดวิวได้:', await response.text());
-      }
-    } catch (error) {
-      console.error('❌ เกิดข้อผิดพลาดในการดึงยอดวิว real-time:', error);
-    } finally {
-      setLoadingViews(false);
-    }
-  };
+  // ✅ ดึงยอดวิวทุก 30 วินาที (real-time polling)
+  // useEffect(() => {
+  //   if (!video?.id) return;
+
+  //   const intervalId = setInterval(() => {
+  //     fetchRealTimeViews();
+  //   }, 30000);
+
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // }, [video?.id]);
 
   // ✅ ฟังก์ชันดึง rating และยอดวิว
   const fetchRatingAndViews = async () => {
     try {
       setLoadingRating(true);
-
-      // ดึง rating
       const ratingRes = await fetch(`/backend-api/rating/${video.id}`);
       if (ratingRes.ok) {
         const ratingData = await ratingRes.json();
         setRatingData(ratingData);
       }
-
-      // ดึงยอดวิวล่าสุด
-      await fetchRealTimeViews();
-
     } catch (err) {
       console.error('Error fetching rating and views:', err);
       setRatingData(null);
@@ -106,20 +158,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     fetchRatingAndViews();
   }, [video.id]);
 
-  // ✅ ดึงยอดวิวทุก 30 วินาที (real-time polling)
-  useEffect(() => {
-    if (!video?.id) return;
-
-    const intervalId = setInterval(() => {
-      fetchRealTimeViews();
-    }, 30000); // 30 seconds
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [video?.id]);
-
-  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว (ใช้ currentViews แทน video.views)
+  // ✅ ฟังก์ชันจัดรูปแบบยอดวิว
   const formatViews = (views) => {
     const viewCount = views || 0;
     if (viewCount >= 1000000) {
@@ -143,8 +182,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     };
   };
 
-  // ✅ ใช้ยอดวิวจาก props โดยตรง
-  const viewData = formatViews(video.views);
+  const viewData = formatViews(currentViews);
 
   const handleImageError = (e) => {
     e.target.src = '';
@@ -184,16 +222,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
   const handleFaceClick = (e) => {
     e.stopPropagation();
-    // console.log("เปิดตัวเลือกรูปภาพสำหรับวิดีโอ:", video.id);
     setShowImageSelector(true);
   };
 
   const handleImageSelect = async (image) => {
-    // console.log("เลือกรูปภาพสำหรับแปลงหน้า:", image);
     setSelectedFaceImage(image);
     setShowImageSelector(false);
-
-    // เริ่มแปลงหน้า
     await handleFaceSwap(video, image);
   };
 
@@ -205,7 +239,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
     try {
       setIsSwapping(true);
-
       let progressInterval;
       const progressSwal = Swal.fire({
         title: '正在换脸...',
@@ -223,19 +256,16 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
         didOpen: () => {
           let progress = 0;
           progressInterval = setInterval(() => {
-            progress += Math.random() * 8 + 2; // 2-10% per second
-            if (progress > 85) progress = 85; // หยุดที่ 85% รอผลลัพธ์จริง
-
+            progress += Math.random() * 8 + 2;
+            if (progress > 85) progress = 85;
             const progressBar = document.querySelector('.progress-bar');
             const progressText = document.querySelector('.progress-text');
             if (progressBar && progressText) {
               progressBar.style.width = `${progress}%`;
-
               let statusText = '';
               if (progress < 30) statusText = 'กำลังดาวน์โหลดวิดีโอ...';
               else if (progress < 60) statusText = 'กำลังประมวลผลใบหน้า...';
               else statusText = 'กำลังสร้างวิดีโอใหม่...';
-
               progressText.textContent = `${Math.round(progress)}% - ${statusText}`;
             }
           }, 1000);
@@ -247,17 +277,15 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
         videoUrl: video.videoUrl,
         faceImageFilename: faceImage.filename,
       }, {
-        timeout: 120000, // 2 นาที
+        timeout: 120000,
       });
 
       clearInterval(progressInterval);
       setIsSwapping(false);
-
       await progressSwal.close();
 
       if (res.data.success && res.data.outputUrl) {
         const processingTime = res.data.processingTime || 45;
-
         Swal.fire({
           icon: 'success',
           title: '换脸完成! 🎉',
@@ -281,15 +309,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       } else {
         throw new Error(res.data.message || 'ไม่สามารถสร้างวิดีโอได้');
       }
-
     } catch (err) {
       console.error("ข้อผิดพลาดในการแปลงหน้า:", err);
       setIsSwapping(false);
-
       if (Swal.isVisible()) {
         Swal.close();
       }
-
       let errorMessage = 'เกิดข้อผิดพลาดในการแปลงหน้า';
       if (err.code === 'ERR_NETWORK') {
         errorMessage = 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้';
@@ -298,7 +323,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       } else if (err.message.includes('timeout')) {
         errorMessage = 'การประมวลผลใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง';
       }
-
       Swal.fire({
         icon: 'error',
         title: 'เกิดข้อผิดพลาด',
@@ -315,6 +339,10 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       setSelectedFaceImage(JSON.parse(saved));
     }
   }, [video.id]);
+
+  // ✅ อ่านค่า locked จาก localStorage โดยตรงเพื่อแสดงสถานะล่าสุด
+  const savedLocked = localStorage.getItem("totle_locked_global");
+  const isCurrentlyLocked = savedLocked === "true";
 
   return (
     <>
@@ -333,16 +361,19 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
             onError={handleImageError}
           />
 
-          {/* ✅ แสดงจำนวนครั้งที่ดูแล้ว */}
-          <div className="absolute top-1 left-1 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-            <span>{viewCount}/1</span> {/* ✅ แสดงจำนวนครั้งจริง */}
-          </div>
+          {/* ✅ แสดงไอคอนชำระเงินถ้าวิดีโอนี้ต้องชำระเงิน */}
+          {hasPricing && (
+            <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+              <span className="text-xs">💰</span>
+              <span>付费</span>
+            </div>
+          )}
 
-          {/* ✅ แสดงสถานะล็อก */}
-          {locked && (
-            <div className="absolute inset-0 flex items-start justify-end p-2 pointer-events-none">
-              <div className=" text-white text-xs px-2 py-1 rounded">
-                🔒 {/* ✅ แสดง 1/1 เมื่อล็อก */}
+          {/* ✅ แสดงสถานะล็อก - ใช้ค่าจาก localStorage โดยตรง */}
+          {isCurrentlyLocked && !hasPricing && (
+            <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
+              <div className="p-3 flex flex-col items-center">
+                <div className="text-white text-2xl mb-1">🔒</div>
               </div>
             </div>
           )}
@@ -372,15 +403,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
               </div>
             </div>
           )}
-
-          {/* <button
-            onClick={handleFaceClick}
-            className={`absolute bottom-2 right-2 p-1 text-2xl font-semibold transition-all transform hover:scale-110 flex items-center gap-1 w-10 h-10 justify-center rounded-full bg-opacity-80 text-white ${locked ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={isSwapping ? 'กำลังแปลงหน้า...' : selectedFaceImage ? 'เปลี่ยนรูปหน้า' : 'เลือกรูปหน้า'}
-            disabled={isSwapping || locked}
-          >
-            {isSwapping ? '⏳' : '🎭'}
-          </button> */}
 
           {isSwapping && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -420,7 +442,6 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                       : 'text-gray-600'
                   }`}
               >
-                {/* ✅ แสดงยอดวิว real-time */}
                 {loadingViews ? (
                   <span className="text-blue-500 animate-pulse">更新中...</span>
                 ) : (
@@ -462,10 +483,27 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           onClose={() => setShowGiftModal(false)}
           isDarkMode={isDarkMode}
           onLoginSuccess={() => {
-            // ปลดล็อกหลังจาก login สำเร็จ
             reset();
             setShowGiftModal(false);
+            // ✅ รีเฟรชสถานะล็อกทันทีหลังจากล็อกอินสำเร็จ
+            setTimeout(() => {
+              refreshLockStatus();
+            }, 100);
           }}
+        />
+      )}
+
+      {/* ✅ Payment Modal */}
+      {showPaymentModal && (
+        <PaymentModal
+          videoId={video.id}
+          onPaymentSuccess={(result) => {
+            // console.log('✅ ชำระเงินสำเร็จ:', result);
+            setShowPaymentModal(false);
+            // ไปดูวิดีโอหลังจากชำระเงินสำเร็จ
+            navigate(`/watch/${video.id}`);
+          }}
+          onClose={() => setShowPaymentModal(false)}
         />
       )}
     </>

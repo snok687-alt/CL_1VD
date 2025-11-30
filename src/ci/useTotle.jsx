@@ -1,55 +1,66 @@
-// 📌 useTotle.jsx — แก้ไขเงื่อนไขการล็อก
 import { useEffect, useState } from "react";
 
-const MAX_VIEW = 1; // ✅ ดูได้ 1 ครั้ง
+const MAX_VIEW = 3;
+const STORAGE_COUNT_KEY = "totle_view_count_global";
+const STORAGE_LOCK_KEY = "totle_locked_global";
 
-export default function useTotle(videoId = "global") {
+export default function useTotle(videoId = "any") { 
   const [viewCount, setViewCount] = useState(0);
   const [locked, setLocked] = useState(false);
 
-  // โหลดค่าจาก localStorage ตอนเริ่ม (แยกตาม videoId)
-  useEffect(() => {
-    const saved = localStorage.getItem(`totle_view_count_${videoId}`);
-    const savedLocked = localStorage.getItem(`totle_locked_${videoId}`);
-
-    if (saved) setViewCount(Number(saved));
+  // ✅ เพิ่มฟังก์ชันรีเฟรชจาก localStorage
+  const refreshFromStorage = () => {
+    const savedCount = localStorage.getItem(STORAGE_COUNT_KEY);
+    const savedLocked = localStorage.getItem(STORAGE_LOCK_KEY);
+    if (savedCount) setViewCount(Number(savedCount));
     if (savedLocked === "true") setLocked(true);
-  }, [videoId]);
+  };
 
-  // เซฟค่าลง localStorage ทุกครั้งที่เปลี่ยน
+  // โหลดค่าจาก localStorage ตอนเริ่ม
   useEffect(() => {
-    localStorage.setItem(`totle_view_count_${videoId}`, viewCount);
-  }, [viewCount, videoId]);
+    refreshFromStorage();
+  }, []);
 
+  // บันทึกค่าลง localStorage
   useEffect(() => {
-    localStorage.setItem(`totle_locked_${videoId}`, locked);
-  }, [locked, videoId]);
+    localStorage.setItem(STORAGE_COUNT_KEY, viewCount);
+    localStorage.setItem(STORAGE_LOCK_KEY, locked);
+  }, [viewCount, locked]);
 
-  // เพิ่มครั้ง
+  // ✅ เพิ่ม event listener สำหรับการเปลี่ยนแปลงใน localStorage
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_COUNT_KEY || e.key === STORAGE_LOCK_KEY) {
+        refreshFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // เพิ่มการดูวิดีโอ
   const increment = () => {
     if (locked) return false;
 
-    const newCount = viewCount + 1;
+    const currentCount = Number(localStorage.getItem(STORAGE_COUNT_KEY) || 0);
+    const newCount = currentCount + 1;
     setViewCount(newCount);
 
-    // ✅ เปลี่ยนเงื่อนไข: ล็อกทันทีที่ครบ 1 ครั้ง (ครั้งที่ 2)
-    if (newCount > MAX_VIEW) {
+    if (newCount >= MAX_VIEW) {
       setLocked(true);
-      return true; // แจ้งให้รู้ว่า "เพิ่งถูกล็อก"
+      return true; // เพิ่งถูกล็อก
     }
     return false;
   };
 
-  // ปลดล็อก + รีเซ็ต หลัง Login
+  // รีเซ็ต global counter
   const reset = () => {
     setViewCount(0);
     setLocked(false);
+    localStorage.setItem(STORAGE_COUNT_KEY, "0");
+    localStorage.setItem(STORAGE_LOCK_KEY, "false");
   };
 
-  return {
-    viewCount,
-    locked,
-    increment,
-    reset,
-  };
+  return { viewCount, locked, increment, reset, refreshFromStorage };
 }

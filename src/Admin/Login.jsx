@@ -13,7 +13,7 @@ export default function Login() {
   useEffect(() => {
     if (!username.trim()) {
       setProfileImage(null);
-      setMessage(""); // เคลียร์ข้อความ
+      setMessage(""); // 清空消息
       return;
     }
 
@@ -35,18 +35,18 @@ export default function Login() {
           } else {
             setProfileImage(null);
           }
-          setMessage(""); // ล้างข้อความ
+          setMessage(""); // 清空消息
         } else if (res.status === 404) {
           setProfileImage(null);
-          setMessage("ບໍ່ພົບຊື່ນີ້"); // แสดงข้อความเมื่อไม่พบ
+          setMessage("未找到该用户名"); // 用户名未找到
         } else {
           setProfileImage(null);
-          setMessage(""); // หรือข้อความอื่น ๆ ถ้าต้องการ
+          setMessage(""); // 其他情况不显示消息
         }
 
       } catch (e) {
         setProfileImage(null);
-        setMessage(""); // เกิด error ไม่แสดงข้อความ
+        setMessage(""); // 出错不显示消息
       }
 
       setCheckingProfile(false);
@@ -55,9 +55,7 @@ export default function Login() {
     return () => clearTimeout(delayDebounce);
   }, [username]);
 
-
-
-  // 👉 ฟังก์ชัน Login
+  // 👉 登录功能
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage("");
@@ -74,16 +72,16 @@ export default function Login() {
 
       if (res.ok && data.token) {
         localStorage.setItem("token", data.token);
-        setMessage("✅ ເຂົ້າລະບົບສຳເລັດ");
+        setMessage("✅ 登录成功");
 
         setTimeout(() => {
           window.location.href = "/CL_____________________________________________________________________________________******_/Admin";
         }, 800);
       } else {
-        setMessage(data.message || "ຊື່ ຫຼື ລະຫັດຜ່ານຜິດ");
+        setMessage(data.message || "用户名或密码错误");
       }
     } catch (error) {
-      setMessage("ເກີດຂໍ້ຜິດພາດ");
+      setMessage("发生错误");
     }
 
     setLoading(false);
@@ -115,8 +113,8 @@ export default function Login() {
             )}
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-800 mb-1">ເຂົ້າລະບົບ</h2>
-          <p className="text-gray-500">ຍິນດີຕ້ອນຮັບກັບຄືນ</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">登录</h2>
+          <p className="text-gray-500">欢迎回来</p>
 
           {username && (
             <div className="mt-2 font-semibold text-gray-700">{username}</div>
@@ -128,7 +126,7 @@ export default function Login() {
           <User className="absolute left-3 top-3 text-gray-400 h-5 w-5" />
           <input
             type="text"
-            placeholder="ຊື່ຜູ້ໃຊ້"
+            placeholder="用户名"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-3 focus:ring-2 focus:ring-purple-600 outline-none"
@@ -142,7 +140,7 @@ export default function Login() {
           <Lock className="absolute left-3 top-3 text-gray-400 h-5 w-5" />
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="ລະຫັດຜ່ານ"
+            placeholder="密码"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border border-gray-300 rounded-lg pl-10 pr-10 py-3 focus:ring-2 focus:ring-purple-600 outline-none"
@@ -165,7 +163,7 @@ export default function Login() {
           disabled={loading}
           className="w-full bg-gradient-to-r from-purple-600 to-green-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
         >
-          {loading ? "ກຳລັງເຂົ້າ..." : "ເຂົ້າລະບົບ"}
+          {loading ? "登录中..." : "登录"}
         </button>
 
         {message && (

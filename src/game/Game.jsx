@@ -28,7 +28,7 @@ function Game() {
       <a href="http://47.238.3.148/game/"
       >
         <img
-          src="https://image-sj.ng-demo.xyz/image//defaultImg/live/1.png"
+          src="/AG.jpg"
           alt="AG真人"
           className="w-full object-cover"
         />

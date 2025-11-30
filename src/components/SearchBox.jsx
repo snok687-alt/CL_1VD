@@ -40,7 +40,7 @@ const SearchBox = ({ searchTerm, onSearchChange, isDarkMode, currentCategory, on
           placeholder="搜索视频"
           className={`w-full py-1 pl-10 pr-10 rounded-full border focus:outline-none focus:ring-2 focus:ring-red-500 ${
             isDarkMode
-              ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+              ? 'bg-gray-700 border-yellow-300 text-white placeholder-gray-400'
               : 'bg-white border-gray-300 text-black placeholder-gray-500'
           }`}
         />

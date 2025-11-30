@@ -12,7 +12,9 @@ import {
   Clock,
   RefreshCw,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Coins,
+  LogOut
 } from 'lucide-react';
 
 const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
@@ -120,13 +122,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
       }
 
       const data = body;
-      
+
       console.log("🔍 Status loaded:", data);
-      
+
       // ตั้งค่าสถานะตามข้อมูลจาก backend
       setPoints(data.amount_gift || 0);
       setLastClaimDate(data.last_claim_date || null);
-      
+
       // ใช้ claimedRecently จาก backend
       setCanClaimToday(!data.claimedRecently);
 
@@ -198,12 +200,15 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
           setIsLoggedIn(true);
           setPoints(data.user.amount_gift || 0);
           setMessage("✅ 登录成功!");
-          
+
           // ✅ สำคัญ: รีเซ็ต counter การดูวิดีโอ
           if (onLoginSuccess) {
             onLoginSuccess();
           }
-          
+
+          // ✅ เรียก event เพื่อแจ้งให้ component อื่นรู้ว่าล็อกอินสำเร็จ
+          window.dispatchEvent(new CustomEvent('userLoggedIn'));
+
           // โหลดสถานะใหม่
           setTimeout(() => loadClaimStatus(data.token), 500);
         } else {
@@ -277,7 +282,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
     try {
       setLoading(true);
       setMessage("");
-      
+
       const token = localStorage.getItem("gift_token");
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -295,7 +300,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
         console.warn("claim failed:", status, body);
         const msg = body?.message || body?.__raw || `HTTP ${status}`;
         setMessage(msg);
-        
+
         if (body?.claimedRecently) {
           setCanClaimToday(false);
           if (body.time_left) setTimeLeft(body.time_left);
@@ -304,13 +309,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
       }
 
       const data = body;
-      
+
       if (data.success) {
         setPoints(data.amount_gift);
         setLastClaimDate(data.last_claim_date || null);
         setCanClaimToday(false);
-        setMessage(`✅ 领取礼物成功! 总计: ${data.amount_gift} 元`);
-        
+        setMessage(`✅ 领取成功! 总计: ${data.amount_gift} 元`);
+
         // โหลดสถานะใหม่เพื่อแสดงเวลาที่เหลือ
         setTimeout(() => loadClaimStatus(token), 1000);
       } else {
@@ -322,7 +327,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
       }
     } catch (err) {
       console.error('Claim error:', err);
-      setMessage("❌ 领取礼物时发生错误");
+      setMessage("❌ 领取时发生错误");
     } finally {
       setLoading(false);
     }
@@ -352,23 +357,27 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
   }, [isOpen]);
 
   // ===================================================================
-  // RENDER
+  // RENDER - โทนเหล็ก
   // ===================================================================
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-[9999] animate-fadeIn p-4"
+      className="fixed inset-0 bg-black/70 backdrop-blur-lg flex items-center justify-center z-[9999] animate-fadeIn p-4"
       onClick={handleClose}
     >
       <div
-        className={`w-full max-w-md rounded-3xl shadow-2xl relative animate-scaleIn overflow-hidden ${
-          isDarkMode ? "bg-gradient-to-br from-[#2c2c2e] to-[#1c1c1e] text-white" : "bg-gradient-to-br from-white to-gray-50 text-gray-800"
-        }`}
+        className={`w-full max-w-md rounded-2xl shadow-2xl relative animate-scaleIn overflow-hidden border-2 ${isDarkMode
+          ? "bg-gradient-to-br from-gray-800 via-gray-700 to-gray-900 border-gray-600 text-white"
+          : "bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 border-gray-400 text-gray-800"
+          }`}
         onClick={handleModalClick}
       >
-        {/* ปุ่มปิด (ออกจากระบบด้วย) */}
+        {/* ปุ่มปิด - โทนเหล็ก */}
         <button
           onClick={handleCloseButton}
-          className="absolute top-4 right-4 text-red-500 w-10 h-10 flex items-center justify-center z-50 pointer-events-auto hover:bg-red-100/20 rounded-full transition"
+          className={`absolute top-4 right-4 w-10 h-10 flex items-center justify-center z-50 pointer-events-auto rounded-lg transition ${isDarkMode
+            ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
+            : "bg-gray-300 hover:bg-gray-400 text-gray-700"
+            }`}
           type="button"
           title="关闭 (Esc)"
         >
@@ -376,34 +385,34 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
         </button>
 
         <div className="relative z-10 p-8">
-          {/* ส่วนหัว */}
+          {/* ส่วนหัว - โทนเหล็ก */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-28 h-28 rounded-full overflow-hidden shadow-xl ring-4 ring-purple-500/30 animate-pulse">
-                <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-600">
-                  <Gift className="w-14 h-14 text-white drop-shadow-lg" />
-                </div>
-              </div>
-            </div>
-
-            <h2 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
-              <Sparkles className="w-6 h-6 text-yellow-400" />
-              {isLoggedIn ? "每日礼物" : showRegister ? "创建新账户" : "登录"}
+            <h2 className={`text-2xl font-bold mb-2 flex items-center justify-center gap-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"
+              }`}>
+              <Sparkles className="w-5 h-5 text-yellow-500" />
+              {isLoggedIn ? "每日奖励" : showRegister ? "创建账户" : "用户登录"}
+              <Sparkles className="w-5 h-5 text-yellow-500" />
             </h2>
-
-            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-              {isLoggedIn ? `欢迎, ${username}` : "每24小时可领取礼物"}
+            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+              登录后您可以解锁所有视频，并领取每日礼物。
+            </p>
+            <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
+              {isLoggedIn ? `欢迎, ${username}` : "登录以访问完整内容"}
             </p>
           </div>
 
-          {/* แบบฟอร์มเข้าสู่ระบบ */}
+          {/* แบบฟอร์มเข้าสู่ระบบ - โทนเหล็ก */}
           {!isLoggedIn && !showRegister && (
             <div className="space-y-4">
               <div className="relative">
-                <User className="absolute left-4 top-4 text-purple-400 w-5 h-5" />
+                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`} />
                 <input
                   type="text"
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:border-purple-500 text-gray-800"
+                  className={`w-full pl-12 pr-4 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    }`}
                   placeholder="用户名"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -412,10 +421,14 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-4 text-purple-400 w-5 h-5" />
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`} />
                 <input
                   type={showPassword ? "text" : "password"}
-                  className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:border-purple-500 text-gray-800"
+                  className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    }`}
                   placeholder="密码"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -425,7 +438,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-gray-500"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -434,7 +448,10 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               <button
                 onClick={handleLogin}
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50"
+                className={`w-full py-3.5 rounded-lg font-semibold transition disabled:opacity-50 border-2 ${isDarkMode
+                  ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
+                  : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600"
+                  }`}
               >
                 <LogIn className="inline-block w-5 h-5 mr-2" />
                 {loading ? "登录中..." : "登录"}
@@ -444,7 +461,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowRegister(true)}
-                  className="text-purple-400 hover:text-purple-300 transition"
+                  className={`transition ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                    }`}
                 >
                   <UserPlus className="inline w-4 h-4 mr-1" /> 创建账户
                 </button>
@@ -452,14 +470,18 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
             </div>
           )}
 
-          {/* แบบฟอร์มลงทะเบียน */}
+          {/* แบบฟอร์มลงทะเบียน - โทนเหล็ก */}
           {!isLoggedIn && showRegister && (
             <div className="space-y-4">
               <div className="relative">
-                <User className="absolute left-4 top-4 text-green-400 w-5 h-5" />
+                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`} />
                 <input
                   type="text"
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:border-green-500 text-gray-800"
+                  className={`w-full pl-12 pr-4 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    }`}
                   placeholder="用户名"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -468,10 +490,14 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-4 text-green-400 w-5 h-5" />
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`} />
                 <input
                   type={showPassword ? "text" : "password"}
-                  className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:border-green-500 text-gray-800"
+                  className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    }`}
                   placeholder="密码 (>=4)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -480,17 +506,22 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4 text-gray-500"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
 
               <div className="relative">
-                <Lock className="absolute left-4 top-4 text-green-400 w-5 h-5" />
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  }`} />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
-                  className="w-full pl-12 pr-12 py-3.5 rounded-xl bg-gray-100 border border-gray-300 focus:outline-none focus:border-green-500 text-gray-800"
+                  className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    }`}
                   placeholder="确认密码"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -499,7 +530,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-4 text-gray-500"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -508,7 +540,10 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               <button
                 onClick={handleRegister}
                 disabled={loading}
-                className="w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 transition disabled:opacity-50"
+                className={`w-full py-3.5 rounded-lg font-semibold transition disabled:opacity-50 border-2 ${isDarkMode
+                  ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
+                  : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600"
+                  }`}
               >
                 <UserPlus className="inline-block w-5 h-5 mr-2" />
                 {loading ? "注册中..." : "注册"}
@@ -518,7 +553,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowRegister(false)}
-                  className="text-green-400 hover:text-green-300 transition"
+                  className={`transition ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                    }`}
                 >
                   <LogIn className="inline w-4 h-4 mr-1" /> 已有账户
                 </button>
@@ -526,32 +562,45 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
             </div>
           )}
 
-          {/* มุมมองหลังเข้าสู่ระบบ */}
+          {/* มุมมองหลังเข้าสู่ระบบ - โทนเหล็ก */}
           {isLoggedIn && (
             <div className="space-y-5">
-              <div className="p-6 rounded-2xl bg-purple-100 border border-purple-200">
-                <div className="text-sm opacity-80 mb-1 text-purple-700">💰 累计金额</div>
-                <div className="text-4xl font-extrabold text-purple-600">
+              <div className={`p-6 rounded-2xl border-2 ${isDarkMode
+                ? "bg-gradient-to-br from-gray-700 to-gray-800 border-gray-600"
+                : "bg-gradient-to-br from-gray-300 to-gray-400 border-gray-500"
+                }`}>
+                <div className={`flex items-center gap-2 text-sm mb-1 ${isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}>
+                  <Coins className="w-4 h-4 text-yellow-500" />
+                  <span>累计金额</span>
+                </div>
+                <div className={`text-4xl font-extrabold ${isDarkMode ? "text-gray-100" : "text-gray-800"
+                  }`}>
                   {points} 元
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-green-100 border border-green-400">
+              <div className={`p-4 rounded-2xl border-2 ${isDarkMode
+                ? "bg-gray-700 border-gray-600"
+                : "bg-gray-300 border-gray-400"
+                }`}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {canClaimToday ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
                     ) : (
-                      <Calendar className="w-5 h-5 text-amber-600" />
+                      <Calendar className="w-5 h-5 text-yellow-500" />
                     )}
-                    <span className="font-semibold text-sm text-gray-700">
-                      {canClaimToday ? "✅ 可领取礼物" : "⏳ 已领取"}
+                    <span className={`font-semibold text-sm ${isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}>
+                      {canClaimToday ? "✅ 可领取奖励" : "⏳ 已领取"}
                     </span>
                   </div>
 
                   <button
                     onClick={handleRefresh}
-                    className="text-gray-600 hover:text-gray-800 transition p-1"
+                    className={`transition p-1 ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                      }`}
                     title="刷新"
                   >
                     <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -559,7 +608,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 </div>
 
                 {!canClaimToday && timeLeft.hours >= 0 && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
+                  <div className={`mt-3 flex items-center gap-2 text-xs ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                    }`}>
                     <Clock className="w-3.5 h-3.5" />
                     <span>
                       可再次领取: {timeLeft.hours} 小时 {timeLeft.minutes} 分钟
@@ -571,34 +621,46 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               <button
                 onClick={claimDailyGift}
                 disabled={!canClaimToday || loading}
-                className={`w-full py-4 rounded-xl font-bold transition flex items-center justify-center gap-2 ${
-                  canClaimToday && !loading
-                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90 cursor-pointer"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
+                className={`w-full py-4 rounded-lg font-bold transition flex items-center justify-center gap-2 border-2 ${canClaimToday && !loading
+                  ? isDarkMode
+                    ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500 cursor-pointer"
+                    : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600 cursor-pointer"
+                  : isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed"
+                    : "bg-gray-400 border-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
               >
                 <Gift className="w-6 h-6" />
-                {canClaimToday ? "🎁 领取礼物" : "✅ 已领取"}
+                {canClaimToday ? "🎁 领取奖励" : "✅ 已领取"}
               </button>
 
               <button
                 onClick={handleLogout}
-                className="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
+                className={`w-full py-3 rounded-lg font-semibold transition border-2 ${isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
+                  : "bg-gray-400 border-gray-300 text-gray-700 hover:bg-gray-500"
+                  }`}
               >
-                退出系统
+                <LogOut className="inline-block w-4 h-4 mr-2" />
+                退出登录
               </button>
             </div>
           )}
 
-          {/* ข้อความ */}
+          {/* ข้อความ - โทนเหล็ก */}
           {message && (
-            <div className={`mt-6 p-3.5 rounded-xl border text-center text-sm ${
-              message.includes('✅') || message.includes('👋') || message.includes('成功')
-                ? 'bg-green-100 border-green-300 text-green-700'
-                : message.includes('❌')
-                ? 'bg-red-100 border-red-300 text-red-700'
-                : 'bg-yellow-100 border-yellow-300 text-yellow-700'
-            }`}>
+            <div className={`mt-6 p-3.5 rounded-lg border-2 text-center text-sm ${message.includes('✅') || message.includes('👋') || message.includes('成功')
+              ? isDarkMode
+                ? 'bg-gray-700 border-green-600 text-green-400'
+                : 'bg-gray-300 border-green-500 text-green-700'
+              : message.includes('❌')
+                ? isDarkMode
+                  ? 'bg-gray-700 border-red-600 text-red-400'
+                  : 'bg-gray-300 border-red-500 text-red-700'
+                : isDarkMode
+                  ? 'bg-gray-700 border-yellow-600 text-yellow-400'
+                  : 'bg-gray-300 border-yellow-500 text-yellow-700'
+              }`}>
               {message}
             </div>
           )}

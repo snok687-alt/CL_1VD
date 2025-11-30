@@ -57,7 +57,7 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
               <img
                 src={Cat}
                 alt="Logo-Cat"
-                className='rounded-full w-9 h-9 ml-1 hover:scale-110 transition-transform duration-200'
+                className='rounded-full w-12 h-12 ml-2 hover:scale-110 transition-transform duration-200 lg:w-14 lg:h-14'
               />
             </div>
             <span className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'} hidden sm:block`}>
@@ -87,7 +87,7 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
 
           {/* ปุ่มด้านขวา */}
           {showRightIcons ? (
-            <div className="flex items-center gap-x-3 md:gap-x-6">
+            <div className="flex items-center gap-x-3 md:gap-x-6 mr-2">
               <button
                 onClick={openGiftModal}
                 className={`p-2 rounded-full transition-all duration-200 ${isDarkMode

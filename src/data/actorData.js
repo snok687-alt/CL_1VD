@@ -1013,7 +1013,7 @@ const actorProfiles = new Map([
       "title": "前艺人挑战娱乐圈未教的4种异常玩法",
       "primaryName": "神木丽",
       "alternativeNames": ["神木蕾"],
-      "profileImage": "https://p3-pc-sign.douyinpic.com/tos-cn-i-0813c000-ce/okw5eItL0EeAAAE4HEXinC5iIRBA1nAccwfPLT~tplv-dy-aweme-images:q75.webp?biz_tag=aweme_images&from=327834062&lk3s=138a59ce&s=PackSourceEnum_SEARCH&sc=image&se=false&x-expires=1763503200&x-signature=C2nsc%2B7IqA%2FIO%2BwAaC4vlWYuWds%3D",
+      "profileImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQna4dxPmzjedgZ_AStfXaodXAKTwAHWcjbS9OowdY1QCzY-32JjJ1JSYGm&s=10",
       "backgroundImage": "",
       "age": "25岁",
       "height": "169厘米",
