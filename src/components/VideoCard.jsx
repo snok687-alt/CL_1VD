@@ -449,6 +449,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
                 )}
               </span>
             </div>
+            <span className="text-xs">{video.id}</span>
             <span className="text-xs">{video.uploadDate}</span>
           </div>
         </div>

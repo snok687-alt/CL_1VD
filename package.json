@@ -14,7 +14,7 @@
     "axios": "^1.12.1",
     "face-api.js": "^0.22.2",
     "geoip-lite": "^1.4.10",
-    "hls.js": "^1.6.11",
+    "hls.js": "^1.6.15",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.540.0",
     "nodemon": "^3.1.10",
