@@ -13,7 +13,11 @@ import {
   FolderOpen,
   Monitor,
   Smartphone,
-  Tablet
+  Tablet,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  AlertCircle
 } from 'lucide-react';
 
 // ✅ Helper สำหรับ debounce
@@ -44,6 +48,8 @@ const Ip = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedIP, setSelectedIP] = useState(null);
   const [ipDetails, setIpDetails] = useState(null);
+  const [sortBy, setSortBy] = useState('lastActivity'); // 排序依据
+  const [sortOrder, setSortOrder] = useState('desc'); // 排序顺序：desc 为最新优先
 
   const itemsPerPage = 20;
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -55,8 +61,9 @@ const Ip = () => {
     const signal = controller.signal;
 
     try {
+      // 添加排序参数，确保最新数据在前
       const res = await fetch(
-        `/backend-api/admin/ip-list?period=${selectedPeriod}&page=${page}&limit=${itemsPerPage}&search=${debouncedSearch}`,
+        `/backend-api/admin/ip-list?period=${selectedPeriod}&page=${page}&limit=${itemsPerPage}&search=${debouncedSearch}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         { signal }
       );
 
@@ -64,7 +71,17 @@ const Ip = () => {
       const data = await res.json();
 
       if (data.success) {
-        setIpList(data.ips || []);
+        // 确保数据按最后活动时间降序排列（最新在前）
+        let sortedIps = data.ips || [];
+        if (sortBy === 'lastActivity') {
+          sortedIps.sort((a, b) => {
+            const timeA = new Date(a.lastActivity || 0).getTime();
+            const timeB = new Date(b.lastActivity || 0).getTime();
+            return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+          });
+        }
+        
+        setIpList(sortedIps);
         setStats({
           totalIPs: data.totalIPs || 0,
           recentIPs: data.recentIPs || 0,
@@ -85,7 +102,7 @@ const Ip = () => {
     }
 
     return () => controller.abort();
-  }, [selectedPeriod, page, debouncedSearch]);
+  }, [selectedPeriod, page, debouncedSearch, sortBy, sortOrder]);
 
   /** 📡 ดึงรายละเอียด IP */
   const fetchIpDetails = useCallback(async (ip) => {
@@ -110,22 +127,32 @@ const Ip = () => {
     }
   }, []);
 
+  // 排序处理函数
+  const handleSort = useCallback((field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc'); // 默认降序
+    }
+  }, [sortBy, sortOrder]);
+
   useEffect(() => {
     fetchIpData();
   }, [fetchIpData]);
 
-  // 🧩 Reusable Component: StatCard
+  // 🧩 Reusable Component: StatCard - 响应式调整
   const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+    <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
+        <div className="min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{title}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1 truncate">
             {value?.toLocaleString() || 0}
           </p>
         </div>
-        <div className={`p-3 rounded-lg bg-${color}-50`}>
-          <Icon className={`h-6 w-6 text-${color}-600`} />
+        <div className={`p-2 sm:p-3 rounded-lg ${color === 'blue' ? 'bg-blue-50' : ''} ${color === 'green' ? 'bg-green-50' : ''} ${color === 'purple' ? 'bg-purple-50' : ''} ${color === 'red' ? 'bg-red-50' : ''}`}>
+          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${color === 'blue' ? 'text-blue-600' : ''} ${color === 'green' ? 'text-green-600' : ''} ${color === 'purple' ? 'text-purple-600' : ''} ${color === 'red' ? 'text-red-600' : ''}`} />
         </div>
       </div>
     </div>
@@ -135,132 +162,148 @@ const Ip = () => {
   const DeviceIcon = ({ device }) => {
     switch (device?.toLowerCase()) {
       case 'mobile':
-        return <Smartphone className="h-4 w-4 text-green-600" />;
+        return <Smartphone className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />;
       case 'tablet':
-        return <Tablet className="h-4 w-4 text-blue-600" />;
+        return <Tablet className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />;
       case 'desktop':
-        return <Monitor className="h-4 w-4 text-purple-600" />;
+        return <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />;
       default:
-        return <Monitor className="h-4 w-4 text-gray-400" />;
+        return <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />;
     }
   };
 
-  // 🧩 Detail Card
+  // 🧩 Mobile-Friendly IP Detail Card
   const IpDetailCard = ({ ip }) => (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">IP 详情: {ip}</h3>
-        <button
-          onClick={() => {
-            setSelectedIP(null);
-            setIpDetails(null);
-          }}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 mx-2 sm:mx-0">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              setSelectedIP(null);
+              setIpDetails(null);
+            }}
+            className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">
+              IP 详情: {ip}
+            </h3>
+            <p className="text-xs sm:text-sm text-gray-600">点击左上角返回列表</p>
+          </div>
+        </div>
+        {ipDetails?.isPrivate && (
+          <div className="flex items-center bg-red-50 text-red-700 px-2 sm:px-3 py-1 rounded-lg">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="text-xs sm:text-sm font-medium">私有 IP</span>
+          </div>
+        )}
       </div>
 
       {loadingDetails ? (
-        <div className="flex justify-center py-8">
-          <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="flex flex-col items-center justify-center py-8">
+          <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+          <p className="text-gray-600 text-sm">加载中...</p>
         </div>
       ) : !ipDetails ? (
         <div className="text-center py-8 text-gray-500">
-          <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>未找到该 IP 的数据</p>
+          <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p className="text-sm sm:text-base">未找到该 IP 的数据</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* 基本信息 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="space-y-4 sm:space-y-6">
+          {/* 基本信息 - 移动端优化 */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-blue-600">总请求数</p>
-                  <p className="text-2xl font-bold text-blue-900">{ipDetails.totalRequests}</p>
+                  <p className="text-xs sm:text-sm text-blue-600">总请求</p>
+                  <p className="text-lg sm:text-2xl font-bold text-blue-900">{ipDetails.totalRequests}</p>
                 </div>
-                <FolderOpen className="h-8 w-8 text-blue-600 opacity-50" />
+                <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 opacity-50" />
               </div>
             </div>
             
-            <div className="bg-green-50 p-4 rounded-lg">
+            <div className="bg-green-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-green-600">项目访问</p>
-                  <p className="text-2xl font-bold text-green-900">{ipDetails.projectAccessCount}</p>
+                  <p className="text-xs sm:text-sm text-green-600">项目访问</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-900">{ipDetails.projectAccessCount}</p>
                 </div>
-                <Wifi className="h-8 w-8 text-green-600 opacity-50" />
+                <Wifi className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 opacity-50" />
               </div>
             </div>
 
-            <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="bg-purple-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-600">设备类型</p>
-                  <p className="text-lg font-bold text-purple-900">
+                  <p className="text-xs sm:text-sm text-purple-600">设备</p>
+                  <p className="text-base sm:text-lg font-bold text-purple-900">
                     {ipDetails.devices?.length || 0} 种
                   </p>
                 </div>
-                <Monitor className="h-8 w-8 text-purple-600 opacity-50" />
+                <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 opacity-50" />
               </div>
             </div>
 
-            <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="bg-orange-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-orange-600">浏览器</p>
-                  <p className="text-lg font-bold text-orange-900">
+                  <p className="text-xs sm:text-sm text-orange-600">浏览器</p>
+                  <p className="text-base sm:text-lg font-bold text-orange-900">
                     {ipDetails.browsers?.length || 0} 种
                   </p>
                 </div>
-                <Globe className="h-8 w-8 text-orange-600 opacity-50" />
+                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 opacity-50" />
               </div>
             </div>
           </div>
 
-          {/* 位置和网络信息 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900 flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-blue-600" /> 位置信息
+          {/* 位置和网络信息 - 移动端堆叠 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base flex items-center">
+                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" /> 位置信息
               </h4>
-              <div className="space-y-2">
+              <div className="space-y-1 sm:space-y-2">
                 {[
                   { label: '国家', value: ipDetails.country },
                   { label: '城市', value: ipDetails.city },
                   { label: '地区', value: ipDetails.region },
                   { label: 'ISP', value: ipDetails.isp }
                 ].map((item, index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="text-gray-600">{item.label}:</span>
-                    <span className="font-medium">{item.value || '未知'}</span>
+                  <div key={index} className="flex justify-between items-center py-1">
+                    <span className="text-gray-600 text-xs sm:text-sm">{item.label}:</span>
+                    <span className="font-medium text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none ml-2">
+                      {item.value || '未知'}
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* 时间信息 */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900 flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-green-600" /> 时间信息
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base flex items-center">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-green-600" /> 时间信息
               </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">首次访问:</span>
-                  <span className="font-medium">
-                    {ipDetails.firstActivity ? new Date(ipDetails.firstActivity).toLocaleString() : '未知'}
+              <div className="space-y-1 sm:space-y-2">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600 text-xs sm:text-sm">首次访问:</span>
+                  <span className="font-medium text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none ml-2">
+                    {ipDetails.firstActivity ? new Date(ipDetails.firstActivity).toLocaleDateString() : '未知'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">最后访问:</span>
-                  <span className="font-medium">
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600 text-xs sm:text-sm">最后访问:</span>
+                  <span className="font-medium text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none ml-2">
                     {ipDetails.lastActivity ? new Date(ipDetails.lastActivity).toLocaleString() : '未知'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">IP 类型:</span>
-                  <span className={`font-medium ${ipDetails.isPrivate ? 'text-red-600' : 'text-green-600'}`}>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-gray-600 text-xs sm:text-sm">IP 类型:</span>
+                  <span className={`font-medium text-xs sm:text-sm ${ipDetails.isPrivate ? 'text-red-600' : 'text-green-600'}`}>
                     {ipDetails.isPrivate ? '私有 IP' : '公有 IP'}
                   </span>
                 </div>
@@ -268,51 +311,56 @@ const Ip = () => {
             </div>
           </div>
 
-          {/* 设备和浏览器信息 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900">设备信息</h4>
-              <div className="flex flex-wrap gap-2">
+          {/* 设备和浏览器信息 - 移动端优化 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">设备信息</h4>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {ipDetails.devices?.map((device, index) => (
-                  <span key={index} className="bg-gray-100 px-3 py-1 rounded-full text-sm flex items-center">
+                  <span key={index} className="bg-gray-100 px-2 sm:px-3 py-1 rounded-full text-xs flex items-center">
                     <DeviceIcon device={device} />
-                    <span className="ml-1">{device}</span>
+                    <span className="ml-1 truncate max-w-[60px] sm:max-w-none">{device}</span>
                   </span>
                 ))}
                 {(!ipDetails.devices || ipDetails.devices.length === 0) && (
-                  <span className="text-gray-500">无设备信息</span>
+                  <span className="text-gray-500 text-xs sm:text-sm">无设备信息</span>
                 )}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900">浏览器信息</h4>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">浏览器信息</h4>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {ipDetails.browsers?.map((browser, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                  <span key={index} className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full text-xs truncate max-w-[80px] sm:max-w-none">
                     {browser}
                   </span>
                 ))}
                 {(!ipDetails.browsers || ipDetails.browsers.length === 0) && (
-                  <span className="text-gray-500">无浏览器信息</span>
+                  <span className="text-gray-500 text-xs sm:text-sm">无浏览器信息</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* 访问的 URL */}
+          {/* 访问的 URL - 移动端优化 */}
           {ipDetails.topUrls && ipDetails.topUrls.length > 0 && (
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900">最常访问的 URL</h4>
-              <div className="space-y-2">
-                {ipDetails.topUrls.map((url, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                    <span className="text-sm font-mono truncate flex-1">{url.url}</span>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">最常访问的 URL</h4>
+              <div className="space-y-1 sm:space-y-2">
+                {ipDetails.topUrls.slice(0, 3).map((url, index) => (
+                  <div key={index} className="flex justify-between items-center bg-gray-50 p-2 sm:p-3 rounded-lg">
+                    <span className="text-xs font-mono truncate flex-1 mr-2">{url.url}</span>
+                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 sm:py-1 rounded text-xs whitespace-nowrap">
                       {url.access_count} 次
                     </span>
                   </div>
                 ))}
+                {ipDetails.topUrls.length > 3 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    还有 {ipDetails.topUrls.length - 3} 个 URL
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -321,86 +369,191 @@ const Ip = () => {
     </div>
   );
 
-  if (selectedIP) return <IpDetailCard ip={selectedIP} />;
+  if (selectedIP) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-2 sm:p-4 md:p-6">
+        <div className="max-w-7xl mx-auto">
+          <IpDetailCard ip={selectedIP} />
+        </div>
+      </div>
+    );
+  }
 
-  // 🧾 Main Table
+  // 🧾 Main Table - 移动端优化
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-2 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
+        {/* Header - 移动端优化 */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <button
               onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
               className="p-2 hover:bg-white rounded-xl transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
                 IP 管理
               </h1>
-              <p className="text-gray-600">查看并分析访问项目的 IP</p>
+              <p className="text-gray-600 text-xs sm:text-sm">查看并分析访问项目的 IP</p>
             </div>
           </div>
 
-          <button
-            onClick={fetchIpData}
-            disabled={loading}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>刷新</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleSort('lastActivity')}
+              className="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+              title="按时间排序"
+            >
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              {sortBy === 'lastActivity' && sortOrder === 'desc' ? '最新' : '最旧'}
+            </button>
+            
+            <button
+              onClick={fetchIpData}
+              disabled={loading}
+              className="flex items-center space-x-1 sm:space-x-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="text-xs sm:text-sm">刷新</span>
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Stats - 移动端网格优化 */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <StatCard title="总 IP 数" value={stats.totalIPs} icon={Globe} color="blue" />
           <StatCard title="最近使用" value={stats.recentIPs} icon={Clock} color="green" />
           <StatCard title="国家数量" value={stats.totalCountries} icon={MapPin} color="purple" />
           <StatCard title="需检查" value={stats.suspiciousIPs} icon={Shield} color="red" />
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="搜索 IP、国家、城市或 ISP..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+        {/* Filters - 移动端优化 */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="搜索 IP、国家、城市或 ISP..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
 
-          <div className="flex items-center space-x-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="24h">24小时</option>
-              <option value="7d">7天</option>
-              <option value="30d">30天</option>
-              <option value="90d">90天</option>
-            </select>
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1">
+                <Filter className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm w-full"
+                >
+                  <option value="24h">24小时</option>
+                  <option value="7d">7天</option>
+                  <option value="30d">30天</option>
+                  <option value="90d">90天</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* IP Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+        {/* Mobile Card View for small screens */}
+        <div className="sm:hidden">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : ipList.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
+              <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>未找到 IP 数据</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ipList.map((ipItem) => (
+                <div key={ipItem.ip} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-1 mb-1">
+                        {ipItem.isPrivate && <Shield className="h-3 w-3 text-red-500 flex-shrink-0" />}
+                        <span className={`font-mono text-sm font-semibold truncate ${ipItem.isPrivate ? 'text-red-600' : ''}`}>
+                          {ipItem.ip}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-xs text-gray-600 mb-2">
+                        <div className="flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <span className="truncate max-w-[80px]">{ipItem.country || '未知'}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          <span>{ipItem.lastActivity ? new Date(ipItem.lastActivity).toLocaleDateString() : '未知'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => fetchIpDetails(ipItem.ip)}
+                      className="text-blue-600 hover:text-blue-900 text-sm font-medium ml-2"
+                    >
+                      详情
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center">
+                      <span className="text-gray-500 mr-1">设备:</span>
+                      <div className="flex items-center">
+                        <DeviceIcon device={ipItem.device} />
+                        <span className="ml-1 truncate">{ipItem.device || '未知'}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <span className="text-gray-500 mr-1">请求:</span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                        {ipItem.totalRequests || 0} 次
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="text-gray-500 mr-1">城市:</span>
+                      <span className="truncate">{ipItem.city || '未知'}</span>
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <span className="text-gray-500 mr-1">ISP:</span>
+                      <span className="truncate max-w-[100px] text-right">{ipItem.isp || '未知'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden sm:block bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 {['IP地址', '国家', '城市', 'ISP', '设备', '总请求', '最近活动', '操作'].map((head) => (
                   <th
                     key={head}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    {head}
+                    <div className="flex items-center">
+                      {head}
+                      {head === '最近活动' && (
+                        <button
+                          onClick={() => handleSort('lastActivity')}
+                          className="ml-1 focus:outline-none"
+                          title={sortBy === 'lastActivity' && sortOrder === 'desc' ? '最新优先' : '最旧优先'}
+                        >
+                          <Clock className="h-3 w-3 text-gray-400" />
+                        </button>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
@@ -410,53 +563,60 @@ const Ip = () => {
                 <tr>
                   <td colSpan="8" className="text-center py-8 text-gray-400">
                     <RefreshCw className="h-8 w-8 animate-spin mx-auto" />
+                    <p className="mt-2 text-sm">加载中...</p>
                   </td>
                 </tr>
               ) : ipList.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="text-center py-8 text-gray-500">
-                    未找到 IP 数据
+                    <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>未找到 IP 数据</p>
+                    <p className="text-sm text-gray-400 mt-1">尝试更改搜索条件或时间段</p>
                   </td>
                 </tr>
               ) : (
                 ipList.map((ipItem) => (
                   <tr key={ipItem.ip} className="hover:bg-gray-50 transition">
-                    <td className="px-6 py-4 font-mono">
-                      <div className="flex items-center space-x-2">
-                        {ipItem.isPrivate && <Shield className="h-4 w-4 text-red-500" />}
-                        <span className={ipItem.isPrivate ? 'text-red-600 font-semibold' : ''}>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        {ipItem.isPrivate && <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 flex-shrink-0" />}
+                        <span className={`font-mono text-sm ${ipItem.isPrivate ? 'text-red-600 font-semibold' : ''} truncate max-w-[120px] sm:max-w-none`}>
                           {ipItem.ip}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{ipItem.country}</span>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+                        <span className="truncate max-w-[60px] sm:max-w-none">{ipItem.country || '未知'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">{ipItem.city}</td>
-                    <td className="px-6 py-4">{ipItem.isp}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-4 sm:px-6 py-4 text-sm truncate max-w-[80px] sm:max-w-none">
+                      {ipItem.city || '未知'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-sm truncate max-w-[100px] sm:max-w-none">
+                      {ipItem.isp || '未知'}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
                         <DeviceIcon device={ipItem.device} />
-                        <span>{ipItem.device}</span>
+                        <span className="text-sm truncate max-w-[60px] sm:max-w-none">{ipItem.device || '未知'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                        {ipItem.totalRequests} 次
+                        {ipItem.totalRequests || 0} 次
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4 text-sm">
                       {ipItem.lastActivity
                         ? new Date(ipItem.lastActivity).toLocaleString()
                         : '未知'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 sm:px-6 py-4">
                       <button
                         onClick={() => fetchIpDetails(ipItem.ip)}
-                        className="text-blue-600 hover:text-blue-900 font-medium"
+                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
                       >
                         查看详情
                       </button>
@@ -468,29 +628,54 @@ const Ip = () => {
           </table>
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - 移动端优化 */}
         {totalPages > 1 && (
-          <div className="flex justify-between items-center mt-4">
-            <div className="text-sm text-gray-600">
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 gap-3">
+            <div className="text-xs sm:text-sm text-gray-600">
               显示第 {((page - 1) * itemsPerPage) + 1} - {Math.min(page * itemsPerPage, stats.totalIPs)} 条，共 {stats.totalIPs} 条
             </div>
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="上一页"
               >
-                上一页
+                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
-              <span className="px-4 py-2 border border-gray-300 rounded-lg bg-white">
-                第 {page} 页，共 {totalPages} 页
-              </span>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (page <= 3) {
+                    pageNum = i + 1;
+                  } else if (page >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm transition-colors ${page === pageNum ? 'bg-blue-600 text-white' : 'border border-gray-300 hover:bg-gray-50'}`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
               <button
                 onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={page === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label="下一页"
               >
-                下一页
+                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           </div>

@@ -10,11 +10,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
   const [activeTab, setActiveTab] = useState(
     location.state?.autoOpenBulkTab ? 'bulk' : 'single'
   );
-  
   const [pricingEnabled, setPricingEnabled] = useState(false);
   
   // กำหนด 6 แพ็กเกจเริ่มต้น
@@ -91,7 +89,6 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           }
           
           if (data.basePrices) {
-            // ตรวจสอบว่ามีข้อมูลครบ 6 แพ็กเกจหรือไม่
             const loadedPrices = { ...basePrices };
             Object.keys(data.basePrices).forEach(key => {
               if (loadedPrices[key]) {
@@ -169,7 +166,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       icon: 'success',
       title: 'ตั้งค่าสำเร็จ',
       text: 'ตั้งค่าราคาแพ็กเกจทั้งหมดให้เท่ากับจำนวนวันแล้ว',
-      confirmButtonText: 'ตกลง'
+      confirmButtonText: 'ตกลง',
+      customClass: {
+        popup: isDarkMode ? 'dark-swal' : ''
+      }
     });
   };
 
@@ -236,7 +236,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             icon: 'error',
             title: 'บันทึกไม่สำเร็จ',
             text: 'รหัสวิดีโอไม่สมบูรณ์',
-            confirmButtonText: 'ตกลง'
+            confirmButtonText: 'ตกลง',
+            customClass: {
+              popup: isDarkMode ? 'dark-swal' : ''
+            }
           });
           return;
         }
@@ -277,7 +280,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           text: activeTab === 'single' 
             ? 'บันทึกการตั้งค่าราคาวิดีโอเรียบร้อยแล้ว' 
             : 'บันทึกการตั้งค่าราคารวมเรียบร้อยแล้ว',
-          confirmButtonText: 'ตกลง'
+          confirmButtonText: 'ตกลง',
+          customClass: {
+            popup: isDarkMode ? 'dark-swal' : ''
+          }
         });
         
         if (activeTab === 'single' && pricingEnabled) {
@@ -302,7 +308,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         icon: 'error',
         title: 'บันทึกไม่สำเร็จ',
         text: error.message || 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า',
-        confirmButtonText: 'ตกลง'
+        confirmButtonText: 'ตกลง',
+        customClass: {
+          popup: isDarkMode ? 'dark-swal' : ''
+        }
       });
     } finally {
       setSaving(false);
@@ -315,9 +324,33 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }, 0);
   };
 
+  // สำหรับสไตล์ dark mode ใน SweetAlert2
+  useEffect(() => {
+    if (isDarkMode) {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        .dark-swal {
+          background-color: #1f2937 !important;
+          color: white !important;
+        }
+        .dark-swal .swal2-title {
+          color: white !important;
+        }
+        .dark-swal .swal2-content {
+          color: #d1d5db !important;
+        }
+        .dark-swal .swal2-confirm {
+          background-color: #3b82f6 !important;
+        }
+      `;
+      document.head.appendChild(style);
+      return () => style.remove();
+    }
+  }, [isDarkMode]);
+
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className={`mt-4 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
@@ -328,89 +361,181 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     );
   }
 
+  // Component สำหรับแพ็กเกจการตั้งค่าราคา (ใช้ซ้ำได้ทั้ง single และ bulk)
+  const PricePackageCard = ({ 
+    item, 
+    keyName, 
+    isEnabled, 
+    onToggle, 
+    onChange, 
+    type = 'single',
+    isDarkMode 
+  }) => {
+    const isSingle = type === 'single';
+    
+    return (
+      <div className={`p-2 sm:p-3 rounded-lg border transition-all min-h-[180px] ${
+        isEnabled 
+          ? (isSingle ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-green-500 bg-green-50 dark:bg-green-900/20') 
+          : 'border-gray-200 dark:border-gray-600'
+      }`}>
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <div className="flex items-center space-x-2">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isEnabled}
+                onChange={onToggle}
+                className="sr-only peer"
+              />
+              <div className={`w-9 h-5 rounded-full peer ${
+                isEnabled 
+                  ? (isSingle ? 'bg-blue-600' : 'bg-green-600') 
+                  : 'bg-gray-200 dark:bg-gray-600'
+              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
+            </label>
+            <span className={`text-sm font-medium whitespace-nowrap ${isEnabled ? (isSingle ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400') : 'text-gray-500'}`}>
+              {item.days} วัน
+            </span>
+          </div>
+          {isEnabled && (
+            <span className={`px-1.5 py-0.5 text-[10px] sm:text-xs rounded ${
+              isSingle 
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
+                : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+            }`}>
+              เปิดแล้ว
+            </span>
+          )}
+        </div>
+
+        {isEnabled && (
+          <div className="space-y-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">ราคา (฿)</label>
+              <input
+                type="number"
+                value={item.amount}
+                onChange={(e) => onChange(keyName, 'amount', e.target.value)}
+                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${
+                  isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
+                } ${isDarkMode 
+                  ? 'bg-gray-600 border-gray-500 text-white' 
+                  : 'bg-white border-gray-300'
+                }`}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">จำนวนวัน</label>
+              <input
+                type="number"
+                value={item.days}
+                onChange={(e) => onChange(keyName, 'days', e.target.value)}
+                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${
+                  isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
+                } ${isDarkMode 
+                  ? 'bg-gray-600 border-gray-500 text-white' 
+                  : 'bg-white border-gray-300'
+                }`}
+                min="1"
+              />
+            </div>
+            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+              <div className="truncate">เฉลี่ย: ฿{(item.amount / item.days).toFixed(2)}/วัน</div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className={`min-h-screen py-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+    <div className={`min-h-screen py-3 sm:py-6 px-2 sm:px-4 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
+      <div className="max-w-7xl mx-auto">
+        {/* Header และปุ่มกลับ */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
             <button 
               onClick={() => navigate('/video-management')}
-              className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-200 border'
               }`}
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              กลับไปจัดการวิดีโอ
+              กลับ
             </button>
           </div>
           
+          {/* ส่วนแสดงข้อมูลวิดีโอหรือ Bulk Pricing */}
           {activeTab === 'single' && video && (
-            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
-              <div className="flex items-start space-x-6">
+            <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                 {video.thumbnail && (
                   <img 
                     src={video.thumbnail} 
                     alt={video.title}
-                    className="w-24 h-18 object-cover rounded-lg"
+                    className="w-full sm:w-20 h-32 sm:h-16 object-cover rounded-lg"
                   />
                 )}
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>รหัสวิดีโอ:</span>
-                      <span className="ml-2 font-mono">{video.id}</span>
+                  <h1 className="text-base sm:text-xl font-bold mb-2 line-clamp-2">{video.title}</h1>
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
+                    <div className="truncate">
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>รหัส:</span>
+                      <span className="ml-1 font-mono">{video.id}</span>
                     </div>
-                    <div>
+                    <div className="truncate">
                       <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>หมวดหมู่:</span>
-                      <span className="ml-2">{video.category}</span>
+                      <span className="ml-1 truncate">{video.category}</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>สถานะการชำระเงิน:</span>
-                      <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>สถานะ:</span>
+                      <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                         pricingEnabled 
                           ? 'bg-green-500 text-white' 
                           : 'bg-gray-500 text-white'
                       }`}>
-                        {pricingEnabled ? 'เปิดใช้งานแล้ว' : 'ยังไม่ได้เปิดใช้งาน'}
+                        {pricingEnabled ? 'เปิด' : 'ปิด'}
                       </span>
                     </div>
                     {originalPrices && (
                       <div>
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>กำลังใช้:</span>
-                        <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ใช้:</span>
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                           usingBulkPricing 
                             ? 'bg-purple-500 text-white' 
                             : 'bg-blue-500 text-white'
                         }`}>
-                          {usingBulkPricing ? 'ราคารวม' : 'ราคาแบบกำหนดเอง'}
+                          {usingBulkPricing ? 'รวม' : 'กำหนดเอง'}
                         </span>
                       </div>
                     )}
                   </div>
                   
                   {originalPrices && (
-                    <div className={`mt-4 p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium">
-                            {usingBulkPricing ? 'ราคารวมที่กำลังใช้อยู่' : 'ราคาแบบกำหนดเองที่กำลังใช้อยู่'}
+                    <div className={`mt-3 p-2 sm:p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <div className="flex-1">
+                          <span className="text-xs sm:text-sm font-medium block mb-1">
+                            {usingBulkPricing ? 'ราคารวมที่กำลังใช้' : 'ราคากำหนดเองที่กำลังใช้'}
                           </span>
-                          <div className="flex flex-wrap gap-2 mt-1">
+                          <div className="flex flex-wrap gap-1">
                             {Object.entries(originalPrices).map(([key, price]) => (
                               price.enabled && (
-                                <span key={key} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-                                  {price.days} วัน: ฿{price.amount}
+                                <span key={key} className="px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
+                                  {price.days}วัน:฿{price.amount}
                                 </span>
                               )
                             ))}
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-sm font-medium">ราคารวม: </span>
-                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        <div className="text-left sm:text-right">
+                          <span className="text-xs sm:text-sm font-medium">รวม: </span>
+                          <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
                             ฿{calculateTotalPrice(originalPrices)}
                           </span>
                         </div>
@@ -423,17 +548,17 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           )}
 
           {activeTab === 'bulk' && (
-            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
-              <div className="flex items-start space-x-6">
-                <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-green-900/20' : 'bg-green-100'}`}>
-                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                <div className={`p-2 sm:p-4 rounded-lg ${isDarkMode ? 'bg-green-900/20' : 'bg-green-100'}`}>
+                  <svg className="w-5 h-5 sm:w-8 sm:h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold mb-2">ตั้งค่าราคาวิดีโอแบบรวม</h1>
-                  <p className={`text-lg mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    ตั้งค่าแผนราคาแบบเดียวกันสำหรับวิดีโอทั้งหมดในระบบ
+                  <h1 className="text-base sm:text-xl font-bold mb-2">ตั้งค่าราคาวิดีโอแบบรวม</h1>
+                  <p className={`text-xs sm:text-base mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    ตั้งค่าแผนราคาแบบเดียวกันสำหรับวิดีโอทั้งหมด
                   </p>
                 </div>
               </div>
@@ -441,55 +566,57 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           )}
         </div>
 
-        <div className={`mb-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
+        {/* Tabs */}
+        <div className={`mb-4 sm:mb-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
               <button
                 onClick={() => setActiveTab('single')}
-                className={`flex-1 py-4 px-6 text-center font-medium text-sm border-b-2 transition-colors ${
+                className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
                   activeTab === 'single'
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                ตั้งค่าราคาวิดีโอแบบเดี่ยว
+                แบบเดี่ยว
               </button>
               <button
                 onClick={() => setActiveTab('bulk')}
-                className={`flex-1 py-4 px-6 text-center font-medium text-sm border-b-2 transition-colors ${
+                className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
                   activeTab === 'bulk'
                     ? 'border-green-500 text-green-600 dark:text-green-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                ตั้งค่าราคาวิดีโอแบบรวม
+                แบบรวม
               </button>
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {activeTab === 'single' && (
               <div>
-                <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold">เปิดใช้งานฟังก์ชันการชำระเงิน</h3>
-                      <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        เมื่อเปิดใช้งานแล้ว ผู้ใช้จะต้องซื้อแพ็กเกจเพื่อดูวิดีโอนี้
+                {/* Toggle Pricing */}
+                <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+                    <div className="flex-1">
+                      <h3 className="text-sm sm:text-lg font-semibold">เปิดใช้งานการชำระเงิน</h3>
+                      <p className={`text-xs sm:text-sm mt-0.5 sm:mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        เปิดใช้งานฟังก์ชันการชำระเงินสำหรับวิดีโอนี้
                       </p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <label className="relative inline-flex items-center cursor-pointer self-start sm:self-center">
                       <input
                         type="checkbox"
                         checked={pricingEnabled}
                         onChange={() => setPricingEnabled(!pricingEnabled)}
                         className="sr-only peer"
                       />
-                      <div className={`w-14 h-7 rounded-full peer ${
+                      <div className={`w-10 h-5 sm:w-14 sm:h-7 rounded-full peer ${
                         pricingEnabled 
                           ? 'bg-blue-600' 
                           : 'bg-gray-200 dark:bg-gray-600'
-                      } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all`}></div>
+                      } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 sm:after:h-6 sm:after:w-6 after:transition-all`}></div>
                     </label>
                   </div>
                 </div>
@@ -497,106 +624,50 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 {pricingEnabled && (
                   <div>
                     {/* ปุ่มควบคุมทั้งหมด */}
-                    <div className="flex items-center justify-between mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <div>
-                        <h3 className="text-xl font-semibold">การตั้งค่าแพ็กเกจราคา</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                          ตั้งค่า 6 แพ็กเกจราคาที่แตกต่างกัน ผู้ใช้สามารถเลือกซื้อตามความต้องการ
-                        </p>
-                      </div>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => toggleAllPrices(true)}
-                          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
-                        >
-                          เปิดใช้งานทั้งหมด
-                        </button>
-                        <button
-                          onClick={() => toggleAllPrices(false)}
-                          className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                        >
-                          ปิดใช้งานทั้งหมด
-                        </button>
-                        <button
-                          onClick={setPriceEqualToDays}
-                          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
-                        >
-                          ราคา=จำนวนวัน
-                        </button>
+                    <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-base sm:text-xl font-semibold">ตั้งค่าแพ็กเกจราคา</h3>
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5 sm:mt-1">
+                            ตั้งค่า 6 แพ็กเกจราคาที่แตกต่างกัน
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
+                          <button
+                            onClick={() => toggleAllPrices(true)}
+                            className="px-2 py-1.5 sm:px-3 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            เปิดทั้งหมด
+                          </button>
+                          <button
+                            onClick={() => toggleAllPrices(false)}
+                            className="px-2 py-1.5 sm:px-3 sm:py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            ปิดทั้งหมด
+                          </button>
+                          <button
+                            onClick={setPriceEqualToDays}
+                            className="px-2 py-1.5 sm:px-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
+                          >
+                            ราคา=วัน
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* แสดงทั้ง 6 แพ็กเกจ */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {/* แสดงทั้ง 6 แพ็กเกจ - 2 columns บนทุกขนาดหน้าจอ */}
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
                       {Object.entries(basePrices).map(([key, price]) => (
-                        <div key={key} className={`p-4 rounded-lg border transition-all ${
-                          price.enabled 
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                            : 'border-gray-200 dark:border-gray-600'
-                        }`}>
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={price.enabled}
-                                  onChange={() => handleBasePriceToggle(key)}
-                                  className="sr-only peer"
-                                />
-                                <div className={`w-11 h-6 rounded-full peer ${
-                                  price.enabled 
-                                    ? 'bg-blue-600' 
-                                    : 'bg-gray-200 dark:bg-gray-600'
-                                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                              </label>
-                              <span className={`font-medium ${price.enabled ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
-                                แพ็กเกจ {price.days} วัน
-                              </span>
-                            </div>
-                            {price.enabled && (
-                              <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                                เปิดใช้งานแล้ว
-                              </span>
-                            )}
-                          </div>
-
-                          {price.enabled && (
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">ราคา (฿)</label>
-                                <input
-                                  type="number"
-                                  value={price.amount}
-                                  onChange={(e) => handleBasePriceChange(key, 'amount', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="0"
-                                  step="0.01"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                                <input
-                                  type="number"
-                                  value={price.days}
-                                  onChange={(e) => handleBasePriceChange(key, 'days', e.target.value)}
-                                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                                    isDarkMode 
-                                      ? 'bg-gray-600 border-gray-500 text-white' 
-                                      : 'bg-white border-gray-300'
-                                  }`}
-                                  min="1"
-                                />
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                <div>ราคาเฉลี่ยต่อวัน: ฿{(price.amount / price.days).toFixed(2)}/วัน</div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <PricePackageCard
+                          key={key}
+                          item={price}
+                          keyName={key}
+                          isEnabled={price.enabled}
+                          onToggle={() => handleBasePriceToggle(key)}
+                          onChange={handleBasePriceChange}
+                          type="single"
+                          isDarkMode={isDarkMode}
+                        />
                       ))}
                     </div>
                   </div>
@@ -606,26 +677,29 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
             {activeTab === 'bulk' && (
               <div>
-                <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                {/* Warning Message */}
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
-                      <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">การตั้งค่าราคาแบบรวม</h3>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        การตั้งค่านี้จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ รวมถึงวิดีโอที่มีอยู่และวิดีโอที่เพิ่มในอนาคต
+                    <div className="ml-2 sm:ml-3">
+                      <h3 className="text-sm sm:text-lg font-semibold text-yellow-800 dark:text-yellow-200">
+                        การตั้งค่าราคาแบบรวม
+                      </h3>
+                      <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mt-0.5 sm:mt-1">
+                        จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold">เทมเพลตราคาแบบรวม</h3>
-                    <div className="flex gap-2">
+                <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
+                    <h3 className="text-base sm:text-xl font-semibold">เทมเพลตราคาแบบรวม</h3>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       <button
                         onClick={() => {
                           const updatedTemplates = { ...bulkPricing.priceTemplates };
@@ -638,9 +712,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                             priceTemplates: updatedTemplates
                           }));
                         }}
-                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors"
+                        className="px-2 py-1.5 sm:px-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm rounded transition-colors whitespace-nowrap"
                       >
-                        เปิดใช้งานทั้งหมด (ราคา=จำนวนวัน)
+                        เปิดทั้งหมด
                       </button>
                       <button
                         onClick={() => {
@@ -653,83 +727,26 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                             priceTemplates: updatedTemplates
                           }));
                         }}
-                        className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                        className="px-2 py-1.5 sm:px-3 sm:py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs sm:text-sm rounded transition-colors whitespace-nowrap"
                       >
-                        ปิดใช้งานทั้งหมด
+                        ปิดทั้งหมด
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* แสดงทั้ง 6 เทมเพลต - 2 columns บนทุกขนาดหน้าจอ */}
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     {Object.entries(bulkPricing.priceTemplates).map(([key, template]) => (
-                      <div key={key} className={`p-4 rounded-lg border transition-all ${
-                        template.enabled 
-                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                          : 'border-gray-200 dark:border-gray-600'
-                      }`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={template.enabled}
-                                onChange={() => handleBulkTemplateToggle(key)}
-                                className="sr-only peer"
-                              />
-                              <div className={`w-11 h-6 rounded-full peer ${
-                                template.enabled 
-                                  ? 'bg-green-600' 
-                                  : 'bg-gray-200 dark:bg-gray-600'
-                              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
-                            </label>
-                            <span className={`font-medium ${template.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-500'}`}>
-                              แพ็กเกจ {template.days} วัน
-                            </span>
-                          </div>
-                          {template.enabled && (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded">
-                              เปิดใช้งานแล้ว
-                            </span>
-                          )}
-                        </div>
-
-                        {template.enabled && (
-                          <div className="space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-2">ราคา (฿)</label>
-                              <input
-                                type="number"
-                                value={template.amount}
-                                onChange={(e) => handleBulkTemplateChange(key, 'amount', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium mb-2">จำนวนวัน</label>
-                              <input
-                                type="number"
-                                value={template.days}
-                                onChange={(e) => handleBulkTemplateChange(key, 'days', e.target.value)}
-                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 ${
-                                  isDarkMode 
-                                    ? 'bg-gray-600 border-gray-500 text-white' 
-                                    : 'bg-white border-gray-300'
-                                }`}
-                                min="1"
-                              />
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              <div>ราคาเฉลี่ยต่อวัน: ฿{(template.amount / template.days).toFixed(2)}/วัน</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <PricePackageCard
+                        key={key}
+                        item={template}
+                        keyName={key}
+                        isEnabled={template.enabled}
+                        onToggle={() => handleBulkTemplateToggle(key)}
+                        onChange={handleBulkTemplateChange}
+                        type="bulk"
+                        isDarkMode={isDarkMode}
+                      />
                     ))}
                   </div>
                 </div>
@@ -738,12 +755,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           </div>
         </div>
 
-        <div className={`mt-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
-          <div className="flex flex-col sm:flex-row gap-3">
+        {/* Footer Buttons */}
+        <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={handleSaveAllSettings}
               disabled={saving}
-              className={`flex-1 px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`flex-1 px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${
                 saving
                   ? 'bg-gray-400 cursor-not-allowed'
                   : activeTab === 'single'
@@ -753,28 +771,28 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             >
               {saving ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                   กำลังบันทึก...
                 </span>
               ) : activeTab === 'single' ? (
-                'บันทึกการตั้งค่าวิดีโอเดี่ยว'
+                'บันทึกวิดีโอเดี่ยว'
               ) : (
-                'บันทึกการตั้งค่าแบบรวม'
+                'บันทึกราคารวม'
               )}
             </button>
             
             <button
               onClick={() => navigate('/video-management')}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+              className={`px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${
                 isDarkMode 
                   ? 'bg-gray-600 hover:bg-gray-500' 
                   : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
-              กลับไปจัดการ
+              ยกเลิก
             </button>
           </div>
         </div>

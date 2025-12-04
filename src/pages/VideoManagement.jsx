@@ -273,26 +273,33 @@ const VideoManagement = ({ isDarkMode }) => {
     return null;
   };
 
-  const handleManagePricing = async (video) => {
-    try {
-      setLoadingVideos(prev => ({ ...prev, [video.id]: true }));
-      
-      const customPriceData = await loadCustomVideoPrice(video.id);
-      
-      navigate(`/video/${video.id}/pricing`, {
-        state: {
-          videoInfo: video,
-          useGlobalPricing: !customPriceData,
-          initialPrices: customPriceData || globalPricing?.priceTemplates
-        }
-      });
-    } catch (error) {
-      console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลราคา:', error);
-      Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลราคาได้', 'error');
-    } finally {
-      setLoadingVideos(prev => ({ ...prev, [video.id]: false }));
-    }
-  };
+// ใน handleManagePricing เพิ่มการตรวจสอบ video id
+const handleManagePricing = async (video) => {
+  // ✅ ตรวจสอบว่า video มี id จริงหรือไม่
+  if (!video || !video.id) {
+    Swal.fire('ข้อผิดพลาด', 'วิดีโอไม่พบหรือไม่มีรหัส', 'error');
+    return;
+  }
+  
+  try {
+    setLoadingVideos(prev => ({ ...prev, [video.id]: true }));
+    
+    const customPriceData = await loadCustomVideoPrice(video.id);
+    
+    navigate(`/video/${video.id}/pricing`, {
+      state: {
+        videoInfo: video,
+        useGlobalPricing: !customPriceData,
+        initialPrices: customPriceData || globalPricing?.priceTemplates
+      }
+    });
+  } catch (error) {
+    console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลราคา:', error);
+    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลราคาได้', 'error');
+  } finally {
+    setLoadingVideos(prev => ({ ...prev, [video.id]: false }));
+  }
+};
 
   const handleAllVideosPricing = () => {
     navigate('/enhanced-price-setting/all', {
@@ -479,40 +486,40 @@ const handleTogglePaidStatus = async (videoId, enable) => {
     const result = await response.json();
 
     if (result.success) {
-      // ✅ อัพเดท state โดยตรง ไม่ต้องโหลดข้อมูลใหม่
-      setVideos(prev => prev.map(video => 
-        video.id === videoId 
-          ? { 
-              ...video, 
-              hasPricing: enable,
-              pricing_enabled: enable
-            }
-          : video
-      ));
+
+      // ⭐ โหลดราคาใหม่แบบเต็ม
+      const newPricing = await loadSingleVideoPricing(videoId);
+
+      // ⭐ อัพเดทข้อมูลทั้งหมดของวิดีโอใน state
+      setVideos(prev =>
+        prev.map(video =>
+          video.id === videoId
+            ? {
+                ...video,
+                ...newPricing,   // << สำคัญที่สุด
+              }
+            : video
+        )
+      );
 
       Swal.fire({
         icon: 'success',
-        title: enable ? 'เปิดใช้งานการชำระเงินแล้ว' : 'ปิดใช้งานการชำระเงินแล้ว',
+        title: enable ? 'เปิดการชำระเงินแล้ว' : 'ปิดการชำระเงินแล้ว',
         text: result.message,
-        confirmButtonText: 'ตกลง',
         timer: 1500
       });
 
     } else {
       throw new Error(result.message || 'ดำเนินการไม่สำเร็จ');
     }
+
   } catch (error) {
-    console.error('สลับสถานะการชำระเงินผิดพลาด:', error);
-    Swal.fire({
-      icon: 'error',
-      title: 'ดำเนินการไม่สำเร็จ',
-      text: error.message,
-      confirmButtonText: 'ตกลง'
-    });
+    Swal.fire('ข้อผิดพลาด', error.message, 'error');
   } finally {
     setLoadingVideos(prev => ({ ...prev, [videoId]: false }));
   }
 };
+
 // ✅ เพิ่ม function สำหรับโหลดข้อมูล video pricing ใหม่
 const loadSingleVideoPricing = async (videoId) => {
   try {

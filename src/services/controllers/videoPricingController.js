@@ -3,60 +3,77 @@ const VideoPricingModel = require('../models/videoPricingModel');
 const VideoPricingController = {
 
 // ✅ แก้ไข method getPricingSettings
-async getPricingSettings(req, res) {
-  try {
-    const { videoId } = req.params;
+  async getPricingSettings(req, res) {
+    try {
+      const { videoId } = req.params;
 
-    const settings = await VideoPricingModel.getPricingSettings(videoId);
+      const settings = await VideoPricingModel.getPricingSettings(videoId);
 
-    if (!settings) {
-      return res.json({
+      if (!settings) {
+        return res.json({
+          success: true,
+          videoInfo: { id: parseInt(videoId) },
+          pricingEnabled: false,
+          useGlobalPricing: true,
+          pricingType: 'none',
+          basePrices: {
+            price_1: { amount: 1, days: 1, enabled: false },
+            price_7: { amount: 7, days: 7, enabled: false },
+            price_30: { amount: 30, days: 30, enabled: false },
+            price_90: { amount: 90, days: 90, enabled: false },
+            price_180: { amount: 180, days: 180, enabled: false },
+            price_365: { amount: 365, days: 365, enabled: false }
+          }
+        });
+      }
+
+      const isGlobal = settings.pricing_type === 'global';
+
+      res.json({
         success: true,
-        videoInfo: { id: parseInt(videoId) }, // ✅ ใช้เฉพาะ video_id
-        pricingEnabled: false,
-        useGlobalPricing: true,
-        pricingType: 'none',
+        videoInfo: { id: settings.video_id },
+        pricingEnabled: settings.pricing_enabled === 1,
+        useGlobalPricing: isGlobal,
+        pricingType: settings.pricing_type,
         basePrices: {
-          price_1: { amount: 1, days: 1, enabled: false },
-          price_7: { amount: 7, days: 7, enabled: false },
-          price_30: { amount: 30, days: 30, enabled: false },
-          price_90: { amount: 90, days: 90, enabled: false },
-          price_180: { amount: 180, days: 180, enabled: false },
-          price_365: { amount: 365, days: 365, enabled: false }
+          price_1: {
+            amount: parseFloat(isGlobal ? settings.template_1_amount : settings.price_1_amount || 1),
+            days: isGlobal ? settings.template_1_days : settings.price_1_days || 1,
+            enabled: isGlobal ? settings.template_1_enabled === 1 : settings.price_1_enabled === 1
+          },
+          price_7: {
+            amount: parseFloat(isGlobal ? settings.template_7_amount : settings.price_7_amount || 7),
+            days: isGlobal ? settings.template_7_days : settings.price_7_days || 7,
+            enabled: isGlobal ? settings.template_7_enabled === 1 : settings.price_7_enabled === 1
+          },
+          price_30: {
+            amount: parseFloat(isGlobal ? settings.template_30_amount : settings.price_30_amount || 30),
+            days: isGlobal ? settings.template_30_days : settings.price_30_days || 30,
+            enabled: isGlobal ? settings.template_30_enabled === 1 : settings.price_30_enabled === 1
+          },
+          price_90: {
+            amount: parseFloat(isGlobal ? settings.template_90_amount : settings.price_90_amount || 90),
+            days: isGlobal ? settings.template_90_days : settings.price_90_days || 90,
+            enabled: isGlobal ? settings.template_90_enabled === 1 : settings.price_90_enabled === 1
+          },
+          price_180: {
+            amount: parseFloat(isGlobal ? settings.template_180_amount : settings.price_180_amount || 180),
+            days: isGlobal ? settings.template_180_days : settings.price_180_days || 180,
+            enabled: isGlobal ? settings.template_180_enabled === 1 : settings.price_180_enabled === 1
+          },
+          price_365: {
+            amount: parseFloat(isGlobal ? settings.template_365_amount : settings.price_365_amount || 365),
+            days: isGlobal ? settings.template_365_days : settings.price_365_days || 365,
+            enabled: isGlobal ? settings.template_365_enabled === 1 : settings.price_365_enabled === 1
+          }
         }
       });
+
+    } catch (error) {
+      console.error('Get pricing settings error:', error);
+      res.status(500).json({ success: false, message: '获取价格设置失败' });
     }
-
-    const isGlobalPricing = settings.pricing_type === 'global';
-
-    const response = {
-      success: true,
-      videoInfo: {
-        id: settings.video_id,
-        // ✅ ไม่มี title, thumbnail, category
-      },
-      pricingEnabled: settings.pricing_enabled === 1,
-      useGlobalPricing: isGlobalPricing,
-      pricingType: settings.pricing_type,
-      basePrices: {
-        price_1: {
-          amount: parseFloat(isGlobalPricing ? settings.template_1_amount : settings.price_1_amount || 1),
-          days: isGlobalPricing ? settings.template_1_days : settings.price_1_days || 1,
-          enabled: isGlobalPricing ? settings.template_1_enabled === 1 : settings.price_1_enabled === 1
-        },
-        // ... basePrices อื่นๆ ...
-      }
-    };
-
-    res.json(response);
-  } catch (error) {
-    console.error('Get pricing settings error:', error);
-    res.status(500).json({
-      success: false,
-      message: '获取价格设置失败'
-    });
-  }
-},
+  },
 
   // ✅ บันทึกการตั้งค่าราคา
 async saveAllSettings(req, res) {
