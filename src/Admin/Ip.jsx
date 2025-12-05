@@ -386,11 +386,14 @@ const Ip = () => {
         {/* Header - 移动端优化 */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <button
+            <button 
               onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
-              className="p-2 hover:bg-white rounded-xl transition-colors"
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm `}
             >
-              <ArrowLeft className="h-5 w-5" />
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              กลับ
             </button>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">

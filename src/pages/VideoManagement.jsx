@@ -30,7 +30,7 @@ const VideoManagement = ({ isDarkMode }) => {
         const categoriesData = await getCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('โหลดหมวดหมู่ไม่สำเร็จ:', error);
+        console.error('加载分类失败:', error);
       }
     };
     loadCategories();
@@ -47,7 +47,7 @@ const VideoManagement = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error('โหลดราคาแบบกลุ่มไม่สำเร็จ:', error);
+      console.error('加载批量价格设置失败:', error);
     }
     return null;
   };
@@ -110,12 +110,12 @@ const VideoManagement = ({ isDarkMode }) => {
       setVideos(videosWithPriceStatus);
       setHasMore(result.hasMore);
     } catch (error) {
-      console.error('โหลดข้อมูลไม่สำเร็จ:', error);
+      console.error('加载数据失败:', error);
       Swal.fire({
         icon: 'error',
-        title: 'โหลดข้อมูลล้มเหลว',
-        text: 'ไม่สามารถโหลดข้อมูลวิดีโอได้',
-        confirmButtonText: 'ตกลง'
+        title: '加载失败',
+        text: '无法加载视频数据',
+        confirmButtonText: '确定'
       });
     } finally {
       setLoading(false);
@@ -183,7 +183,7 @@ const VideoManagement = ({ isDarkMode }) => {
         setHasMore(false);
       }
     } catch (error) {
-      console.error('โหลดวิดีโอเพิ่มไม่สำเร็จ:', error);
+      console.error('加载更多视频失败:', error);
       setHasMore(false);
     } finally {
       setLoadingMore(false);
@@ -240,7 +240,7 @@ const VideoManagement = ({ isDarkMode }) => {
       }
       return { hasPricing: false, isPaid: false };
     } catch (error) {
-      console.error('ตรวจสอบสถานะราคาผิดพลาด:', error);
+      console.error('检查价格状态失败:', error);
       return { hasPricing: false, isPaid: false };
     }
   };
@@ -253,7 +253,7 @@ const VideoManagement = ({ isDarkMode }) => {
       }
       return null;
     } catch (error) {
-      console.error('โหลดข้อมูลเรตติ้งผิดพลาด:', error);
+      console.error('加载评分数据失败:', error);
       return null;
     }
   };
@@ -268,38 +268,36 @@ const VideoManagement = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error(`โหลดราคาวิดีโอ ${videoId} ไม่สำเร็จ:`, error);
+      console.error(`加载视频${videoId}价格失败:`, error);
     }
     return null;
   };
 
-// ใน handleManagePricing เพิ่มการตรวจสอบ video id
-const handleManagePricing = async (video) => {
-  // ✅ ตรวจสอบว่า video มี id จริงหรือไม่
-  if (!video || !video.id) {
-    Swal.fire('ข้อผิดพลาด', 'วิดีโอไม่พบหรือไม่มีรหัส', 'error');
-    return;
-  }
-  
-  try {
-    setLoadingVideos(prev => ({ ...prev, [video.id]: true }));
-    
-    const customPriceData = await loadCustomVideoPrice(video.id);
-    
-    navigate(`/video/${video.id}/pricing`, {
-      state: {
-        videoInfo: video,
-        useGlobalPricing: !customPriceData,
-        initialPrices: customPriceData || globalPricing?.priceTemplates
-      }
-    });
-  } catch (error) {
-    console.error('เกิดข้อผิดพลาดในการโหลดข้อมูลราคา:', error);
-    Swal.fire('ข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลราคาได้', 'error');
-  } finally {
-    setLoadingVideos(prev => ({ ...prev, [video.id]: false }));
-  }
-};
+  const handleManagePricing = async (video) => {
+    if (!video || !video.id) {
+      Swal.fire('错误', '未找到视频或缺少ID', 'error');
+      return;
+    }
+
+    try {
+      setLoadingVideos(prev => ({ ...prev, [video.id]: true }));
+
+      const customPriceData = await loadCustomVideoPrice(video.id);
+
+      navigate(`/video/${video.id}/pricing`, {
+        state: {
+          videoInfo: video,
+          useGlobalPricing: !customPriceData,
+          initialPrices: customPriceData || globalPricing?.priceTemplates
+        }
+      });
+    } catch (error) {
+      console.error('加载价格数据时发生错误:', error);
+      Swal.fire('错误', '无法加载价格数据', 'error');
+    } finally {
+      setLoadingVideos(prev => ({ ...prev, [video.id]: false }));
+    }
+  };
 
   const handleAllVideosPricing = () => {
     navigate('/enhanced-price-setting/all', {
@@ -309,94 +307,93 @@ const handleManagePricing = async (video) => {
     });
   };
 
-// ✅ แก้ไข handleEnableAllVideosInSystem
-const handleEnableAllVideosInSystem = async () => {
-  try {
-    const result = await Swal.fire({
-      title: 'เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในระบบ',
-      text: `คุณแน่ใจหรือไม่ที่จะเปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในระบบ?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'เปิดใช้งานทั้งหมด',
-      cancelButtonText: 'ยกเลิก'
-    });
-
-    if (result.isConfirmed) {
-      const progressSwal = Swal.fire({
-        title: 'กำลังดำเนินการ...',
-        html: `กำลังเปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในระบบ...`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
+  const handleEnableAllVideosInSystem = async () => {
+    try {
+      const result = await Swal.fire({
+        title: '为系统中所有视频启用付费功能',
+        text: `您确定要为系统中所有视频启用付费功能吗？`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '全部启用',
+        cancelButtonText: '取消'
       });
 
-      try {
-        const response = await fetch('/backend-api/video/pricing/enable-all-paid', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+      if (result.isConfirmed) {
+        const progressSwal = Swal.fire({
+          title: '正在处理...',
+          html: `正在为系统中所有视频启用付费功能...`,
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
           }
         });
 
-        const resultData = await response.json();
+        try {
+          const response = await fetch('/backend-api/video/pricing/enable-all-paid', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
 
-        await progressSwal.close();
+          const resultData = await response.json();
 
-        if (response.ok && resultData.success) {
-          // ✅ โหลดข้อมูลใหม่ทั้งหมดจาก server
-          await loadInitialVideos();
-          
-          Swal.fire({
-            icon: 'success',
-            title: 'ดำเนินการเสร็จสิ้น',
-            html: `
+          await progressSwal.close();
+
+          if (response.ok && resultData.success) {
+            await loadInitialVideos();
+
+            Swal.fire({
+              icon: 'success',
+              title: '操作完成',
+              html: `
             <div>
-              <p>เปิดใช้งานการชำระเงินสำเร็จสำหรับวิดีโอทั้งหมด</p>
-              <p class="text-sm text-gray-600">จำนวนวิดีโอ: ${resultData.totalVideos || 'ทั้งหมด'} รายการ</p>
-              <p class="text-sm text-gray-600">สำเร็จ: ${resultData.successCount} รายการ</p>
-              ${resultData.failCount > 0 ? `<p class="text-sm text-red-600">ล้มเหลว: ${resultData.failCount} รายการ</p>` : ''}
+              <p>已成功为所有视频启用付费功能</p>
+              <p class="text-sm text-gray-600">视频数量: ${resultData.totalVideos || '全部'} 个</p>
+              <p class="text-sm text-gray-600">成功: ${resultData.successCount} 个</p>
+              ${resultData.failCount > 0 ? `<p class="text-sm text-red-600">失败: ${resultData.failCount} 个</p>` : ''}
             </div>
           `,
-            confirmButtonText: 'ตกลง'
-          });
-        } else {
-          throw new Error(resultData.message || 'เปิดใช้งานไม่สำเร็จ');
+              confirmButtonText: '确定'
+            });
+          } else {
+            throw new Error(resultData.message || '启用失败');
+          }
+        } catch (error) {
+          await progressSwal.close();
+          throw error;
         }
-      } catch (error) {
-        await progressSwal.close();
-        throw error;
       }
+    } catch (error) {
+      console.error('启用所有视频付费功能失败:', error);
+      Swal.fire('错误', '操作失败: ' + error.message, 'error');
     }
-  } catch (error) {
-    console.error('เปิดใช้งานการชำระเงินทั้งหมดผิดพลาด:', error);
-    Swal.fire('ข้อผิดพลาด', 'ดำเนินการไม่สำเร็จ: ' + error.message, 'error');
-  }
-};
+  };
+
   const handleEnableAllVideosInPage = async () => {
     try {
       const currentPageVideoIds = filteredVideos.map(video => video.id);
 
       if (currentPageVideoIds.length === 0) {
-        Swal.fire('แจ้งเตือน', 'ไม่มีวิดีโอในหน้าปัจจุบัน', 'warning');
+        Swal.fire('提示', '当前页面没有视频', 'warning');
         return;
       }
 
       const result = await Swal.fire({
-        title: 'เปิดใช้งานการชำระเงินสำหรับวิดีโอทั้งหมดในหน้านี้',
-        text: `คุณแน่ใจหรือไม่ที่จะเปิดใช้งานการชำระเงินสำหรับวิดีโอ ${currentPageVideoIds.length} รายการในหน้านี้?`,
+        title: '为本页所有视频启用付费功能',
+        text: `您确定要为本页${currentPageVideoIds.length}个视频启用付费功能吗？`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'เปิดใช้งาน',
-        cancelButtonText: 'ยกเลิก'
+        confirmButtonText: '启用',
+        cancelButtonText: '取消'
       });
 
       if (result.isConfirmed) {
         const progressSwal = Swal.fire({
-          title: 'กำลังดำเนินการ...',
-          html: `กำลังเปิดใช้งานการชำระเงินสำหรับ ${currentPageVideoIds.length} วิดีโอ...`,
+          title: '正在处理...',
+          html: `正在为${currentPageVideoIds.length}个视频启用付费功能...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -425,21 +422,21 @@ const handleEnableAllVideosInSystem = async () => {
 
             if (response.ok && resultData.success) {
               successCount++;
-              
-              setVideos(prev => prev.map(video => 
-                video.id === videoId 
-                  ? { 
-                      ...video, 
-                      hasPricing: true,
-                      pricing_enabled: true 
-                    }
+
+              setVideos(prev => prev.map(video =>
+                video.id === videoId
+                  ? {
+                    ...video,
+                    hasPricing: true,
+                    pricing_enabled: true
+                  }
                   : video
               ));
             } else {
-              throw new Error(resultData.message || 'เปิดใช้งานไม่สำเร็จ');
+              throw new Error(resultData.message || '启用失败');
             }
           } catch (error) {
-            console.error(`เปิดใช้งานวิดีโอ ${videoId} ไม่สำเร็จ:`, error);
+            console.error(`启用视频${videoId}失败:`, error);
             failCount++;
           }
         }
@@ -448,112 +445,107 @@ const handleEnableAllVideosInSystem = async () => {
 
         Swal.fire({
           icon: successCount > 0 ? 'success' : 'error',
-          title: 'ดำเนินการเสร็จสิ้น',
+          title: '操作完成',
           html: `
           <div>
-            <p>เปิดใช้งานสำเร็จ: ${successCount} วิดีโอ</p>
-            ${failCount > 0 ? `<p style="color: red;">ล้มเหลว: ${failCount} วิดีโอ</p>` : ''}
+            <p>启用成功: ${successCount} 个视频</p>
+            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
           </div>
         `,
-          confirmButtonText: 'ตกลง'
+          confirmButtonText: '确定'
         });
       }
     } catch (error) {
-      console.error('เปิดใช้งานการชำระเงินทั้งหมดผิดพลาด:', error);
-      Swal.fire('ข้อผิดพลาด', 'ดำเนินการไม่สำเร็จ', 'error');
+      console.error('启用页面所有视频失败:', error);
+      Swal.fire('错误', '操作失败', 'error');
     }
   };
 
-// ใน handleTogglePaidStatus - ลบการตรวจสอบ video_id
-const handleTogglePaidStatus = async (videoId, enable) => {
-  try {
-    setLoadingVideos(prev => ({ ...prev, [videoId]: true }));
+  const handleTogglePaidStatus = async (videoId, enable) => {
+    try {
+      setLoadingVideos(prev => ({ ...prev, [videoId]: true }));
 
-    const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token');
 
-    const response = await fetch('/backend-api/video/pricing/toggle-paid', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        video_id: parseInt(videoId),
-        enable: enable
-      })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-
-      // ⭐ โหลดราคาใหม่แบบเต็ม
-      const newPricing = await loadSingleVideoPricing(videoId);
-
-      // ⭐ อัพเดทข้อมูลทั้งหมดของวิดีโอใน state
-      setVideos(prev =>
-        prev.map(video =>
-          video.id === videoId
-            ? {
-                ...video,
-                ...newPricing,   // << สำคัญที่สุด
-              }
-            : video
-        )
-      );
-
-      Swal.fire({
-        icon: 'success',
-        title: enable ? 'เปิดการชำระเงินแล้ว' : 'ปิดการชำระเงินแล้ว',
-        text: result.message,
-        timer: 1500
+      const response = await fetch('/backend-api/video/pricing/toggle-paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          video_id: parseInt(videoId),
+          enable: enable
+        })
       });
 
-    } else {
-      throw new Error(result.message || 'ดำเนินการไม่สำเร็จ');
+      const result = await response.json();
+
+      if (result.success) {
+        const newPricing = await loadSingleVideoPricing(videoId);
+
+        setVideos(prev =>
+          prev.map(video =>
+            video.id === videoId
+              ? {
+                ...video,
+                ...newPricing,
+              }
+              : video
+          )
+        );
+
+        Swal.fire({
+          icon: 'success',
+          title: enable ? '已开启付费' : '已关闭付费',
+          text: result.message,
+          timer: 1500
+        });
+
+      } else {
+        throw new Error(result.message || '操作失败');
+      }
+
+    } catch (error) {
+      Swal.fire('错误', error.message, 'error');
+    } finally {
+      setLoadingVideos(prev => ({ ...prev, [videoId]: false }));
     }
+  };
 
-  } catch (error) {
-    Swal.fire('ข้อผิดพลาด', error.message, 'error');
-  } finally {
-    setLoadingVideos(prev => ({ ...prev, [videoId]: false }));
-  }
-};
+  const loadSingleVideoPricing = async (videoId) => {
+    try {
+      const [priceStatus, customPriceData] = await Promise.all([
+        checkVideoPriceStatus(videoId),
+        loadCustomVideoPrice(videoId)
+      ]);
 
-// ✅ เพิ่ม function สำหรับโหลดข้อมูล video pricing ใหม่
-const loadSingleVideoPricing = async (videoId) => {
-  try {
-    const [priceStatus, customPriceData] = await Promise.all([
-      checkVideoPriceStatus(videoId),
-      loadCustomVideoPrice(videoId)
-    ]);
-
-    return {
-      hasPricing: priceStatus.hasPricing,
-      isPaid: priceStatus.isPaid,
-      priceStatusLoaded: true,
-      pricing_enabled: priceStatus.hasPricing,
-      useGlobalPricing: !customPriceData,
-      customPriceData: customPriceData
-    };
-  } catch (error) {
-    console.error(`โหลดข้อมูล video ${videoId} ไม่สำเร็จ:`, error);
-    return {
-      hasPricing: false,
-      isPaid: false,
-      priceStatusLoaded: false,
-      pricing_enabled: false,
-      useGlobalPricing: true,
-      customPriceData: null
-    };
-  }
-};
+      return {
+        hasPricing: priceStatus.hasPricing,
+        isPaid: priceStatus.isPaid,
+        priceStatusLoaded: true,
+        pricing_enabled: priceStatus.hasPricing,
+        useGlobalPricing: !customPriceData,
+        customPriceData: customPriceData
+      };
+    } catch (error) {
+      console.error(`加载视频${videoId}数据失败:`, error);
+      return {
+        hasPricing: false,
+        isPaid: false,
+        priceStatusLoaded: false,
+        pricing_enabled: false,
+        useGlobalPricing: true,
+        customPriceData: null
+      };
+    }
+  };
 
   const renderVideoPrices = (video) => {
     if (!video.priceData) {
       return (
         <div className="text-xs text-gray-500 text-center mt-1">
-          ยังไม่ได้ตั้งราคา
+          未设置价格
         </div>
       );
     }
@@ -564,7 +556,7 @@ const loadSingleVideoPricing = async (videoId) => {
     if (enabledPrices.length === 0) {
       return (
         <div className="text-xs text-gray-500 text-center mt-1">
-          ยังไม่ได้ตั้งราคา
+          未设置价格
         </div>
       );
     }
@@ -575,14 +567,13 @@ const loadSingleVideoPricing = async (videoId) => {
           {enabledPrices.map(([key, price], index) => (
             <div
               key={key}
-              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border ${
-                index % 2 === 0 
-                  ? 'bg-gradient-to-br from-green-50 to-blue-50 text-green-800 border-green-200' 
+              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border ${index % 2 === 0
+                  ? 'bg-gradient-to-br from-green-50 to-blue-50 text-green-800 border-green-200'
                   : 'bg-gradient-to-br from-emerald-50 to-cyan-50 text-emerald-800 border-emerald-200'
-              }`}
+                }`}
             >
               <span className="font-bold">¥{price.amount}</span>
-              <span className="text-[10px]">{price.days} วัน</span>
+              <span className="text-[10px]">{price.days} 天</span>
             </div>
           ))}
         </div>
@@ -613,31 +604,31 @@ const loadSingleVideoPricing = async (videoId) => {
 
   const handleBulkAction = async () => {
     if (selectedVideos.size === 0) {
-      Swal.fire('แจ้งเตือน', 'กรุณาเลือกวิดีโอก่อน', 'warning');
+      Swal.fire('提示', '请先选择视频', 'warning');
       return;
     }
 
     if (!bulkAction) {
-      Swal.fire('แจ้งเตือน', 'กรุณาเลือกการดำเนินการ', 'warning');
+      Swal.fire('提示', '请选择操作', 'warning');
       return;
     }
 
     try {
       const result = await Swal.fire({
-        title: 'ยืนยันการดำเนินการ',
-        text: `คุณแน่ใจหรือไม่ที่จะดำเนินการ "${bulkAction === 'enable' ? 'เปิดใช้งานการชำระเงิน' : 'ปิดใช้งานการชำระเงิน'}" กับ ${selectedVideos.size} วิดีโอ?`,
+        title: '确认操作',
+        text: `您确定要对${selectedVideos.size}个视频执行"${bulkAction === 'enable' ? '启用付费功能' : '禁用付费功能'}"操作吗？`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: 'ดำเนินการ',
-        cancelButtonText: 'ยกเลิก'
+        confirmButtonText: '执行',
+        cancelButtonText: '取消'
       });
 
       if (result.isConfirmed) {
         const videoIds = Array.from(selectedVideos);
 
         const progressSwal = Swal.fire({
-          title: 'กำลังดำเนินการ...',
-          html: `กำลังประมวลผล ${videoIds.length} วิดีโอ...`,
+          title: '正在处理...',
+          html: `正在处理${videoIds.length}个视频...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -666,7 +657,7 @@ const loadSingleVideoPricing = async (videoId) => {
 
             if (response.ok && resultData.success) {
               successCount++;
-              
+
               setVideos(prev => prev.map(video => {
                 if (selectedVideos.has(video.id)) {
                   return {
@@ -678,7 +669,7 @@ const loadSingleVideoPricing = async (videoId) => {
                 return video;
               }));
             } else {
-              throw new Error(resultData.message || 'ดำเนินการไม่สำเร็จ');
+              throw new Error(resultData.message || '操作失败');
             }
           } catch (error) {
             failCount++;
@@ -689,22 +680,22 @@ const loadSingleVideoPricing = async (videoId) => {
 
         Swal.fire({
           icon: successCount > 0 ? 'success' : 'error',
-          title: 'ดำเนินการเสร็จสิ้น',
+          title: '操作完成',
           html: `
           <div>
-            <p>สำเร็จ: ${successCount} วิดีโอ</p>
-            ${failCount > 0 ? `<p style="color: red;">ล้มเหลว: ${failCount} วิดีโอ</p>` : ''}
+            <p>成功: ${successCount} 个视频</p>
+            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
           </div>
         `,
-          confirmButtonText: 'ตกลง'
+          confirmButtonText: '确定'
         });
 
         setSelectedVideos(new Set());
         setBulkAction('');
       }
     } catch (error) {
-      console.error('ดำเนินการแบบกลุ่มผิดพลาด:', error);
-      Swal.fire('ข้อผิดพลาด', 'ดำเนินการไม่สำเร็จ', 'error');
+      console.error('批量操作失败:', error);
+      Swal.fire('错误', '操作失败', 'error');
     }
   };
 
@@ -712,20 +703,20 @@ const loadSingleVideoPricing = async (videoId) => {
     const viewCount = views || 0;
     if (viewCount >= 1000000) {
       return {
-        text: `${(viewCount / 1000000).toFixed(1)}M ดู`,
+        text: `${(viewCount / 1000000).toFixed(1)}M 观看`,
         isPopular: true,
         level: 'mega'
       };
     }
     if (viewCount >= 1000) {
       return {
-        text: `${(viewCount / 1000).toFixed(0)}K ดู`,
+        text: `${(viewCount / 1000).toFixed(0)}K 观看`,
         isPopular: true,
         level: 'popular'
       };
     }
     return {
-      text: `${viewCount} ดู`,
+      text: `${viewCount} 观看`,
       isPopular: false,
       level: 'normal'
     };
@@ -764,7 +755,7 @@ const loadSingleVideoPricing = async (videoId) => {
     if (!video.priceStatusLoaded) {
       return (
         <span className="px-2 py-1 text-xs bg-gray-400 text-white rounded-full">
-          กำลังโหลด...
+          加载中...
         </span>
       );
     }
@@ -772,13 +763,13 @@ const loadSingleVideoPricing = async (videoId) => {
     if (video.hasPricing) {
       return (
         <span className="px-2 py-1 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full">
-          วิดีโอแบบชำระเงิน
+          付费视频
         </span>
       );
     }
     return (
       <span className="px-2 py-1 text-xs bg-gray-500 text-white rounded-full">
-        วิดีโอฟรี
+        免费视频
       </span>
     );
   };
@@ -805,9 +796,9 @@ const loadSingleVideoPricing = async (videoId) => {
       <div className={`min-h-screen py-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">จัดการราคาการดูวิดีโอ</h1>
+            <h1 className="text-3xl font-bold mb-2">视频价格管理</h1>
             <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              กำลังโหลดข้อมูลวิดีโอ...
+              正在加载视频数据...
             </p>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -825,95 +816,85 @@ const loadSingleVideoPricing = async (videoId) => {
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <button
+              onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-200 border'
+                }`}
+            >
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              返回
+            </button>
             <div>
-              <h1 className="text-3xl font-bold mb-2">จัดการราคาการดูวิดีโอ</h1>
-              <p className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                จัดการการตั้งค่าการชำระเงินสำหรับวิดีโอทั้งหมด • ทั้งหมด {videos.length} วิดีโอ
-                {selectedVideos.size > 0 && ` • เลือกแล้ว ${selectedVideos.size} วิดีโอ`}
-              </p>
+              <h1 className="text-3xl font-bold mb-2">视频价格管理</h1>
             </div>
             <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
               <button
                 onClick={handleEnableAllVideosInSystem}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                  isDarkMode
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
                     ? 'bg-red-700 hover:bg-red-600 text-white'
                     : 'bg-red-600 hover:bg-red-700 text-white'
-                }`}
+                  }`}
               >
-                เปิดการชำระเงินทั้งหมดในระบบ
+                启用系统中所有视频付费
               </button>
 
               <button
                 onClick={handleEnableAllVideosInPage}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                  isDarkMode
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
                     ? 'bg-purple-700 hover:bg-purple-600 text-white'
                     : 'bg-purple-600 hover:bg-purple-700 text-white'
-                }`}
+                  }`}
               >
-                เปิดการชำระเงินทั้งหมดในหน้านี้
+                启用本页所有视频付费
               </button>
 
               <button
                 onClick={handleAllVideosPricing}
-                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                  isDarkMode
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
                     ? 'bg-green-700 hover:bg-green-600 text-white'
                     : 'bg-green-600 hover:bg-green-700 text-white'
-                }`}
+                  }`}
               >
-                ตั้งราคาวิดีโอทั้งหมด
-              </button>
-
-              <button
-                onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  isDarkMode
-                    ? 'bg-gray-700 hover:bg-gray-600'
-                    : 'bg-white hover:bg-gray-200 border'
-                }`}
-              >
-                กลับไปหน้าแรก
+                设置所有视频价格
               </button>
             </div>
           </div>
         </div>
 
         {selectedVideos.size > 0 && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
-          }`}>
+          <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+            }`}>
             <div className="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
               <div className="flex items-center space-x-3">
-                <span className="font-semibold">ดำเนินการแบบกลุ่ม:</span>
+                <span className="font-semibold">批量操作:</span>
                 <select
                   value={bulkAction}
                   onChange={(e) => setBulkAction(e.target.value)}
-                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                    isDarkMode
+                  className={`px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
                       ? 'bg-gray-700 border-gray-600 text-white'
                       : 'bg-white border-gray-300'
-                  }`}
+                    }`}
                 >
-                  <option value="">เลือกการดำเนินการ</option>
-                  <option value="enable">เปิดใช้งานการชำระเงิน</option>
-                  <option value="disable">ปิดใช้งานการชำระเงิน</option>
+                  <option value="">选择操作</option>
+                  <option value="enable">启用付费功能</option>
+                  <option value="disable">禁用付费功能</option>
                 </select>
                 <button
                   onClick={handleBulkAction}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  ดำเนินการ
+                  执行
                 </button>
               </div>
               <div className="flex items-center space-x-3">
-                <span className="text-sm">เลือกแล้ว {selectedVideos.size} วิดีโอ</span>
+                <span className="text-sm">已选择 {selectedVideos.size} 个视频</span>
                 <button
                   onClick={handleDeselectAll}
                   className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
                 >
-                  ยกเลิกการเลือกทั้งหมด
+                  取消全选
                 </button>
               </div>
             </div>
@@ -923,30 +904,28 @@ const loadSingleVideoPricing = async (videoId) => {
         <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">ค้นหาวิดีโอ</label>
+              <label className="block text-sm font-medium mb-2">搜索视频</label>
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="ป้อนชื่อวิดีโอ, นักแสดง หรือ ID..."
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode
+                placeholder="输入视频名称、演员或ID..."
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">หมวดหมู่</label>
+              <label className="block text-sm font-medium mb-2">分类</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               >
                 {categories.map(category => (
                   <option key={category.id} value={category.id}>
@@ -957,28 +936,27 @@ const loadSingleVideoPricing = async (videoId) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">สถานะการชำระเงิน</label>
+              <label className="block text-sm font-medium mb-2">付费状态</label>
               <select
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value)}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                  isDarkMode
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isDarkMode
                     ? 'bg-gray-700 border-gray-600 text-white'
                     : 'bg-white border-gray-300'
-                }`}
+                  }`}
               >
-                <option value="all">วิดีโอทั้งหมด</option>
-                <option value="paid">วิดีโอแบบชำระเงิน</option>
-                <option value="free">วิดีโอฟรี</option>
+                <option value="all">所有视频</option>
+                <option value="paid">付费视频</option>
+                <option value="free">免费视频</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">สถิติ</label>
+              <label className="block text-sm font-medium mb-2">统计</label>
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div>วิดีโอทั้งหมด: {videos.length} รายการ</div>
-                <div>แบบชำระเงิน: {videos.filter(v => v.hasPricing).length} รายการ</div>
-                <div>ฟรี: {videos.filter(v => !v.hasPricing).length} รายการ</div>
+                <div>总视频数: {videos.length} 个</div>
+                <div>付费视频: {videos.filter(v => v.hasPricing).length} 个</div>
+                <div>免费视频: {videos.filter(v => !v.hasPricing).length} 个</div>
               </div>
             </div>
           </div>
@@ -989,18 +967,18 @@ const loadSingleVideoPricing = async (videoId) => {
                 onClick={handleSelectAll}
                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
-                เลือกทั้งหมดในหน้านี้
+                全选本页
               </button>
               <button
                 onClick={handleDeselectAll}
                 className="px-3 py-1 text-sm bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
               >
-                ยกเลิกการเลือกทั้งหมด
+                取消全选
               </button>
             </div>
             <div className="text-sm text-gray-500">
-              แสดง {filteredVideos.length} วิดีโอ
-              {hasMore && ' • เลื่อนเพื่อโหลดเพิ่ม'}
+              显示 {filteredVideos.length} 个视频
+              {hasMore && ' • 滚动加载更多'}
             </div>
           </div>
         </div>
@@ -1014,11 +992,9 @@ const loadSingleVideoPricing = async (videoId) => {
               return (
                 <div
                   key={video.id}
-                  className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${
-                    isDarkMode ? 'bg-white' : 'bg-white'
-                  } ${video.hasPricing ? 'ring-2 ring-green-500' : ''} ${
-                    selectedVideos.has(video.id) ? 'ring-2 ring-blue-500' : ''
-                  }`}
+                  className={`rounded-md overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 ${isDarkMode ? 'bg-white' : 'bg-white'
+                    } ${video.hasPricing ? 'ring-2 ring-green-500' : ''} ${selectedVideos.has(video.id) ? 'ring-2 ring-blue-500' : ''
+                    }`}
                 >
                   <div
                     className="relative aspect-[6/4] bg-gray-700 overflow-hidden group"
@@ -1037,7 +1013,7 @@ const loadSingleVideoPricing = async (videoId) => {
                       {maxStar > 0 ? (
                         renderStars(maxStar)
                       ) : (
-                        <span className="text-gray-300">ยังไม่มีเรตติ้ง</span>
+                        <span className="text-gray-300">暂无评分</span>
                       )}
                     </div>
 
@@ -1055,7 +1031,7 @@ const loadSingleVideoPricing = async (videoId) => {
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-white text-xs text-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-1"></div>
-                          กำลังดำเนินการ...
+                          处理中...
                         </div>
                       </div>
                     )}
@@ -1063,17 +1039,15 @@ const loadSingleVideoPricing = async (videoId) => {
 
                   <div className="px-2 py-1">
                     <p
-                      className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${
-                        isDarkMode ? 'text-gray-900' : 'text-black'
-                      }`}
+                      className={`font-medium text-xs leading-tight truncate whitespace-nowrap overflow-hidden ${isDarkMode ? 'text-gray-900' : 'text-black'
+                        }`}
                       title={video.title}
                     >
                       {video.title}
                     </p>
                     <div
-                      className={`flex items-center justify-between text-xs ${
-                        isDarkMode ? 'text-gray-900' : 'text-gray-600'
-                      }`}
+                      className={`flex items-center justify-between text-xs ${isDarkMode ? 'text-gray-900' : 'text-gray-600'
+                        }`}
                     >
                       <span>{viewData.text}</span>
                       <span className="text-xs">{video.uploadDate}</span>
@@ -1090,13 +1064,12 @@ const loadSingleVideoPricing = async (videoId) => {
                           handleManagePricing(video);
                         }}
                         disabled={loadingVideos[video.id]}
-                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${
-                          video.hasPricing
+                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${video.hasPricing
                             ? 'bg-blue-600 hover:bg-blue-700 text-white'
                             : 'bg-gray-600 hover:bg-gray-700 text-white'
-                        } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {video.hasPricing ? 'ปรับราคา' : 'ตั้งราคา'}
+                        {video.hasPricing ? '调整价格' : '设置价格'}
                       </button>
 
                       <button
@@ -1105,13 +1078,12 @@ const loadSingleVideoPricing = async (videoId) => {
                           handleTogglePaidStatus(video.id, !video.pricing_enabled);
                         }}
                         disabled={loadingVideos[video.id]}
-                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${
-                          video.pricing_enabled
+                        className={`w-full py-1 px-2 rounded text-xs font-medium transition-colors ${video.pricing_enabled
                             ? 'bg-red-600 hover:bg-red-700 text-white'
                             : 'bg-green-600 hover:bg-green-700 text-white'
-                        } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {video.pricing_enabled ? 'ปิดการชำระเงิน' : 'เปิดการชำระเงิน'}
+                        {video.pricing_enabled ? '关闭付费' : '开启付费'}
                       </button>
                     </div>
                   </div>
@@ -1125,15 +1097,15 @@ const loadSingleVideoPricing = async (videoId) => {
               <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-lg">ไม่พบวิดีโอที่ตรงกับเงื่อนไข</p>
-              <p className="text-sm mt-2">ลองปรับเปลี่ยนเงื่อนไขการค้นหาหรือตัวกรอง</p>
+              <p className="text-lg">未找到符合条件的视频</p>
+              <p className="text-sm mt-2">请尝试调整搜索条件或筛选器</p>
             </div>
           )}
 
           {loadingMore && (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-3 text-gray-500">กำลังโหลดวิดีโอเพิ่มเติม...</span>
+              <span className="ml-3 text-gray-500">正在加载更多视频...</span>
             </div>
           )}
 
@@ -1146,13 +1118,12 @@ const loadSingleVideoPricing = async (videoId) => {
           <div className="flex justify-center mb-6">
             <button
               onClick={loadMoreVideos}
-              className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                isDarkMode
+              className={`px-6 py-3 rounded-lg font-medium transition-colors ${isDarkMode
                   ? 'bg-blue-600 hover:bg-blue-700 text-white'
                   : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
+                }`}
             >
-              โหลดวิดีโอเพิ่มเติม
+              加载更多视频
             </button>
           </div>
         )}
@@ -1160,7 +1131,7 @@ const loadSingleVideoPricing = async (videoId) => {
         {!hasMore && filteredVideos.length > 0 && (
           <div className="text-center py-6">
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              🎉 แสดงวิดีโอทั้งหมดแล้ว ({filteredVideos.length} รายการ)
+              🎉 已显示所有视频 ({filteredVideos.length} 个)
             </p>
           </div>
         )}

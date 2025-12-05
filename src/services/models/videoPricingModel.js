@@ -417,7 +417,7 @@ async togglePaidStatus(videoId, enable) {
       console.error('Get all videos with pricing error:', error);
       return [];
     }
-  }
+  },
 
 };
 

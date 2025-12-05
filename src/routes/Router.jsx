@@ -64,6 +64,7 @@ const Router = () => {
           
           {/* ✅ เพิ่ม Route สำหรับระบบจัดการวิดีโอ */}
           <Route path="video-management" element={<VideoManagement />} />
+          {/* ✅ กำหนด route สำหรับการตั้งค่าราคา */}
           <Route path="video/:videoId/pricing" element={<EnhancedPriceSetting />} />
           <Route path="/enhanced-price-setting/:videoId?" element={<EnhancedPriceSetting />} />
         </Route>
@@ -87,7 +88,6 @@ const Router = () => {
         <Route path="/GameDashboard" element={<GameDashboard/>} />
         <Route path="/Addlinks" element={<Addlinks/>} />
         <Route path="/P" element={<P/>} />
-
 
         {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
         <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Not Found</h1>} />

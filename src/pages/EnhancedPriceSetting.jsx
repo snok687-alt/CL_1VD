@@ -10,12 +10,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState(
-    location.state?.autoOpenBulkTab ? 'bulk' : 'single'
-  );
+  const [activeTab, setActiveTab] = useState('single'); // 设置默认值为single
   const [pricingEnabled, setPricingEnabled] = useState(false);
   
-  // กำหนด 6 แพ็กเกจเริ่มต้น
+  // 定义6个初始套餐
   const [basePrices, setBasePrices] = useState({
     price_1: { amount: 1, days: 1, enabled: true },
     price_7: { amount: 7, days: 7, enabled: true },
@@ -40,26 +38,48 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
   const [originalPrices, setOriginalPrices] = useState(null);
   const [usingBulkPricing, setUsingBulkPricing] = useState(false);
+  const [hasValidAccess, setHasValidAccess] = useState(false);
 
+  // ✅ 检查访问权限 - 如果没有videoId，禁止直接进入bulk页面
   useEffect(() => {
     if (location.state?.autoOpenBulkTab) {
+      // 如果有autoOpenBulkTab状态，则打开bulk标签页
       setActiveTab('bulk');
+      setHasValidAccess(true);
+    } else if (videoId && videoId !== 'all') {
+      // 如果有非'all'的videoId，则打开single标签页
+      setActiveTab('single');
+      setHasValidAccess(true);
+    } else {
+      // 如果没有videoId或videoId为'all'但没有autoOpenBulkTab状态
+      // 重定向回video-management
+      Swal.fire({
+        icon: 'error',
+        title: '访问无效',
+        text: '请从视频管理页面选择视频',
+        confirmButtonText: '确定'
+      }).then(() => {
+        navigate('/video-management');
+      });
     }
-  }, [location.state]);
+  }, [videoId, location.state, navigate]);
 
+  // ✅ 修改loadData的useEffect
   useEffect(() => {
+    if (!hasValidAccess) return;
+
     const loadData = async () => {
       try {
         setLoading(true);
         
-        if (activeTab === 'single' && videoId) {
+        if (activeTab === 'single' && videoId && videoId !== 'all') {
           await loadPriceSettings(videoId);
         } else if (activeTab === 'bulk') {
           await loadBulkPriceSettings();
         }
       } catch (error) {
-        console.error('ข้อผิดพลาดในการโหลดข้อมูล:', error);
-        if (activeTab === 'single' && videoId) {
+        console.error('加载数据时出错:', error);
+        if (activeTab === 'single' && videoId && videoId !== 'all') {
           await loadVideoInfo(videoId);
         }
       } finally {
@@ -68,7 +88,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     };
 
     loadData();
-  }, [videoId, activeTab]);
+  }, [videoId, activeTab, hasValidAccess]);
 
   const loadPriceSettings = async (id) => {
     try {
@@ -104,7 +124,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       await loadVideoInfo(id);
       
     } catch (error) {
-      console.error('ข้อผิดพลาดในการโหลดการตั้งค่าราคา:', error);
+      console.error('加载价格设置时出错:', error);
       await loadVideoInfo(id);
     }
   };
@@ -119,7 +139,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error('ข้อผิดพลาดในการโหลดข้อมูลวิดีโอ:', error);
+      console.error('加载视频信息时出错:', error);
     }
   };
 
@@ -133,11 +153,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error('ข้อผิดพลาดในการโหลดการตั้งค่าการตั้งค่าราคารวม:', error);
+      console.error('加载批量价格设置时出错:', error);
     }
   };
 
-  // ฟังก์ชันเปิด/ปิดการใช้งานราคาทั้ง 6 แบบพร้อมกัน
+  // 批量启用/禁用所有6个价格
   const toggleAllPrices = (enabled) => {
     const updatedPrices = { ...basePrices };
     Object.keys(updatedPrices).forEach(key => {
@@ -149,7 +169,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     setBasePrices(updatedPrices);
   };
 
-  // ฟังก์ชันตั้งค่าราคาให้เท่ากับจำนวนวัน
+  // 将价格设置为等于天数
   const setPriceEqualToDays = () => {
     const updatedPrices = { ...basePrices };
     Object.keys(updatedPrices).forEach(key => {
@@ -164,9 +184,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     
     Swal.fire({
       icon: 'success',
-      title: 'ตั้งค่าสำเร็จ',
-      text: 'ตั้งค่าราคาแพ็กเกจทั้งหมดให้เท่ากับจำนวนวันแล้ว',
-      confirmButtonText: 'ตกลง',
+      title: '设置成功',
+      text: '已将所有套餐价格设置为等于天数',
+      confirmButtonText: '确定',
       customClass: {
         popup: isDarkMode ? 'dark-swal' : ''
       }
@@ -223,6 +243,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }));
   };
 
+  // ✅ 修改handleSaveAllSettings
   const handleSaveAllSettings = async () => {
     try {
       setSaving(true);
@@ -231,12 +252,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       const token = localStorage.getItem('token');
 
       if (activeTab === 'single') {
-        if (!videoId) {
+        if (!videoId || videoId === 'all') {
           Swal.fire({
             icon: 'error',
-            title: 'บันทึกไม่สำเร็จ',
-            text: 'รหัสวิดีโอไม่สมบูรณ์',
-            confirmButtonText: 'ตกลง',
+            title: '保存失败',
+            text: '视频ID不完整',
+            confirmButtonText: '确定',
             customClass: {
               popup: isDarkMode ? 'dark-swal' : ''
             }
@@ -276,11 +297,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       if (result.success) {
         await Swal.fire({
           icon: 'success',
-          title: 'บันทึกสำเร็จ',
+          title: '保存成功',
           text: activeTab === 'single' 
-            ? 'บันทึกการตั้งค่าราคาวิดีโอเรียบร้อยแล้ว' 
-            : 'บันทึกการตั้งค่าราคารวมเรียบร้อยแล้ว',
-          confirmButtonText: 'ตกลง',
+            ? '视频价格设置已保存' 
+            : '批量价格设置已保存',
+          confirmButtonText: '确定',
           customClass: {
             popup: isDarkMode ? 'dark-swal' : ''
           }
@@ -300,15 +321,15 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           });
         }
       } else {
-        throw new Error(result.message || 'บันทึกไม่สำเร็จ');
+        throw new Error(result.message || '保存失败');
       }
     } catch (error) {
-      console.error('ข้อผิดพลาดในการบันทึกการตั้งค่า:', error);
+      console.error('保存设置时出错:', error);
       Swal.fire({
         icon: 'error',
-        title: 'บันทึกไม่สำเร็จ',
-        text: error.message || 'เกิดข้อผิดพลาดในการบันทึกการตั้งค่า',
-        confirmButtonText: 'ตกลง',
+        title: '保存失败',
+        text: error.message || '保存设置时出错',
+        confirmButtonText: '确定',
         customClass: {
           popup: isDarkMode ? 'dark-swal' : ''
         }
@@ -324,7 +345,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }, 0);
   };
 
-  // สำหรับสไตล์ dark mode ใน SweetAlert2
+  // 为SweetAlert2的dark mode样式
   useEffect(() => {
     if (isDarkMode) {
       const style = document.createElement('style');
@@ -348,20 +369,34 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }
   }, [isDarkMode]);
 
-  if (loading) {
+  // ✅ 如果没有访问权限，显示loading或重定向
+  if (!hasValidAccess) {
     return (
       <div className={`min-h-screen flex items-center justify-center px-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className={`mt-4 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
-            {activeTab === 'single' ? 'กำลังโหลดการตั้งค่าราคาวิดีโอ...' : 'กำลังโหลดการตั้งค่าราคารวม...'}
+            正在检查访问权限...
           </p>
         </div>
       </div>
     );
   }
 
-  // Component สำหรับแพ็กเกจการตั้งค่าราคา (ใช้ซ้ำได้ทั้ง single และ bulk)
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center px-4 ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className={`mt-4 ${isDarkMode ? 'text-white' : 'text-gray-700'}`}>
+            {activeTab === 'single' ? '正在加载视频价格设置...' : '正在加载批量价格设置...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 价格套餐卡片组件（可重复用于single和bulk）
   const PricePackageCard = ({ 
     item, 
     keyName, 
@@ -395,7 +430,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
             </label>
             <span className={`text-sm font-medium whitespace-nowrap ${isEnabled ? (isSingle ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400') : 'text-gray-500'}`}>
-              {item.days} วัน
+              {item.days} 天
             </span>
           </div>
           {isEnabled && (
@@ -404,7 +439,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
                 : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
             }`}>
-              เปิดแล้ว
+              已启用
             </span>
           )}
         </div>
@@ -412,7 +447,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         {isEnabled && (
           <div className="space-y-2">
             <div>
-              <label className="block text-xs font-medium mb-1">ราคา (฿)</label>
+              <label className="block text-xs font-medium mb-1">价格 (¥)</label>
               <input
                 type="number"
                 value={item.amount}
@@ -428,7 +463,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1">จำนวนวัน</label>
+              <label className="block text-xs font-medium mb-1">天数</label>
               <input
                 type="number"
                 value={item.days}
@@ -443,7 +478,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               />
             </div>
             <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-              <div className="truncate">เฉลี่ย: ฿{(item.amount / item.days).toFixed(2)}/วัน</div>
+              <div className="truncate">平均: ¥{(item.amount / item.days).toFixed(2)}/天</div>
             </div>
           </div>
         )}
@@ -454,7 +489,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   return (
     <div className={`min-h-screen py-3 sm:py-6 px-2 sm:px-4 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
       <div className="max-w-7xl mx-auto">
-        {/* Header และปุ่มกลับ */}
+        {/* Header和返回按钮 */}
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <button 
@@ -466,11 +501,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              กลับ
+              返回
             </button>
           </div>
           
-          {/* ส่วนแสดงข้อมูลวิดีโอหรือ Bulk Pricing */}
+          {/* 显示视频信息或批量定价信息 */}
           {activeTab === 'single' && video && (
             <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
@@ -485,32 +520,32 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   <h1 className="text-base sm:text-xl font-bold mb-2 line-clamp-2">{video.title}</h1>
                   <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                     <div className="truncate">
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>รหัส:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ID:</span>
                       <span className="ml-1 font-mono">{video.id}</span>
                     </div>
                     <div className="truncate">
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>หมวดหมู่:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>分类:</span>
                       <span className="ml-1 truncate">{video.category}</span>
                     </div>
                     <div>
-                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>สถานะ:</span>
+                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>状态:</span>
                       <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                         pricingEnabled 
                           ? 'bg-green-500 text-white' 
                           : 'bg-gray-500 text-white'
                       }`}>
-                        {pricingEnabled ? 'เปิด' : 'ปิด'}
+                        {pricingEnabled ? '开启' : '关闭'}
                       </span>
                     </div>
                     {originalPrices && (
                       <div>
-                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>ใช้:</span>
+                        <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>使用:</span>
                         <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
                           usingBulkPricing 
                             ? 'bg-purple-500 text-white' 
                             : 'bg-blue-500 text-white'
                         }`}>
-                          {usingBulkPricing ? 'รวม' : 'กำหนดเอง'}
+                          {usingBulkPricing ? '批量' : '自定义'}
                         </span>
                       </div>
                     )}
@@ -521,22 +556,22 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
                         <div className="flex-1">
                           <span className="text-xs sm:text-sm font-medium block mb-1">
-                            {usingBulkPricing ? 'ราคารวมที่กำลังใช้' : 'ราคากำหนดเองที่กำลังใช้'}
+                            {usingBulkPricing ? '正在使用的批量价格' : '正在使用的自定义价格'}
                           </span>
                           <div className="flex flex-wrap gap-1">
                             {Object.entries(originalPrices).map(([key, price]) => (
                               price.enabled && (
                                 <span key={key} className="px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-                                  {price.days}วัน:฿{price.amount}
+                                  {price.days}天:¥{price.amount}
                                 </span>
                               )
                             ))}
                           </div>
                         </div>
                         <div className="text-left sm:text-right">
-                          <span className="text-xs sm:text-sm font-medium">รวม: </span>
+                          <span className="text-xs sm:text-sm font-medium">总计: </span>
                           <span className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">
-                            ฿{calculateTotalPrice(originalPrices)}
+                            ¥{calculateTotalPrice(originalPrices)}
                           </span>
                         </div>
                       </div>
@@ -556,9 +591,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-base sm:text-xl font-bold mb-2">ตั้งค่าราคาวิดีโอแบบรวม</h1>
+                  <h1 className="text-base sm:text-xl font-bold mb-2">批量视频价格设置</h1>
                   <p className={`text-xs sm:text-base mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    ตั้งค่าแผนราคาแบบเดียวกันสำหรับวิดีโอทั้งหมด
+                    为所有视频设置相同的价格方案
                   </p>
                 </div>
               </div>
@@ -566,20 +601,23 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           )}
         </div>
 
-        {/* Tabs */}
+        {/* 标签页 - 只显示相关标签页 */}
         <div className={`mb-4 sm:mb-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="border-b border-gray-200 dark:border-gray-700">
             <nav className="flex -mb-px">
-              <button
-                onClick={() => setActiveTab('single')}
-                className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
-                  activeTab === 'single'
-                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
-              >
-                แบบเดี่ยว
-              </button>
+              {videoId && videoId !== 'all' && (
+                <button
+                  onClick={() => setActiveTab('single')}
+                  className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
+                    activeTab === 'single'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  单个
+                </button>
+              )}
+              
               <button
                 onClick={() => setActiveTab('bulk')}
                 className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
@@ -588,7 +626,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                แบบรวม
+                批量
               </button>
             </nav>
           </div>
@@ -596,13 +634,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           <div className="p-3 sm:p-6">
             {activeTab === 'single' && (
               <div>
-                {/* Toggle Pricing */}
+                {/* 定价开关 */}
                 <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
                     <div className="flex-1">
-                      <h3 className="text-sm sm:text-lg font-semibold">เปิดใช้งานการชำระเงิน</h3>
+                      <h3 className="text-sm sm:text-lg font-semibold">启用付费功能</h3>
                       <p className={`text-xs sm:text-sm mt-0.5 sm:mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                        เปิดใช้งานฟังก์ชันการชำระเงินสำหรับวิดีโอนี้
+                        为此视频启用付费功能
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer self-start sm:self-center">
@@ -623,13 +661,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
                 {pricingEnabled && (
                   <div>
-                    {/* ปุ่มควบคุมทั้งหมด */}
+                    {/* 批量控制按钮 */}
                     <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
                         <div className="flex-1">
-                          <h3 className="text-base sm:text-xl font-semibold">ตั้งค่าแพ็กเกจราคา</h3>
+                          <h3 className="text-base sm:text-xl font-semibold">设置价格套餐</h3>
                           <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mt-0.5 sm:mt-1">
-                            ตั้งค่า 6 แพ็กเกจราคาที่แตกต่างกัน
+                            设置6个不同的价格套餐
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -637,25 +675,25 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                             onClick={() => toggleAllPrices(true)}
                             className="px-2 py-1.5 sm:px-3 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
                           >
-                            เปิดทั้งหมด
+                            全部启用
                           </button>
                           <button
                             onClick={() => toggleAllPrices(false)}
                             className="px-2 py-1.5 sm:px-3 sm:py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
                           >
-                            ปิดทั้งหมด
+                            全部禁用
                           </button>
                           <button
                             onClick={setPriceEqualToDays}
                             className="px-2 py-1.5 sm:px-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap"
                           >
-                            ราคา=วัน
+                            价格=天数
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* แสดงทั้ง 6 แพ็กเกจ - 2 columns บนทุกขนาดหน้าจอ */}
+                    {/* 显示6个套餐 - 所有屏幕尺寸上均为2列 */}
                     <div className="grid grid-cols-2 gap-2 sm:gap-4">
                       {Object.entries(basePrices).map(([key, price]) => (
                         <PricePackageCard
@@ -677,7 +715,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
             {activeTab === 'bulk' && (
               <div>
-                {/* Warning Message */}
+                {/* 警告信息 */}
                 <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
@@ -687,10 +725,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     </div>
                     <div className="ml-2 sm:ml-3">
                       <h3 className="text-sm sm:text-lg font-semibold text-yellow-800 dark:text-yellow-200">
-                        การตั้งค่าราคาแบบรวม
+                        批量价格设置
                       </h3>
                       <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mt-0.5 sm:mt-1">
-                        จะถูกนำไปใช้กับวิดีโอทั้งหมดในระบบ
+                        将应用于系统中的所有视频
                       </p>
                     </div>
                   </div>
@@ -698,7 +736,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
                 <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-3">
-                    <h3 className="text-base sm:text-xl font-semibold">เทมเพลตราคาแบบรวม</h3>
+                    <h3 className="text-base sm:text-xl font-semibold">批量价格模板</h3>
                     <div className="flex flex-wrap gap-1 sm:gap-2">
                       <button
                         onClick={() => {
@@ -714,7 +752,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         }}
                         className="px-2 py-1.5 sm:px-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white text-xs sm:text-sm rounded transition-colors whitespace-nowrap"
                       >
-                        เปิดทั้งหมด
+                        全部启用
                       </button>
                       <button
                         onClick={() => {
@@ -729,12 +767,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         }}
                         className="px-2 py-1.5 sm:px-3 sm:py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs sm:text-sm rounded transition-colors whitespace-nowrap"
                       >
-                        ปิดทั้งหมด
+                        全部禁用
                       </button>
                     </div>
                   </div>
 
-                  {/* แสดงทั้ง 6 เทมเพลต - 2 columns บนทุกขนาดหน้าจอ */}
+                  {/* 显示6个模板 - 所有屏幕尺寸上均为2列 */}
                   <div className="grid grid-cols-2 gap-2 sm:gap-4">
                     {Object.entries(bulkPricing.priceTemplates).map(([key, template]) => (
                       <PricePackageCard
@@ -755,7 +793,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           </div>
         </div>
 
-        {/* Footer Buttons */}
+        {/* 底部按钮 */}
         <div className={`mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
@@ -775,12 +813,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  กำลังบันทึก...
+                  正在保存...
                 </span>
               ) : activeTab === 'single' ? (
-                'บันทึกวิดีโอเดี่ยว'
+                '保存单个视频'
               ) : (
-                'บันทึกราคารวม'
+                '保存批量价格'
               )}
             </button>
             
@@ -792,7 +830,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                   : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
-              ยกเลิก
+              取消
             </button>
           </div>
         </div>

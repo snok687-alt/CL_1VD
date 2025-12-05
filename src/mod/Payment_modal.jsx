@@ -176,16 +176,6 @@ function PaymentModal({ videoId, onPaymentSuccess, onClose }) {
                   {rightColumn.map(price => <PriceCard key={price.key} price={price} />)}
                 </div>
               </div>
-
-              {/* ข้อมูลเพิ่มเติม */}
-              <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-blue-800">
-                <p className="font-semibold mb-2">ข้อมูลสำคัญ:</p>
-                <ul className="space-y-1">
-                  <li>• ดูวิดีโอได้ไม่จำกัดครั้งในช่วงเวลาที่ชำระเงิน</li>
-                  <li>• ราคาเป็นหยวน (¥)</li>
-                  <li>• ต่ออายุได้เมื่อหมดอายุ</li>
-                </ul>
-              </div>
             </>
           )}
         </div>
