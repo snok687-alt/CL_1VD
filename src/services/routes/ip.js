@@ -14,7 +14,7 @@ function isPrivateIP(ip) {
   return privateRanges.some(range => range.test(ip));
 }
 
-// ดึงรายการ IP
+// ดึงรายการ IP - นับเฉพาะ POST /backend-api/views/add
 router.get('/ip-list', async (req, res) => {
   try {
     const { period = '7d', page = 1, limit = 20, search = '' } = req.query;
@@ -31,11 +31,17 @@ router.get('/ip-list', async (req, res) => {
       case '90d': startDate.setDate(startDate.getDate() - 90); break;
     }
 
-    // Base query - นับจำนวน project ที่เข้าใช้งาน
+    // ✅ แก้ไข: Base query - นับเฉพาะ POST /backend-api/views/increment status 200
     let query = `
       SELECT 
         ip,
-        COUNT(DISTINCT CASE WHEN url LIKE '/project/%' THEN url END) as project_access_count,
+        SUM(CASE 
+          WHEN method = 'POST' 
+          AND url LIKE '%/backend-api/views/increment%' 
+          AND status = 200 
+          THEN hits 
+          ELSE 0 
+        END) as video_view_requests,
         COUNT(*) as total_requests,
         MAX(last_access) as last_activity,
         MIN(first_access) as first_activity,
@@ -63,7 +69,7 @@ router.get('/ip-list', async (req, res) => {
     // Add grouping and pagination
     query += ` 
       GROUP BY ip 
-      ORDER BY total_requests DESC, last_activity DESC 
+      ORDER BY video_view_requests DESC, last_activity DESC 
       LIMIT ? OFFSET ?
     `;
     queryParams.push(parseInt(limit), parseInt(offset));
@@ -73,11 +79,14 @@ router.get('/ip-list', async (req, res) => {
 
     const [ips] = await pool.query(query, queryParams);
 
-    // ดึงจำนวนทั้งหมดสำหรับ pagination
+    // ดึงจำนวนทั้งหมดสำหรับ pagination (เฉพาะ IP ที่มี view requests)
     let countQuery = `
       SELECT COUNT(DISTINCT ip) as total 
       FROM access_logs 
       WHERE last_access >= ?
+      AND method = 'POST' 
+      AND url LIKE '%/backend-api/views/increment%' 
+      AND status = 200
     `;
     const countParams = [startDate];
 
@@ -90,11 +99,15 @@ router.get('/ip-list', async (req, res) => {
     const total = countResult[0]?.total || 0;
     const totalPages = Math.ceil(total / limit);
 
-    // นับ IP ที่ต้องตรวจสอบ (private IPs)
+    // นับ IP ที่ต้องตรวจสอบ (private IPs) เฉพาะที่มี view requests
     let suspiciousQuery = `
       SELECT COUNT(DISTINCT ip) as suspicious 
       FROM access_logs 
-      WHERE last_access >= ? AND (
+      WHERE last_access >= ? 
+      AND method = 'POST' 
+      AND url LIKE '%/backend-api/views/increment%' 
+      AND status = 200
+      AND (
         ip LIKE '10.%' OR 
         ip LIKE '172.1%' OR 
         ip LIKE '172.2%' OR 
@@ -108,11 +121,16 @@ router.get('/ip-list', async (req, res) => {
     const [suspiciousResult] = await pool.query(suspiciousQuery, [startDate]);
     const suspiciousIPs = suspiciousResult[0]?.suspicious || 0;
 
-    // นับจำนวนประเทศที่ไม่ซ้ำ
+    // นับจำนวนประเทศที่ไม่ซ้ำ (เฉพาะที่มี view requests)
     let countryQuery = `
       SELECT COUNT(DISTINCT user_country) as total_countries 
       FROM access_logs 
-      WHERE last_access >= ? AND user_country IS NOT NULL AND user_country != ''
+      WHERE last_access >= ? 
+      AND user_country IS NOT NULL 
+      AND user_country != ''
+      AND method = 'POST' 
+      AND url LIKE '%/backend-api/views/increment%' 
+      AND status = 200
     `;
     const [countryResult] = await pool.query(countryQuery, [startDate]);
     const totalCountries = countryResult[0]?.total_countries || 0;
@@ -120,7 +138,7 @@ router.get('/ip-list', async (req, res) => {
     // ประมวลผลข้อมูล IP
     const processedIPs = ips.map(ip => ({
       ip: ip.ip,
-      projectAccessCount: ip.project_access_count || 0,
+      videoViewRequests: ip.video_view_requests || 0, // ✅ เปลี่ยนชื่อฟิลด์
       totalRequests: ip.total_requests || 0,
       lastActivity: ip.last_activity,
       firstActivity: ip.first_activity,
@@ -164,18 +182,24 @@ router.get('/ip-list', async (req, res) => {
   }
 });
 
-// ดึงรายละเอียด IP
+// ✅ ดึงรายละเอียด IP - เฉพาะ POST /backend-api/views/add
 router.get('/ip-details/:ip', async (req, res) => {
   try {
     const { ip } = req.params;
     
     console.log('🔍 ดึงรายละเอียด IP:', ip);
 
-    // ดึงข้อมูลพื้นฐาน
+    // ✅ แก้ไข: ดึงข้อมูลพื้นฐาน - เฉพาะ view requests
     const [ipStats] = await pool.query(`
       SELECT 
+        SUM(CASE 
+          WHEN method = 'POST' 
+          AND url LIKE '%/backend-api/views/increment%' 
+          AND status = 200 
+          THEN hits 
+          ELSE 0 
+        END) as video_view_requests,
         COUNT(*) as total_requests,
-        COUNT(DISTINCT CASE WHEN url LIKE '/project/%' THEN url END) as project_access_count,
         MAX(last_access) as last_activity,
         MIN(first_access) as first_activity,
         GROUP_CONCAT(DISTINCT user_agent) as user_agents,
@@ -190,26 +214,32 @@ router.get('/ip-details/:ip', async (req, res) => {
       WHERE ip = ?
     `, [ip]);
 
-    // ดึง URL ที่เข้าชมบ่อย
+    // ✅ แก้ไข: ดึง URL ที่เข้าชมบ่อย - เฉพาะ view requests
     const [topUrls] = await pool.query(`
       SELECT 
         url,
-        COUNT(*) as access_count,
+        SUM(hits) as access_count,
         MAX(last_access) as last_access
       FROM access_logs 
       WHERE ip = ?
+      AND method = 'POST' 
+      AND url LIKE '%/backend-api/views/increment%' 
+      AND status = 200
       GROUP BY url
       ORDER BY access_count DESC
       LIMIT 10
     `, [ip]);
 
-    // ดึงสถิติการใช้งานตามเวลา
+    // ✅ แก้ไข: ดึงสถิติการใช้งานตามเวลา - เฉพาะ view requests
     const [hourlyStats] = await pool.query(`
       SELECT 
         HOUR(last_access) as hour,
-        COUNT(*) as requests
+        SUM(hits) as requests
       FROM access_logs 
       WHERE ip = ?
+      AND method = 'POST' 
+      AND url LIKE '%/backend-api/views/increment%' 
+      AND status = 200
       GROUP BY HOUR(last_access)
       ORDER BY hour
     `, [ip]);
@@ -232,8 +262,8 @@ router.get('/ip-details/:ip', async (req, res) => {
     const responseData = {
       success: true,
       ip: ip,
+      videoViewRequests: stats?.video_view_requests || 0, // ✅ เปลี่ยนชื่อฟิลด์
       totalRequests: stats?.total_requests || 0,
-      projectAccessCount: stats?.project_access_count || 0,
       lastActivity: stats?.last_activity,
       firstActivity: stats?.first_activity,
       userAgents: userAgents,
@@ -251,8 +281,8 @@ router.get('/ip-details/:ip', async (req, res) => {
 
     console.log('✅ ส่งรายละเอียด IP สำเร็จ:', {
       ip: ip,
+      videoViewRequests: responseData.videoViewRequests,
       totalRequests: responseData.totalRequests,
-      projectAccessCount: responseData.projectAccessCount,
       userAgentsCount: responseData.userAgents.length
     });
 

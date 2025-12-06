@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MoreVertical,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
 
 // ✅ Helper สำหรับ debounce
@@ -38,7 +39,8 @@ const Ip = () => {
     totalIPs: 0,
     recentIPs: 0,
     totalCountries: 0,
-    suspiciousIPs: 0
+    suspiciousIPs: 0,
+    totalVideoViews: 0
   });
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
@@ -48,8 +50,8 @@ const Ip = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedIP, setSelectedIP] = useState(null);
   const [ipDetails, setIpDetails] = useState(null);
-  const [sortBy, setSortBy] = useState('lastActivity'); // 排序依据
-  const [sortOrder, setSortOrder] = useState('desc'); // 排序顺序：desc 为最新优先
+  const [sortBy, setSortBy] = useState('videoViewRequests'); // ✅ เปลี่ยนเริ่มต้นเรียงตามจำนวนการดูวิดีโอ
+  const [sortOrder, setSortOrder] = useState('desc'); // ✅ เรียงจากมากไปน้อย
 
   const itemsPerPage = 20;
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -61,7 +63,6 @@ const Ip = () => {
     const signal = controller.signal;
 
     try {
-      // 添加排序参数，确保最新数据在前
       const res = await fetch(
         `/backend-api/admin/ip-list?period=${selectedPeriod}&page=${page}&limit=${itemsPerPage}&search=${debouncedSearch}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
         { signal }
@@ -71,13 +72,20 @@ const Ip = () => {
       const data = await res.json();
 
       if (data.success) {
-        // 确保数据按最后活动时间降序排列（最新在前）
+        // ✅ เรียงข้อมูลตาม sortBy และ sortOrder
         let sortedIps = data.ips || [];
+        
         if (sortBy === 'lastActivity') {
           sortedIps.sort((a, b) => {
             const timeA = new Date(a.lastActivity || 0).getTime();
             const timeB = new Date(b.lastActivity || 0).getTime();
             return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+          });
+        } else if (sortBy === 'videoViewRequests') {
+          sortedIps.sort((a, b) => {
+            const viewsA = a.videoViewRequests || 0;
+            const viewsB = b.videoViewRequests || 0;
+            return sortOrder === 'desc' ? viewsB - viewsA : viewsA - viewsB;
           });
         }
         
@@ -86,7 +94,8 @@ const Ip = () => {
           totalIPs: data.totalIPs || 0,
           recentIPs: data.recentIPs || 0,
           totalCountries: data.totalCountries || 0,
-          suspiciousIPs: data.suspiciousIPs || 0
+          suspiciousIPs: data.suspiciousIPs || 0,
+          totalVideoViews: data.totalVideoViews || 0 // ✅ เพิ่มยอดรวมการดูวิดีโอ
         });
         setTotalPages(data.totalPages || 1);
       } else {
@@ -133,7 +142,7 @@ const Ip = () => {
       setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
       setSortBy(field);
-      setSortOrder('desc'); // 默认降序
+      setSortOrder('desc'); // ✅ เปลี่ยน: เรียงตามจำนวนการดูวิดีโอจากมากไปน้อยเป็นค่าเริ่มต้น
     }
   }, [sortBy, sortOrder]);
 
@@ -142,7 +151,7 @@ const Ip = () => {
   }, [fetchIpData]);
 
   // 🧩 Reusable Component: StatCard - 响应式调整
-  const StatCard = ({ title, value, icon: Icon, color = 'blue' }) => (
+  const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle }) => (
     <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
@@ -150,9 +159,12 @@ const Ip = () => {
           <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1 truncate">
             {value?.toLocaleString() || 0}
           </p>
+          {subtitle && (
+            <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+          )}
         </div>
-        <div className={`p-2 sm:p-3 rounded-lg ${color === 'blue' ? 'bg-blue-50' : ''} ${color === 'green' ? 'bg-green-50' : ''} ${color === 'purple' ? 'bg-purple-50' : ''} ${color === 'red' ? 'bg-red-50' : ''}`}>
-          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${color === 'blue' ? 'text-blue-600' : ''} ${color === 'green' ? 'text-green-600' : ''} ${color === 'purple' ? 'text-purple-600' : ''} ${color === 'red' ? 'text-red-600' : ''}`} />
+        <div className={`p-2 sm:p-3 rounded-lg ${color === 'blue' ? 'bg-blue-50' : ''} ${color === 'green' ? 'bg-green-50' : ''} ${color === 'purple' ? 'bg-purple-50' : ''} ${color === 'red' ? 'bg-red-50' : ''} ${color === 'orange' ? 'bg-orange-50' : ''}`}>
+          <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${color === 'blue' ? 'text-blue-600' : ''} ${color === 'green' ? 'text-green-600' : ''} ${color === 'purple' ? 'text-purple-600' : ''} ${color === 'red' ? 'text-red-600' : ''} ${color === 'orange' ? 'text-orange-600' : ''}`} />
         </div>
       </div>
     </div>
@@ -213,23 +225,29 @@ const Ip = () => {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {/* 基本信息 - 移动端优化 */}
+          {/* ✅ แก้ไข: ข้อมูลพื้นฐาน - แสดงเฉพาะการดูวิดีโอ */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-blue-600">总请求</p>
-                  <p className="text-lg sm:text-2xl font-bold text-blue-900">{ipDetails.totalRequests}</p>
+                  <p className="text-xs sm:text-sm text-blue-600">视频观看</p>
+                  <p className="text-lg sm:text-2xl font-bold text-blue-900">
+                    {ipDetails.videoViewRequests || 0}
+                  </p>
+                  <p className="text-xs text-blue-500 mt-1">POST /views/increment</p>
                 </div>
-                <FolderOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 opacity-50" />
+                <Eye className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 opacity-50" />
               </div>
             </div>
             
             <div className="bg-green-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-green-600">项目访问</p>
-                  <p className="text-lg sm:text-2xl font-bold text-green-900">{ipDetails.projectAccessCount}</p>
+                  <p className="text-xs sm:text-sm text-green-600">总请求</p>
+                  <p className="text-lg sm:text-2xl font-bold text-green-900">
+                    {ipDetails.totalRequests || 0}
+                  </p>
+                  <p className="text-xs text-green-500 mt-1">所有请求类型</p>
                 </div>
                 <Wifi className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 opacity-50" />
               </div>
@@ -242,6 +260,7 @@ const Ip = () => {
                   <p className="text-base sm:text-lg font-bold text-purple-900">
                     {ipDetails.devices?.length || 0} 种
                   </p>
+                  <p className="text-xs text-purple-500 mt-1">使用设备类型</p>
                 </div>
                 <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 opacity-50" />
               </div>
@@ -254,6 +273,7 @@ const Ip = () => {
                   <p className="text-base sm:text-lg font-bold text-orange-900">
                     {ipDetails.browsers?.length || 0} 种
                   </p>
+                  <p className="text-xs text-orange-500 mt-1">使用浏览器</p>
                 </div>
                 <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 opacity-50" />
               </div>
@@ -343,24 +363,65 @@ const Ip = () => {
             </div>
           </div>
 
-          {/* 访问的 URL - 移动端优化 */}
+          {/* ✅ แก้ไข: 访问的 URL - แสดงเฉพาะ /backend-api/views/increment */}
           {ipDetails.topUrls && ipDetails.topUrls.length > 0 && (
             <div className="space-y-3 sm:space-y-4">
-              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">最常访问的 URL</h4>
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base flex items-center">
+                <Eye className="h-4 w-4 mr-2 text-blue-600" /> 视频观看请求
+              </h4>
               <div className="space-y-1 sm:space-y-2">
-                {ipDetails.topUrls.slice(0, 3).map((url, index) => (
-                  <div key={index} className="flex justify-between items-center bg-gray-50 p-2 sm:p-3 rounded-lg">
-                    <span className="text-xs font-mono truncate flex-1 mr-2">{url.url}</span>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-0.5 sm:py-1 rounded text-xs whitespace-nowrap">
+                {ipDetails.topUrls.slice(0, 5).map((url, index) => (
+                  <div key={index} className="flex justify-between items-center bg-blue-50 p-2 sm:p-3 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center">
+                        <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded mr-2">
+                          POST
+                        </span>
+                        <span className="text-xs font-mono truncate flex-1">
+                          {url.url.replace('/backend-api', '')}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        最后访问: {new Date(url.last_access).toLocaleString()}
+                      </div>
+                    </div>
+                    <span className="bg-blue-600 text-white px-2 py-0.5 sm:py-1 rounded text-xs whitespace-nowrap ml-2">
                       {url.access_count} 次
                     </span>
                   </div>
                 ))}
-                {ipDetails.topUrls.length > 3 && (
+                {ipDetails.topUrls.length > 5 && (
                   <p className="text-xs text-gray-500 text-center">
-                    还有 {ipDetails.topUrls.length - 3} 个 URL
+                    还有 {ipDetails.topUrls.length - 5} 个观看请求
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ✅ แสดงสถิติตามเวลาเฉพาะการดูวิดีโอ */}
+          {ipDetails.hourlyStats && ipDetails.hourlyStats.length > 0 && (
+            <div className="space-y-3 sm:space-y-4">
+              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">观看时间分布</h4>
+              <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                {ipDetails.hourlyStats.map((stat, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-xs text-gray-600">{stat.hour}:00</div>
+                    <div className="mt-1">
+                      <div 
+                        className="bg-blue-500 rounded-sm mx-auto"
+                        style={{ 
+                          height: `${Math.min(stat.requests * 2, 40)}px`,
+                          width: '80%',
+                          opacity: stat.requests > 0 ? 0.8 : 0.3
+                        }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-800 font-medium mt-1">
+                      {stat.requests || 0}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -388,22 +449,32 @@ const Ip = () => {
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button 
               onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
-              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm `}
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm bg-white border border-gray-200 hover:bg-gray-50`}
             >
               <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              กลับ
+              返回
             </button>
             <div className="min-w-0">
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
                 IP 管理
               </h1>
-              <p className="text-gray-600 text-xs sm:text-sm">查看并分析访问项目的 IP</p>
+              <p className="text-gray-600 text-xs sm:text-sm">查看并分析访问视频的 IP</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
+            {/* ✅ เพิ่มปุ่มเรียงตามจำนวนการดูวิดีโอ */}
+            <button
+              onClick={() => handleSort('videoViewRequests')}
+              className="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
+              title="按观看次数排序"
+            >
+              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              {sortBy === 'videoViewRequests' && sortOrder === 'desc' ? '最多观看' : '最少观看'}
+            </button>
+            
             <button
               onClick={() => handleSort('lastActivity')}
               className="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
@@ -424,12 +495,43 @@ const Ip = () => {
           </div>
         </div>
 
-        {/* Stats - 移动端网格优化 */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
-          <StatCard title="总 IP 数" value={stats.totalIPs} icon={Globe} color="blue" />
-          <StatCard title="最近使用" value={stats.recentIPs} icon={Clock} color="green" />
-          <StatCard title="国家数量" value={stats.totalCountries} icon={MapPin} color="purple" />
-          <StatCard title="需检查" value={stats.suspiciousIPs} icon={Shield} color="red" />
+        {/* ✅ แก้ไข: Stats - แสดงข้อมูลการดูวิดีโอ */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <StatCard 
+            title="活跃IP" 
+            value={stats.totalIPs} 
+            icon={Globe} 
+            color="blue"
+            subtitle="有观看记录的IP"
+          />
+          <StatCard 
+            title="视频观看" 
+            value={stats.totalVideoViews} 
+            icon={Eye} 
+            color="green"
+            subtitle="总观看次数"
+          />
+          <StatCard 
+            title="最近IP" 
+            value={stats.recentIPs} 
+            icon={Clock} 
+            color="purple"
+            subtitle="最近活跃"
+          />
+          <StatCard 
+            title="国家" 
+            value={stats.totalCountries} 
+            icon={MapPin} 
+            color="orange"
+            subtitle="来源国家"
+          />
+          <StatCard 
+            title="需检查" 
+            value={stats.suspiciousIPs} 
+            icon={Shield} 
+            color="red"
+            subtitle="私有IP地址"
+          />
         </div>
 
         {/* Filters - 移动端优化 */}
@@ -472,8 +574,9 @@ const Ip = () => {
             </div>
           ) : ipList.length === 0 ? (
             <div className="text-center py-8 text-gray-500 bg-white rounded-xl shadow-sm border border-gray-100">
-              <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <Eye className="h-12 w-12 mx-auto mb-2 opacity-50" />
               <p>未找到 IP 数据</p>
+              <p className="text-sm text-gray-400 mt-1">这段时间内没有视频观看记录</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -515,9 +618,9 @@ const Ip = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-end">
-                      <span className="text-gray-500 mr-1">请求:</span>
-                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
-                        {ipItem.totalRequests || 0} 次
+                      <span className="text-gray-500 mr-1">观看:</span>
+                      <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
+                        {ipItem.videoViewRequests || 0} 次
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -525,8 +628,10 @@ const Ip = () => {
                       <span className="truncate">{ipItem.city || '未知'}</span>
                     </div>
                     <div className="flex items-center justify-end">
-                      <span className="text-gray-500 mr-1">ISP:</span>
-                      <span className="truncate max-w-[100px] text-right">{ipItem.isp || '未知'}</span>
+                      <span className="text-gray-500 mr-1">总请求:</span>
+                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                        {ipItem.totalRequests || 0} 次
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -540,20 +645,29 @@ const Ip = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {['IP地址', '国家', '城市', 'ISP', '设备', '总请求', '最近活动', '操作'].map((head) => (
+                {['IP地址', '国家', '城市', 'ISP', '设备', '视频观看', '总请求', '最近活动', '操作'].map((head) => (
                   <th
                     key={head}
                     className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    <div className="flex items-center">
-                      {head}
+                    <div className="flex items-center space-x-1">
+                      <span>{head}</span>
+                      {head === '视频观看' && (
+                        <button
+                          onClick={() => handleSort('videoViewRequests')}
+                          className="focus:outline-none"
+                          title={sortBy === 'videoViewRequests' && sortOrder === 'desc' ? '最多观看优先' : '最少观看优先'}
+                        >
+                          <Eye className="h-3 w-3 text-gray-400 hover:text-blue-500" />
+                        </button>
+                      )}
                       {head === '最近活动' && (
                         <button
                           onClick={() => handleSort('lastActivity')}
-                          className="ml-1 focus:outline-none"
+                          className="focus:outline-none"
                           title={sortBy === 'lastActivity' && sortOrder === 'desc' ? '最新优先' : '最旧优先'}
                         >
-                          <Clock className="h-3 w-3 text-gray-400" />
+                          <Clock className="h-3 w-3 text-gray-400 hover:text-blue-500" />
                         </button>
                       )}
                     </div>
@@ -564,17 +678,17 @@ const Ip = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-gray-400">
+                  <td colSpan="9" className="text-center py-8 text-gray-400">
                     <RefreshCw className="h-8 w-8 animate-spin mx-auto" />
                     <p className="mt-2 text-sm">加载中...</p>
                   </td>
                 </tr>
               ) : ipList.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-8 text-gray-500">
-                    <Globe className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <td colSpan="9" className="text-center py-8 text-gray-500">
+                    <Eye className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>未找到 IP 数据</p>
-                    <p className="text-sm text-gray-400 mt-1">尝试更改搜索条件或时间段</p>
+                    <p className="text-sm text-gray-400 mt-1">这段时间内没有视频观看记录</p>
                   </td>
                 </tr>
               ) : (
@@ -607,6 +721,11 @@ const Ip = () => {
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
+                      <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {ipItem.videoViewRequests || 0} 次
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4">
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                         {ipItem.totalRequests || 0} 次
                       </span>
@@ -619,7 +738,7 @@ const Ip = () => {
                     <td className="px-4 sm:px-6 py-4">
                       <button
                         onClick={() => fetchIpDetails(ipItem.ip)}
-                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                        className="text-blue-600 hover:text-blue-900 text-sm font-medium hover:underline"
                       >
                         查看详情
                       </button>

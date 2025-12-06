@@ -357,7 +357,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
   }, [isOpen]);
 
   // ===================================================================
-  // RENDER - โทนเหล็ก
+  // RENDER - โทนเหล็กที่มีสีสัน
   // ===================================================================
   return (
     <div
@@ -375,8 +375,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
         <button
           onClick={handleCloseButton}
           className={`absolute top-4 right-4 w-10 h-10 flex items-center justify-center z-50 pointer-events-auto rounded-lg transition ${isDarkMode
-            ? "bg-gray-700 hover:bg-gray-600 text-gray-300"
-            : "bg-gray-300 hover:bg-gray-400 text-gray-700"
+            ? "bg-gray-700 hover:bg-red-600 text-gray-300"
+            : "bg-gray-300 hover:bg-red-500 text-gray-700"
             }`}
           type="button"
           title="关闭 (Esc)"
@@ -405,13 +405,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
           {!isLoggedIn && !showRegister && (
             <div className="space-y-4">
               <div className="relative">
-                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-yellow-500" : "text-blue-500"
                   }`} />
                 <input
                   type="text"
                   className={`w-full pl-12 pr-4 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
-                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     }`}
                   placeholder="用户名"
                   value={username}
@@ -421,13 +421,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               </div>
 
               <div className="relative">
-                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-yellow-500" : "text-blue-500"
                   }`} />
                 <input
                   type={showPassword ? "text" : "password"}
                   className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
-                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     }`}
                   placeholder="密码"
                   value={password}
@@ -438,7 +438,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-blue-500 hover:text-blue-400"
                     }`}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -449,8 +449,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 onClick={handleLogin}
                 disabled={loading}
                 className={`w-full py-3.5 rounded-lg font-semibold transition disabled:opacity-50 border-2 ${isDarkMode
-                  ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
-                  : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600"
+                  ? "bg-gradient-to-r from-yellow-600 to-yellow-700 border-yellow-500 text-white hover:from-yellow-500 hover:to-yellow-600 shadow-lg shadow-yellow-900/30"
+                  : "bg-gradient-to-r from-blue-500 to-blue-600 border-blue-400 text-white hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-400/30"
                   }`}
               >
                 <LogIn className="inline-block w-5 h-5 mr-2" />
@@ -461,7 +461,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowRegister(true)}
-                  className={`transition ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                  className={`transition ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-blue-600 hover:text-blue-800"
                     }`}
                 >
                   <UserPlus className="inline w-4 h-4 mr-1" /> 创建账户
@@ -474,13 +474,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
           {!isLoggedIn && showRegister && (
             <div className="space-y-4">
               <div className="relative">
-                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                <User className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-yellow-500" : "text-green-500"
                   }`} />
                 <input
                   type="text"
                   className={`w-full pl-12 pr-4 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
-                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-green-500 focus:ring-1 focus:ring-green-500"
                     }`}
                   placeholder="用户名"
                   value={username}
@@ -490,13 +490,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               </div>
 
               <div className="relative">
-                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-yellow-500" : "text-green-500"
                   }`} />
                 <input
                   type={showPassword ? "text" : "password"}
                   className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
-                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-green-500 focus:ring-1 focus:ring-green-500"
                     }`}
                   placeholder="密码 (>=4)"
                   value={password}
@@ -506,7 +506,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"
                     }`}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -514,13 +514,13 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               </div>
 
               <div className="relative">
-                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                <Lock className={`absolute left-4 top-4 w-5 h-5 ${isDarkMode ? "text-yellow-500" : "text-green-500"
                   }`} />
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   className={`w-full pl-12 pr-12 py-3.5 rounded-lg border-2 focus:outline-none transition ${isDarkMode
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-gray-400"
-                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-gray-500"
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+                    : "bg-gray-200 border-gray-300 text-gray-800 focus:border-green-500 focus:ring-1 focus:ring-green-500"
                     }`}
                   placeholder="确认密码"
                   value={confirmPassword}
@@ -530,7 +530,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className={`absolute right-4 top-4 ${isDarkMode ? "text-gray-400" : "text-gray-600"
+                  className={`absolute right-4 top-4 ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"
                     }`}
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -541,8 +541,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 onClick={handleRegister}
                 disabled={loading}
                 className={`w-full py-3.5 rounded-lg font-semibold transition disabled:opacity-50 border-2 ${isDarkMode
-                  ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500"
-                  : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600"
+                  ? "bg-gradient-to-r from-green-600 to-green-700 border-green-500 text-white hover:from-green-500 hover:to-green-600 shadow-lg shadow-green-900/30"
+                  : "bg-gradient-to-r from-green-500 to-green-600 border-green-400 text-white hover:from-green-600 hover:to-green-700 shadow-lg shadow-green-400/30"
                   }`}
               >
                 <UserPlus className="inline-block w-5 h-5 mr-2" />
@@ -553,7 +553,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 <button
                   type="button"
                   onClick={() => setShowRegister(false)}
-                  className={`transition ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                  className={`transition ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-blue-600 hover:text-blue-800"
                     }`}
                 >
                   <LogIn className="inline w-4 h-4 mr-1" /> 已有账户
@@ -576,7 +576,9 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 </div>
                 <div className={`text-4xl font-extrabold ${isDarkMode ? "text-gray-100" : "text-gray-800"
                   }`}>
-                  {points} 元
+                  <span className="bg-gradient-to-r from-yellow-600 to-yellow-500 bg-clip-text text-transparent">
+                    {points} 元
+                  </span>
                 </div>
               </div>
 
@@ -599,7 +601,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
 
                   <button
                     onClick={handleRefresh}
-                    className={`transition p-1 ${isDarkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
+                    className={`transition p-1 ${isDarkMode ? "text-yellow-500 hover:text-yellow-400" : "text-blue-600 hover:text-blue-800"
                       }`}
                     title="刷新"
                   >
@@ -612,7 +614,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                     }`}>
                     <Clock className="w-3.5 h-3.5" />
                     <span>
-                      可再次领取: {timeLeft.hours} 小时 {timeLeft.minutes} 分钟
+                      可再次领取: <span className="font-bold text-yellow-600">{timeLeft.hours}</span> 小时 <span className="font-bold text-yellow-600">{timeLeft.minutes}</span> 分钟
                     </span>
                   </div>
                 )}
@@ -623,8 +625,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
                 disabled={!canClaimToday || loading}
                 className={`w-full py-4 rounded-lg font-bold transition flex items-center justify-center gap-2 border-2 ${canClaimToday && !loading
                   ? isDarkMode
-                    ? "bg-gray-600 border-gray-500 text-white hover:bg-gray-500 cursor-pointer"
-                    : "bg-gray-500 border-gray-400 text-white hover:bg-gray-600 cursor-pointer"
+                    ? "bg-gradient-to-r from-yellow-600 to-orange-600 border-yellow-500 text-white hover:from-yellow-500 hover:to-orange-500 cursor-pointer shadow-lg shadow-yellow-900/30"
+                    : "bg-gradient-to-r from-yellow-500 to-orange-500 border-yellow-400 text-white hover:from-yellow-600 hover:to-orange-600 cursor-pointer shadow-lg shadow-yellow-400/30"
                   : isDarkMode
                     ? "bg-gray-700 border-gray-600 text-gray-400 cursor-not-allowed"
                     : "bg-gray-400 border-gray-300 text-gray-500 cursor-not-allowed"
@@ -637,8 +639,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               <button
                 onClick={handleLogout}
                 className={`w-full py-3 rounded-lg font-semibold transition border-2 ${isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                  : "bg-gray-400 border-gray-300 text-gray-700 hover:bg-gray-500"
+                  ? "bg-gray-700 border-gray-600 text-gray-300 hover:bg-red-700 hover:border-red-600"
+                  : "bg-gray-400 border-gray-300 text-gray-700 hover:bg-red-500 hover:text-white hover:border-red-400"
                   }`}
               >
                 <LogOut className="inline-block w-4 h-4 mr-2" />
@@ -651,15 +653,15 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
           {message && (
             <div className={`mt-6 p-3.5 rounded-lg border-2 text-center text-sm ${message.includes('✅') || message.includes('👋') || message.includes('成功')
               ? isDarkMode
-                ? 'bg-gray-700 border-green-600 text-green-400'
-                : 'bg-gray-300 border-green-500 text-green-700'
+                ? 'bg-gradient-to-r from-green-900/30 to-green-800/20 border-green-600 text-green-300'
+                : 'bg-gradient-to-r from-green-100 to-green-50 border-green-500 text-green-700'
               : message.includes('❌')
                 ? isDarkMode
-                  ? 'bg-gray-700 border-red-600 text-red-400'
-                  : 'bg-gray-300 border-red-500 text-red-700'
+                  ? 'bg-gradient-to-r from-red-900/30 to-red-800/20 border-red-600 text-red-300'
+                  : 'bg-gradient-to-r from-red-100 to-red-50 border-red-500 text-red-700'
                 : isDarkMode
-                  ? 'bg-gray-700 border-yellow-600 text-yellow-400'
-                  : 'bg-gray-300 border-yellow-500 text-yellow-700'
+                  ? 'bg-gradient-to-r from-yellow-900/30 to-yellow-800/20 border-yellow-600 text-yellow-300'
+                  : 'bg-gradient-to-r from-yellow-100 to-yellow-50 border-yellow-500 text-yellow-700'
               }`}>
               {message}
             </div>
