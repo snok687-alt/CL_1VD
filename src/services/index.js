@@ -39,6 +39,7 @@ const userRoutes = require('./routes/userRoutes');
 const linkRoutes = require('./routes/linkRoutes');
 const videoPricingRoutes = require('./routes/videoPricingRoutes');
 const usersCustomGiftRoutes = require('./routes/usersCustomGift.routes');
+const accountRoutes = require('./routes/accountRoutes');
 
 app.use('/backend-api', viewRoutes);
 app.use('/backend-api', starRoute);
@@ -51,6 +52,7 @@ app.use('/backend-api', logRoutes);
 app.use('/backend-api', linkRoutes);
 app.use('/backend-api/video', videoPricingRoutes);
 app.use('/backend-api', usersCustomGiftRoutes);
+app.use('/backend-api/account', accountRoutes);
 
 app.get('/backend-api/test', (req, res) => {
   res.json({

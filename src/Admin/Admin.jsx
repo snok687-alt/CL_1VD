@@ -25,11 +25,11 @@ import {
   MonitorPlay,
   User,
   Bell,
-  Check,
   CheckCheck,
   Clock,
   Shield,
-  Activity
+  Activity,
+  Gift
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -163,7 +163,8 @@ const Admin = () => {
     { id: 'ip', label: 'IP管理', icon: Globe, path: '/ip' },
     { id: 'videos', label: '视频管理', icon: MonitorPlay, path: '/video-management' },
     { id: 'videos_links', label: '新视频链接', icon: LinkIcon, path: '/Addlinks' },
-    { id: 'games', label: '游戏管理', icon: Gamepad2, path: 'http://47.238.3.148/game/admin' },
+    { id: 'games', label: '游戏管理', icon: Gamepad2, path: '/error' },
+    { id: 'gift_accounts', label: '礼品账户', icon: Gift, path: '/Account' },
   ];
 
   const fetchDashboardData = async () => {
@@ -237,13 +238,14 @@ const Admin = () => {
     }
   };
 
-  const StatCard = ({ title, value, change, icon: Icon, trend, subtitle, isRevenue = false, onClick, color = 'blue' }) => {
+  const StatCard = ({ title, value, change, icon: Icon, trend, subtitle, isRevenue = false, isGift = false, onClick, color = 'blue' }) => {
     const colorClasses = {
       blue: { bg: 'bg-blue-50', icon: 'text-blue-600', text: 'text-blue-600' },
       green: { bg: 'bg-green-50', icon: 'text-green-600', text: 'text-green-600' },
       purple: { bg: 'bg-purple-50', icon: 'text-purple-600', text: 'text-purple-600' },
       orange: { bg: 'bg-orange-50', icon: 'text-orange-600', text: 'text-orange-600' },
-      red: { bg: 'bg-red-50', icon: 'text-red-600', text: 'text-red-600' }
+      red: { bg: 'bg-red-50', icon: 'text-red-600', text: 'text-red-600' },
+      pink: { bg: 'bg-pink-50', icon: 'text-pink-600', text: 'text-pink-600' }
     };
 
     const colors = colorClasses[color];
@@ -257,10 +259,12 @@ const Admin = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            <p className={`text-2xl font-bold mb-2 ${isRevenue ? 'text-green-600' : 'text-gray-900'}`}>
+            <p className={`text-2xl font-bold mb-2 ${isRevenue ? 'text-green-600' : isGift ? 'text-pink-600' : 'text-gray-900'}`}>
               {typeof value === 'number' ? (
                 isRevenue ? (
                   value > 0 ? `¥${value.toLocaleString()}` : '尚无收入'
+                ) : isGift ? (
+                  value > 0 ? `${value.toLocaleString()} 账户` : '尚无账户'
                 ) : (
                   value.toLocaleString()
                 )
@@ -644,6 +648,19 @@ const Admin = () => {
                       onClick={() => navigate('/ip')}
                     />
                   )}
+
+                  {/* ✅ เพิ่ม Card แสดงจำนวนบัญชีผู้รับของขวัญ */}
+                  <StatCard
+                    title="礼品账户总数"
+                    value={data.stats.giftAccounts || 0}
+                    subtitle={`礼品总额: ${data.giftAccountStats?.totalGiftAmount || 0} 份`}
+                    change={`${data.stats.giftAccountChange > 0 ? '+' : ''}${data.stats.giftAccountChange || 0}%`}
+                    icon={Gift}
+                    trend={data.stats.giftAccountChange >= 0 ? "up" : "down"}
+                    color="pink"
+                    isGift={true}
+                    onClick={() => navigate('/Account')}
+                  />
 
                   <StatCard
                     title="视频总数"

@@ -90,17 +90,17 @@ async function initializeDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
           -- ຕາລາງຜູ້ຊົມທີ່ຮັບຂອງຂວັນ
-    CREATE TABLE IF NOT EXISTS users_custom_gift (
-      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(50) NOT NULL UNIQUE,
-      password_hash VARCHAR(255) NOT NULL,
-      ip_address VARCHAR(45) NULL,
-      amount_gift INT NOT NULL DEFAULT 0,
-      last_login DATETIME NULL,
-      last_claim_date DATE NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      CREATE TABLE IF NOT EXISTS users_custom_gift (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        ip_address VARCHAR(45) NULL,
+        amount_gift INT NOT NULL DEFAULT 0,
+        last_login DATETIME NULL,
+        last_claim_date DATE NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
       -- ✅ อัปเดตตาราง users เพิ่มฟิลด์ใหม่
@@ -261,6 +261,25 @@ async function initializeDatabase() {
         INDEX idx_is_active (is_active),
         INDEX idx_purchase_date (purchase_date)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+            CREATE TABLE IF NOT EXISTS ip_groups (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        group_key VARCHAR(100) NOT NULL UNIQUE,
+        display_name VARCHAR(100) NOT NULL,
+        ip_pattern VARCHAR(100) NOT NULL,
+        description TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_group_key (group_key),
+        INDEX idx_ip_pattern (ip_pattern)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+      -- ✅ เพิ่มข้อมูลกลุ่ม IP เริ่มต้น
+      INSERT IGNORE INTO ip_groups (group_key, display_name, ip_pattern, description) VALUES
+      ('cloudflare_104_28', 'Cloudflare 104.28.x.x', '104.28.%', 'Cloudflare CDN IP Range'),
+      ('cloudflare_104_27', 'Cloudflare 104.27.x.x', '104.27.%', 'Cloudflare CDN IP Range'),
+      ('cloudflare_172_67', 'Cloudflare 172.67.x.x', '172.67.%', 'Cloudflare CDN IP Range'),
+      ('cloudflare_172_64', 'Cloudflare 172.64.x.x', '172.64.%', 'Cloudflare CDN IP Range');
     `;
 
     await connection.query(createTablesSQL);

@@ -16,9 +16,10 @@ import {
   Tablet,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
   AlertCircle,
-  Eye
+  Eye,
+  Users,
+  Cloud
 } from 'lucide-react';
 
 // ✅ Helper สำหรับ debounce
@@ -44,14 +45,16 @@ const Ip = () => {
   });
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadingGroup, setLoadingGroup] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedIP, setSelectedIP] = useState(null);
   const [ipDetails, setIpDetails] = useState(null);
-  const [sortBy, setSortBy] = useState('videoViewRequests'); // ✅ เปลี่ยนเริ่มต้นเรียงตามจำนวนการดูวิดีโอ
-  const [sortOrder, setSortOrder] = useState('desc'); // ✅ เรียงจากมากไปน้อย
+  const [ipGroup, setIpGroup] = useState(null);
+  const [sortBy, setSortBy] = useState('lastActivity');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   const itemsPerPage = 20;
   const debouncedSearch = useDebounce(searchTerm, 500);
@@ -63,16 +66,21 @@ const Ip = () => {
     const signal = controller.signal;
 
     try {
-      const res = await fetch(
-        `/backend-api/admin/ip-list?period=${selectedPeriod}&page=${page}&limit=${itemsPerPage}&search=${debouncedSearch}&sortBy=${sortBy}&sortOrder=${sortOrder}`,
-        { signal }
-      );
+      const url = `/backend-api/admin/ip-list?period=${selectedPeriod}&page=${page}&limit=${itemsPerPage}&search=${debouncedSearch}&sortBy=${sortBy}&sortOrder=${sortOrder}`;
+      console.log('🔍 Fetching IP list:', url);
+      
+      const res = await fetch(url, { signal });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errorText}`);
+      }
+      
       const data = await res.json();
+      console.log('📊 API Response:', data);
 
       if (data.success) {
-        // ✅ เรียงข้อมูลตาม sortBy และ sortOrder
+        // ✅ เรียงข้อมูล
         let sortedIps = data.ips || [];
         
         if (sortBy === 'lastActivity') {
@@ -95,7 +103,7 @@ const Ip = () => {
           recentIPs: data.recentIPs || 0,
           totalCountries: data.totalCountries || 0,
           suspiciousIPs: data.suspiciousIPs || 0,
-          totalVideoViews: data.totalVideoViews || 0 // ✅ เพิ่มยอดรวมการดูวิดีโอ
+          totalVideoViews: data.totalVideoViews || 0
         });
         setTotalPages(data.totalPages || 1);
       } else {
@@ -104,7 +112,7 @@ const Ip = () => {
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('❌ 获取IP数据错误:', err);
-        alert('加载数据失败，请稍后再试。');
+        alert(`加载数据失败: ${err.message}`);
       }
     } finally {
       setLoading(false);
@@ -136,13 +144,37 @@ const Ip = () => {
     }
   }, []);
 
+  /** 📋 ดึงข้อมูลกลุ่ม IP */
+  const fetchIPGroup = useCallback(async (groupKey) => {
+    setLoadingGroup(true);
+    try {
+      const res = await fetch(`/backend-api/admin/ip-group/${encodeURIComponent(groupKey)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      
+      if (data.success) {
+        setIpGroup(data);
+        setIpDetails(null);
+        setSelectedIP(groupKey);
+      } else {
+        throw new Error(data.error || 'Failed to fetch IP group');
+      }
+    } catch (err) {
+      console.error('❌ 获取IP组错误:', err);
+      alert('加载IP组信息失败。');
+      setIpGroup(null);
+    } finally {
+      setLoadingGroup(false);
+    }
+  }, []);
+
   // 排序处理函数
   const handleSort = useCallback((field) => {
     if (sortBy === field) {
       setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
     } else {
       setSortBy(field);
-      setSortOrder('desc'); // ✅ เปลี่ยน: เรียงตามจำนวนการดูวิดีโอจากมากไปน้อยเป็นค่าเริ่มต้น
+      setSortOrder('desc');
     }
   }, [sortBy, sortOrder]);
 
@@ -150,7 +182,7 @@ const Ip = () => {
     fetchIpData();
   }, [fetchIpData]);
 
-  // 🧩 Reusable Component: StatCard - 响应式调整
+  // 🧩 Reusable Component: StatCard
   const StatCard = ({ title, value, icon: Icon, color = 'blue', subtitle }) => (
     <div className="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-gray-100">
       <div className="flex items-center justify-between">
@@ -184,7 +216,7 @@ const Ip = () => {
     }
   };
 
-  // 🧩 Mobile-Friendly IP Detail Card
+  // 🧩 IP Detail Card
   const IpDetailCard = ({ ip }) => (
     <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 mx-2 sm:mx-0">
       <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -193,6 +225,7 @@ const Ip = () => {
             onClick={() => {
               setSelectedIP(null);
               setIpDetails(null);
+              setIpGroup(null);
             }}
             className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -200,17 +233,25 @@ const Ip = () => {
           </button>
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate max-w-[200px] sm:max-w-none">
-              IP 详情: {ip}
+              {ipDetails?.isCloudflareGroup ? 'IP 组详情' : 'IP 详情'}: {ip}
             </h3>
             <p className="text-xs sm:text-sm text-gray-600">点击左上角返回列表</p>
           </div>
         </div>
-        {ipDetails?.isPrivate && (
-          <div className="flex items-center bg-red-50 text-red-700 px-2 sm:px-3 py-1 rounded-lg">
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            <span className="text-xs sm:text-sm font-medium">私有 IP</span>
-          </div>
-        )}
+        <div className="flex items-center space-x-2">
+          {ipDetails?.isPrivate && (
+            <div className="flex items-center bg-red-50 text-red-700 px-2 sm:px-3 py-1 rounded-lg">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="text-xs sm:text-sm font-medium">私有 IP</span>
+            </div>
+          )}
+          {ipDetails?.isCloudflareGroup && (
+            <div className="flex items-center bg-purple-50 text-purple-700 px-2 sm:px-3 py-1 rounded-lg">
+              <Cloud className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+              <span className="text-xs sm:text-sm font-medium">Cloudflare 组</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {loadingDetails ? (
@@ -225,7 +266,45 @@ const Ip = () => {
         </div>
       ) : (
         <div className="space-y-4 sm:space-y-6">
-          {/* ✅ แก้ไข: ข้อมูลพื้นฐาน - แสดงเฉพาะการดูวิดีโอ */}
+          {/* Cloudflare Group Info */}
+          {ipDetails.isCloudflareGroup && ipDetails.allIPs && (
+            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center">
+                  <Cloud className="h-5 w-5 text-purple-600 mr-2" />
+                  <h4 className="font-semibold text-purple-900">Cloudflare IP 组</h4>
+                </div>
+                <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">
+                  {ipDetails.ipCount} 个IP地址
+                </span>
+              </div>
+              <p className="text-sm text-purple-700 mb-3">
+                此IP属于Cloudflare CDN节点组，包含以下IP地址：
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {ipDetails.allIPs.slice(0, 6).map((ipItem, index) => (
+                  <div key={index} className="bg-white p-2 rounded border border-purple-100">
+                    <div className="flex justify-between items-center">
+                      <span className="font-mono text-sm">{ipItem.ip}</span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(ipItem.last_activity).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      请求: {ipItem.request_count} 次 | 设备: {ipItem.devices?.split(',')[0] || 'Unknown'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {ipDetails.allIPs.length > 6 && (
+                <p className="text-xs text-purple-600 mt-2 text-center">
+                  还有 {ipDetails.allIPs.length - 6} 个IP地址...
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* 基本信息 */}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-4 sm:gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
@@ -253,34 +332,45 @@ const Ip = () => {
               </div>
             </div>
 
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs sm:text-sm text-purple-600">设备</p>
-                  <p className="text-base sm:text-lg font-bold text-purple-900">
-                    {ipDetails.devices?.length || 0} 种
-                  </p>
-                  <p className="text-xs text-purple-500 mt-1">使用设备类型</p>
+            {ipDetails.isCloudflareGroup && (
+              <div className="bg-purple-50 p-3 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs sm:text-sm text-purple-600">IP数量</p>
+                    <p className="text-lg sm:text-2xl font-bold text-purple-900">
+                      {ipDetails.ipCount || 0}
+                    </p>
+                    <p className="text-xs text-purple-500 mt-1">组内IP地址数</p>
+                  </div>
+                  <Users className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 opacity-50" />
                 </div>
-                <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600 opacity-50" />
               </div>
-            </div>
+            )}
 
             <div className="bg-orange-50 p-3 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm text-orange-600">浏览器</p>
+                  <p className="text-xs sm:text-sm text-orange-600">{ipDetails.isCloudflareGroup ? '活跃IP' : '设备'}</p>
                   <p className="text-base sm:text-lg font-bold text-orange-900">
-                    {ipDetails.browsers?.length || 0} 种
+                    {ipDetails.isCloudflareGroup ? 
+                      ipDetails.allIPs?.[0]?.ip?.split('.').slice(2, 4).join('.') || 'Unknown' :
+                      ipDetails.devices?.length || 0
+                    } {ipDetails.isCloudflareGroup ? '' : '种'}
                   </p>
-                  <p className="text-xs text-orange-500 mt-1">使用浏览器</p>
+                  <p className="text-xs text-orange-500 mt-1">
+                    {ipDetails.isCloudflareGroup ? '最新IP' : '使用设备类型'}
+                  </p>
                 </div>
-                <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 opacity-50" />
+                {ipDetails.isCloudflareGroup ? (
+                  <Cloud className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 opacity-50" />
+                ) : (
+                  <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600 opacity-50" />
+                )}
               </div>
             </div>
           </div>
 
-          {/* 位置和网络信息 - 移动端堆叠 */}
+          {/* 位置和网络信息 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-3 sm:space-y-4">
               <h4 className="font-semibold text-gray-900 text-sm sm:text-base flex items-center">
@@ -331,39 +421,7 @@ const Ip = () => {
             </div>
           </div>
 
-          {/* 设备和浏览器信息 - 移动端优化 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <div className="space-y-3 sm:space-y-4">
-              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">设备信息</h4>
-              <div className="flex flex-wrap gap-1 sm:gap-2">
-                {ipDetails.devices?.map((device, index) => (
-                  <span key={index} className="bg-gray-100 px-2 sm:px-3 py-1 rounded-full text-xs flex items-center">
-                    <DeviceIcon device={device} />
-                    <span className="ml-1 truncate max-w-[60px] sm:max-w-none">{device}</span>
-                  </span>
-                ))}
-                {(!ipDetails.devices || ipDetails.devices.length === 0) && (
-                  <span className="text-gray-500 text-xs sm:text-sm">无设备信息</span>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3 sm:space-y-4">
-              <h4 className="font-semibold text-gray-900 text-sm sm:text-base">浏览器信息</h4>
-              <div className="flex flex-wrap gap-1 sm:gap-2">
-                {ipDetails.browsers?.map((browser, index) => (
-                  <span key={index} className="bg-blue-100 text-blue-800 px-2 sm:px-3 py-1 rounded-full text-xs truncate max-w-[80px] sm:max-w-none">
-                    {browser}
-                  </span>
-                ))}
-                {(!ipDetails.browsers || ipDetails.browsers.length === 0) && (
-                  <span className="text-gray-500 text-xs sm:text-sm">无浏览器信息</span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ✅ แก้ไข: 访问的 URL - แสดงเฉพาะ /backend-api/views/increment */}
+          {/* 访问的 URL */}
           {ipDetails.topUrls && ipDetails.topUrls.length > 0 && (
             <div className="space-y-3 sm:space-y-4">
               <h4 className="font-semibold text-gray-900 text-sm sm:text-base flex items-center">
@@ -390,16 +448,11 @@ const Ip = () => {
                     </span>
                   </div>
                 ))}
-                {ipDetails.topUrls.length > 5 && (
-                  <p className="text-xs text-gray-500 text-center">
-                    还有 {ipDetails.topUrls.length - 5} 个观看请求
-                  </p>
-                )}
               </div>
             </div>
           )}
 
-          {/* ✅ แสดงสถิติตามเวลาเฉพาะการดูวิดีโอ */}
+          {/* สถิติตามเวลา */}
           {ipDetails.hourlyStats && ipDetails.hourlyStats.length > 0 && (
             <div className="space-y-3 sm:space-y-4">
               <h4 className="font-semibold text-gray-900 text-sm sm:text-base">观看时间分布</h4>
@@ -440,11 +493,11 @@ const Ip = () => {
     );
   }
 
-  // 🧾 Main Table - 移动端优化
+  // 🧾 Main Table
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-2 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header - 移动端优化 */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
           <div className="flex items-center space-x-2 sm:space-x-4">
             <button 
@@ -460,12 +513,11 @@ const Ip = () => {
               <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
                 IP 管理
               </h1>
-              <p className="text-gray-600 text-xs sm:text-sm">查看并分析访问视频的 IP</p>
+              <p className="text-gray-600 text-xs sm:text-sm">查看并分析访问视频的 IP (已合并Cloudflare IP)</p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            {/* ✅ เพิ่มปุ่มเรียงตามจำนวนการดูวิดีโอ */}
             <button
               onClick={() => handleSort('videoViewRequests')}
               className="text-xs sm:text-sm px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center"
@@ -495,14 +547,14 @@ const Ip = () => {
           </div>
         </div>
 
-        {/* ✅ แก้ไข: Stats - แสดงข้อมูลการดูวิดีโอ */}
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <StatCard 
             title="活跃IP" 
             value={stats.totalIPs} 
             icon={Globe} 
             color="blue"
-            subtitle="有观看记录的IP"
+            subtitle="已合并重复IP"
           />
           <StatCard 
             title="视频观看" 
@@ -534,7 +586,7 @@ const Ip = () => {
           />
         </div>
 
-        {/* Filters - 移动端优化 */}
+        {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
@@ -566,7 +618,7 @@ const Ip = () => {
           </div>
         </div>
 
-        {/* Mobile Card View for small screens */}
+        {/* Mobile Card View */}
         <div className="sm:hidden">
           {loading ? (
             <div className="flex justify-center py-8">
@@ -586,6 +638,14 @@ const Ip = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-1 mb-1">
                         {ipItem.isPrivate && <Shield className="h-3 w-3 text-red-500 flex-shrink-0" />}
+                        {ipItem.isCloudflareGroup && (
+                          <div className="flex items-center">
+                            <Cloud className="h-3 w-3 text-purple-500 mr-1" />
+                            <span className="bg-purple-100 text-purple-800 text-xs px-1 py-0.5 rounded">
+                              组
+                            </span>
+                          </div>
+                        )}
                         <span className={`font-mono text-sm font-semibold truncate ${ipItem.isPrivate ? 'text-red-600' : ''}`}>
                           {ipItem.ip}
                         </span>
@@ -602,7 +662,7 @@ const Ip = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => fetchIpDetails(ipItem.ip)}
+                      onClick={() => ipItem.isCloudflareGroup ? fetchIPGroup(ipItem.groupKey) : fetchIpDetails(ipItem.ip)}
                       className="text-blue-600 hover:text-blue-900 text-sm font-medium ml-2"
                     >
                       详情
@@ -613,8 +673,10 @@ const Ip = () => {
                     <div className="flex items-center">
                       <span className="text-gray-500 mr-1">设备:</span>
                       <div className="flex items-center">
-                        <DeviceIcon device={ipItem.device} />
-                        <span className="ml-1 truncate">{ipItem.device || '未知'}</span>
+                        <DeviceIcon device={ipItem.device || ipItem.devices?.[0]} />
+                        <span className="ml-1 truncate">
+                          {ipItem.isCloudflareGroup && ipItem.ipCount > 1 ? `${ipItem.ipCount}个IP` : (ipItem.device || ipItem.devices?.[0] || '未知')}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-end">
@@ -697,9 +759,24 @@ const Ip = () => {
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-1 sm:space-x-2">
                         {ipItem.isPrivate && <Shield className="h-3 w-3 sm:h-4 sm:w-4 text-red-500 flex-shrink-0" />}
-                        <span className={`font-mono text-sm ${ipItem.isPrivate ? 'text-red-600 font-semibold' : ''} truncate max-w-[120px] sm:max-w-none`}>
-                          {ipItem.ip}
-                        </span>
+                        {ipItem.isCloudflareGroup && (
+                          <div className="flex items-center" title="Cloudflare IP 组">
+                            <Cloud className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500 flex-shrink-0" />
+                            <span className="bg-purple-100 text-purple-800 text-xs px-1.5 py-0.5 rounded">
+                              组
+                            </span>
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className={`font-mono text-sm ${ipItem.isPrivate ? 'text-red-600 font-semibold' : ''} truncate max-w-[120px] sm:max-w-none`}>
+                            {ipItem.ip}
+                          </div>
+                          {ipItem.isCloudflareGroup && ipItem.ipCount > 1 && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              包含 {ipItem.ipCount} 个IP地址
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
@@ -716,8 +793,10 @@ const Ip = () => {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <div className="flex items-center space-x-1 sm:space-x-2">
-                        <DeviceIcon device={ipItem.device} />
-                        <span className="text-sm truncate max-w-[60px] sm:max-w-none">{ipItem.device || '未知'}</span>
+                        <DeviceIcon device={ipItem.device || ipItem.devices?.[0]} />
+                        <span className="text-sm truncate max-w-[60px] sm:max-w-none">
+                          {ipItem.isCloudflareGroup && ipItem.ipCount > 1 ? `${ipItem.ipCount}个IP` : (ipItem.device || ipItem.devices?.[0] || '未知')}
+                        </span>
                       </div>
                     </td>
                     <td className="px-4 sm:px-6 py-4">
@@ -737,10 +816,10 @@ const Ip = () => {
                     </td>
                     <td className="px-4 sm:px-6 py-4">
                       <button
-                        onClick={() => fetchIpDetails(ipItem.ip)}
+                        onClick={() => ipItem.isCloudflareGroup ? fetchIPGroup(ipItem.groupKey) : fetchIpDetails(ipItem.ip)}
                         className="text-blue-600 hover:text-blue-900 text-sm font-medium hover:underline"
                       >
-                        查看详情
+                        {ipItem.isCloudflareGroup ? '查看组' : '查看详情'}
                       </button>
                     </td>
                   </tr>
@@ -750,7 +829,7 @@ const Ip = () => {
           </table>
         </div>
 
-        {/* Pagination - 移动端优化 */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 gap-3">
             <div className="text-xs sm:text-sm text-gray-600">

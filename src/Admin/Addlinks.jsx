@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Addlinks() {
   const [title, setTitle] = useState(''); // 标题（title）
@@ -9,6 +10,7 @@ function Addlinks() {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editUrl, setEditUrl] = useState('');
+  const navigate = useNavigate();
 
   const API_BASE = 'http://47.238.3.148/backend-api';
 
@@ -120,6 +122,15 @@ function Addlinks() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* 添加链接表单 - 左侧 */}
           <div className="lg:col-span-1">
+                        <button 
+              onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm bg-white border border-gray-200 hover:bg-gray-50`}
+            >
+              <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              返回
+            </button>
             <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 sticky top-6">
               <h2 className="text-xl lg:text-2xl font-bold text-gray-800 mb-6 flex items-center">
                 <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>

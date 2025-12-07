@@ -14,6 +14,7 @@ import Login from '../Admin/Login';
 import ProtectedRoute from './ProtectedRoute'; 
 import GameDashboard from '../game/GameDashboard'
 import Addlinks from '../Admin/Addlinks'
+import Account from '../Admin/Account'
 import VideoManagement from '../pages/VideoManagement';
 import EnhancedPriceSetting from '../pages/EnhancedPriceSetting';
 import P from '../mod/Payment_modal';
@@ -87,10 +88,11 @@ const Router = () => {
 
         <Route path="/GameDashboard" element={<GameDashboard/>} />
         <Route path="/Addlinks" element={<Addlinks/>} />
+        <Route path="/Account" element={<Account/>} />
         <Route path="/P" element={<P/>} />
 
         {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
-        <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '50px' }}>404 - Not Found</h1>} />
+        <Route path="*" element={<h1 style={{ textAlign: 'center', marginTop: '80px' }}>404 - Not Found</h1>} />
       </Routes>
     </BrowserRouter>
   );
