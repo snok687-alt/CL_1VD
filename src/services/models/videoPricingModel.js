@@ -171,88 +171,133 @@ async refreshAllVideoPricing() {
   }
 },
 
-  // ✅ ตรวจสอบสถานะราคาของวิดีโอ
-  async checkPriceStatus(videoId) {
+   async checkPriceStatus(videoId) {
     try {
-      const settings = await this.getPricingSettings(videoId);
+      const [settings] = await pool.query(
+        'SELECT pricing_enabled, use_global_pricing, custom_pricing_enabled FROM video_pricing WHERE video_id = ?',
+        [videoId]
+      );
 
-      if (!settings) {
-        return { hasPricing: false, isPaid: false, pricingType: 'none' };
+      if (settings.length === 0) {
+        return {
+          hasPricing: false,
+          isPaid: false,
+          useGlobalPricing: true,
+          customPricingEnabled: false
+        };
       }
 
+      const setting = settings[0];
+      
       return {
-        hasPricing: settings.pricing_enabled === 1,
-        isPaid: settings.pricing_enabled === 1,
-        pricingType: settings.pricing_type || 'none',
-        useGlobalPricing: settings.use_global_pricing === 1
+        hasPricing: setting.pricing_enabled === 1,
+        isPaid: setting.pricing_enabled === 1,
+        useGlobalPricing: setting.use_global_pricing === 1,
+        customPricingEnabled: setting.custom_pricing_enabled === 1
       };
     } catch (error) {
       console.error('Check price status error:', error);
-      return { hasPricing: false, isPaid: false, pricingType: 'none' };
+      return {
+        hasPricing: false,
+        isPaid: false,
+        useGlobalPricing: true,
+        customPricingEnabled: false
+      };
     }
   },
 
-// ✅ แก้ไข method togglePaidStatus ให้ตรวจสอบ video_id ก่อน
-// ✅ แก้ไข method togglePaidStatus - ไม่ต้องตรวจสอบ video_id
-async togglePaidStatus(videoId, enable) {
-  try {
-    console.log('🔧 Toggling paid status for video:', videoId, 'to:', enable);
-    
-    // ❌ ลบการตรวจสอบ video existence
-    // ✅ บันทึกเข้า video_pricing โดยตรง
-    
-    // ตรวจสอบว่ามีการตั้งค่าในตาราง video_pricing หรือไม่
-    const [existing] = await pool.query(
-      'SELECT * FROM video_pricing WHERE video_id = ?',
-      [videoId]
-    );
-
-    let result;
-    
-    if (existing.length > 0) {
-      // อัพเดทสถานะการชำระเงิน
-      [result] = await pool.query(
-        'UPDATE video_pricing SET pricing_enabled = ?, updated_at = NOW() WHERE video_id = ?',
-        [enable, videoId]
+ async getVideoInfo(videoId) {
+    try {
+      const [video] = await pool.query(
+        'SELECT id, title FROM videos WHERE id = ?',
+        [videoId]
       );
-      console.log('✅ Updated existing pricing setting:', result.affectedRows, 'rows affected');
-    } else {
-      // สร้างการตั้งค่าใหม่
-      [result] = await pool.query(
-        `INSERT INTO video_pricing 
-        (video_id, pricing_enabled, use_global_pricing, custom_pricing_enabled) 
-        VALUES (?, ?, FALSE, TRUE)`,
-        [videoId, enable]
-      );
-      console.log('✅ Created new pricing setting:', result.insertId);
+      
+      return video.length > 0 ? video[0] : null;
+    } catch (error) {
+      console.error('Get video info error:', error);
+      return null;
     }
+  },
 
-    // ✅ ตรวจสอบว่าบันทึกสำเร็จจริง
-    const [verify] = await pool.query(
-      'SELECT pricing_enabled FROM video_pricing WHERE video_id = ?',
-      [videoId]
-    );
+  // ✅ เพิ่ม method เพื่อสร้าง video entry ถ้ายังไม่มี
+  async ensureVideoExists(videoId) {
+    try {
+      const videoInfo = await this.getVideoInfo(videoId);
+      
+      if (!videoInfo) {
+        console.log(`📝 Creating video entry for ${videoId}`);
+        await pool.query(
+          'INSERT INTO videos (id, title) VALUES (?, ?)',
+          [videoId, `Video ${videoId}`]
+        );
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Ensure video exists error:', error);
+      throw error;
+    }
+  },
 
-    if (verify.length > 0) {
-      console.log('✅ Verified: Paid status successfully saved to database');
-      return { 
-        success: true, 
+  // ✅ แก้ไข method togglePaidStatus ให้บันทึกข้อมูลถูกต้อง
+  async togglePaidStatus(videoId, enable) {
+    try {
+      console.log('🔄 Toggle paid status for video:', { videoId, enable });
+
+      // ✅ ตรวจสอบและสร้าง video entry ถ้ายังไม่มี
+      await this.ensureVideoExists(videoId);
+
+      // ✅ ตรวจสอบว่ามีการตั้งค่าใน video_pricing แล้วหรือยัง
+      const [existingSettings] = await pool.query(
+        'SELECT * FROM video_pricing WHERE video_id = ?',
+        [videoId]
+      );
+
+      if (existingSettings.length > 0) {
+        // ✅ อัปเดตสถานะที่มีอยู่
+        await pool.query(`
+          UPDATE video_pricing 
+          SET pricing_enabled = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE video_id = ?
+        `, [enable ? 1 : 0, videoId]);
+      } else {
+        // ✅ สร้างการตั้งค่าใหม่ (ใช้ global pricing เป็นค่าเริ่มต้น)
+        await pool.query(`
+          INSERT INTO video_pricing (
+            video_id,
+            pricing_enabled,
+            use_global_pricing,
+            custom_pricing_enabled,
+            created_at,
+            updated_at
+          ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, [
+          videoId,
+          enable ? 1 : 0,
+          1, // use_global_pricing = true
+          0  // custom_pricing_enabled = false
+        ]);
+      }
+
+      return {
+        success: true,
+        videoId,
         enabled: enable,
-        message: `บันทึกการตั้งค่าสำเร็จสำหรับ video_id: ${videoId}`
+        useGlobalPricing: true,
+        message: enable ? '已开启付费功能并使用全局价格' : '已关闭付费功能'
       };
-    } else {
-      throw new Error('Database verification failed');
-    }
 
-  } catch (error) {
-    console.error('❌ Toggle paid status error:', error);
-    return { 
-      success: false, 
-      error: error.message,
-      message: `ไม่สามารถบันทึกข้อมูลสำหรับ video_id: ${videoId}`
-    };
-  }
-},
+    } catch (error) {
+      console.error('❌ Toggle paid status error:', error);
+      return {
+        success: false,
+        message: error.message,
+        error: error
+      };
+    }
+  },
   // ✅ ดึงการตั้งค่าราคาแบบกลุ่ม (6 ราคาเท่านั้น)
   async getGlobalPricingSettings() {
     try {

@@ -287,7 +287,6 @@ function Account() {
                                         {isLargeScreen && (
                                             <th className="px-3 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">创建时间</th>
                                         )}
-                                        <th className="px-3 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -333,41 +332,6 @@ function Account() {
                                                     {formatDate(user.created_at)}
                                                 </td>
                                             )}
-                                            <td className="px-3 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                                {editingId === user.id ? (
-                                                    <div className="flex flex-col sm:flex-row justify-center space-y-1 sm:space-y-0 sm:space-x-2">
-                                                        <button
-                                                            onClick={() => handleSaveEdit(user.id)}
-                                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-500 hover:bg-green-600 transition"
-                                                        >
-                                                            <Save className="h-3.5 w-3.5 mr-1" /> 保存
-                                                        </button>
-                                                        <button
-                                                            onClick={handleCancelEdit}
-                                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 transition"
-                                                        >
-                                                            <XCircle className="h-3.5 w-3.5 mr-1" /> 取消
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex justify-center space-x-1 sm:space-x-2">
-                                                        <button
-                                                            onClick={() => handleEdit(user)}
-                                                            className="text-indigo-600 hover:text-indigo-900 p-1.5 rounded-lg hover:bg-indigo-50 transition"
-                                                            title="编辑"
-                                                        >
-                                                            <Pencil className="h-4 w-4 sm:h-5 sm:w-5" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(user.id)}
-                                                            className="text-red-600 hover:text-red-900 p-1.5 rounded-lg hover:bg-red-50 transition"
-                                                            title="删除"
-                                                        >
-                                                            <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

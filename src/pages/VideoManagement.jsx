@@ -78,6 +78,9 @@ const VideoManagement = ({ isDarkMode }) => {
               loadCustomVideoPrice(video.id)
             ]);
 
+            // ✅ ตรวจสอบว่าวิดีโอนี้ใช้ global pricing หรือไม่
+            const useGlobal = !customPriceData;
+            // ✅ เลือกข้อมูลราคาที่ถูกต้อง
             const priceData = customPriceData || globalPrices?.priceTemplates;
 
             return {
@@ -88,7 +91,7 @@ const VideoManagement = ({ isDarkMode }) => {
               pricing_enabled: priceStatus.hasPricing,
               ratingData: rating,
               priceData: priceData,
-              useGlobalPricing: !customPriceData,
+              useGlobalPricing: useGlobal, // ✅ ระบุชัดเจนว่าใช้ global หรือ custom
               customPriceData: customPriceData
             };
           } catch (error) {
@@ -100,7 +103,7 @@ const VideoManagement = ({ isDarkMode }) => {
               pricing_enabled: false,
               ratingData: null,
               priceData: globalPrices?.priceTemplates,
-              useGlobalPricing: true,
+              useGlobalPricing: true, // ✅ ใช้ global เป็น default
               customPriceData: null
             };
           }
@@ -147,6 +150,7 @@ const VideoManagement = ({ isDarkMode }) => {
                 loadCustomVideoPrice(video.id)
               ]);
 
+              const useGlobal = !customPriceData;
               const priceData = customPriceData || globalPricing?.priceTemplates;
 
               return {
@@ -157,7 +161,7 @@ const VideoManagement = ({ isDarkMode }) => {
                 pricing_enabled: priceStatus.hasPricing,
                 ratingData: rating,
                 priceData: priceData,
-                useGlobalPricing: !customPriceData,
+                useGlobalPricing: useGlobal,
                 customPriceData: customPriceData
               };
             } catch (error) {
@@ -428,7 +432,8 @@ const VideoManagement = ({ isDarkMode }) => {
                   ? {
                     ...video,
                     hasPricing: true,
-                    pricing_enabled: true
+                    pricing_enabled: true,
+                    useGlobalPricing: true // ✅ เปิดชำระเงินใหม่ใช้ global pricing
                   }
                   : video
               ));
@@ -490,6 +495,8 @@ const VideoManagement = ({ isDarkMode }) => {
               ? {
                 ...video,
                 ...newPricing,
+                // ✅ เมื่อเปิดชำระเงินใหม่ ให้ใช้ global pricing เป็น default
+                useGlobalPricing: enable ? true : video.useGlobalPricing
               }
               : video
           )
@@ -541,35 +548,31 @@ const VideoManagement = ({ isDarkMode }) => {
     }
   };
 
-  const renderVideoPrices = (video) => {
-    if (!video.priceData) {
-      return (
-        <div className="text-xs text-gray-500 text-center mt-1">
-          未设置价格
-        </div>
-      );
-    }
-
-    const enabledPrices = Object.entries(video.priceData)
+  const renderGlobalPrices = (priceTemplates, label) => {
+    const enabledPrices = Object.entries(priceTemplates)
       .filter(([key, price]) => price.enabled && price.amount > 0);
 
     if (enabledPrices.length === 0) {
       return (
         <div className="text-xs text-gray-500 text-center mt-1">
-          未设置价格
+          全局价格未设置
         </div>
       );
     }
 
     return (
-      <div className="flex flex-col gap-1.5 mt-2">
+      <div className="mt-2">
+        <div className="text-[10px] text-blue-600 font-medium mb-1 text-center">
+          {label}
+        </div>
         <div className="grid grid-cols-2 gap-1">
           {enabledPrices.map(([key, price], index) => (
             <div
               key={key}
-              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border ${index % 2 === 0
-                  ? 'bg-gradient-to-br from-green-50 to-blue-50 text-green-800 border-green-200'
-                  : 'bg-gradient-to-br from-emerald-50 to-cyan-50 text-emerald-800 border-emerald-200'
+              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border 
+                ${index % 2 === 0
+                  ? 'bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-800 border-blue-200'
+                  : 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800 border-indigo-200'
                 }`}
             >
               <span className="font-bold">¥{price.amount}</span>
@@ -579,6 +582,85 @@ const VideoManagement = ({ isDarkMode }) => {
         </div>
       </div>
     );
+  };
+
+  const renderCustomPrices = (priceData, label) => {
+    const enabledPrices = Object.entries(priceData)
+      .filter(([key, price]) => price.enabled && price.amount > 0);
+
+    if (enabledPrices.length === 0) {
+      return (
+        <div className="text-xs text-gray-500 text-center mt-1">
+          自定义价格未启用
+        </div>
+      );
+    }
+
+    return (
+      <div className="mt-2">
+        <div className="text-[10px] text-green-600 font-medium mb-1 text-center">
+          {label}
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          {enabledPrices.map(([key, price], index) => (
+            <div
+              key={key}
+              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border 
+                ${index % 2 === 0
+                  ? 'bg-gradient-to-br from-green-50 to-emerald-50 text-green-800 border-green-200'
+                  : 'bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-800 border-emerald-200'
+                }`}
+            >
+              <span className="font-bold">¥{price.amount}</span>
+              <span className="text-[10px]">{price.days} 天</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderVideoPrices = (video) => {
+    // ถ้าวิดีโอใช้ global pricing และ global pricing มีข้อมูล
+    if (video.useGlobalPricing && globalPricing && globalPricing.priceTemplates) {
+      return renderGlobalPrices(globalPricing.priceTemplates, '使用全局价格');
+    }
+    
+    // ถ้าวิดีโอมี custom pricing
+    if (video.priceData && !video.useGlobalPricing) {
+      return renderCustomPrices(video.priceData, '自定义价格');
+    }
+    
+    // ถ้าไม่มีราคาทั้งสองแบบ
+    return (
+      <div className="text-xs text-gray-500 text-center mt-1">
+        未设置价格
+      </div>
+    );
+  };
+
+  const renderPriceTypeBadge = (video) => {
+    if (video.useGlobalPricing && video.hasPricing) {
+      return (
+        <div className="absolute top-8 left-1">
+          <span className="px-1.5 py-0.5 text-[10px] bg-blue-600 text-white rounded-full border border-blue-700 shadow-sm">
+            全局价
+          </span>
+        </div>
+      );
+    }
+    
+    if (!video.useGlobalPricing && video.hasPricing) {
+      return (
+        <div className="absolute top-8 left-1">
+          <span className="px-1.5 py-0.5 text-[10px] bg-green-600 text-white rounded-full border border-green-700 shadow-sm">
+            自定义价
+          </span>
+        </div>
+      );
+    }
+    
+    return null;
   };
 
   const handleSelectVideo = (videoId) => {
@@ -663,7 +745,8 @@ const VideoManagement = ({ isDarkMode }) => {
                   return {
                     ...video,
                     hasPricing: bulkAction === 'enable',
-                    pricing_enabled: bulkAction === 'enable'
+                    pricing_enabled: bulkAction === 'enable',
+                    useGlobalPricing: bulkAction === 'enable' ? true : video.useGlobalPricing
                   };
                 }
                 return video;
@@ -828,6 +911,16 @@ const VideoManagement = ({ isDarkMode }) => {
             </button>
             <div>
               <h1 className="text-3xl font-bold mb-2">视频价格管理</h1>
+              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span className="inline-flex items-center mr-3">
+                  <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
+                  全局价格
+                </span>
+                <span className="inline-flex items-center">
+                  <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
+                  自定义价格
+                </span>
+              </p>
             </div>
             <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
               <button
@@ -956,7 +1049,14 @@ const VideoManagement = ({ isDarkMode }) => {
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 <div>总视频数: {videos.length} 个</div>
                 <div>付费视频: {videos.filter(v => v.hasPricing).length} 个</div>
-                <div>免费视频: {videos.filter(v => !v.hasPricing).length} 个</div>
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
+                  全局价格: {videos.filter(v => v.hasPricing && v.useGlobalPricing).length} 个
+                </div>
+                <div className="flex items-center">
+                  <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
+                  自定义价格: {videos.filter(v => v.hasPricing && !v.useGlobalPricing).length} 个
+                </div>
               </div>
             </div>
           </div>
@@ -1008,6 +1108,9 @@ const VideoManagement = ({ isDarkMode }) => {
                       decoding="async"
                       onError={handleImageError}
                     />
+
+                    {/* Badge ประเภทราคา */}
+                    {renderPriceTypeBadge(video)}
 
                     <div className="absolute top-1 left-1 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
                       {maxStar > 0 ? (
@@ -1133,6 +1236,16 @@ const VideoManagement = ({ isDarkMode }) => {
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               🎉 已显示所有视频 ({filteredVideos.length} 个)
             </p>
+            <div className="text-xs text-gray-500 mt-2">
+              <span className="inline-flex items-center mr-3">
+                <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
+                全局价格: {videos.filter(v => v.hasPricing && v.useGlobalPricing).length} 个
+              </span>
+              <span className="inline-flex items-center">
+                <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
+                自定义价格: {videos.filter(v => v.hasPricing && !v.useGlobalPricing).length} 个
+              </span>
+            </div>
           </div>
         )}
       </div>

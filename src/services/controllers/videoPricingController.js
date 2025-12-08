@@ -139,62 +139,69 @@ async saveAllSettings(req, res) {
     try {
       const { videoId } = req.params;
 
+      console.log('🔍 Check price status for video:', videoId);
+
       const status = await VideoPricingModel.checkPriceStatus(videoId);
 
       res.json({
         success: true,
-        ...status
+        hasPricing: status.hasPricing,
+        isPaid: status.isPaid,
+        useGlobalPricing: status.useGlobalPricing,
+        customPricingEnabled: status.customPricingEnabled
       });
     } catch (error) {
       console.error('Check price status error:', error);
       res.status(500).json({
         success: false,
         hasPricing: false,
-        isPaid: false
+        isPaid: false,
+        useGlobalPricing: true,
+        customPricingEnabled: false
       });
     }
   },
 
 // ✅ แก้ไข method togglePaidStatus ให้จัดการ error ดีขึ้น
-// ✅ แก้ไข method togglePaidStatus
-async togglePaidStatus(req, res) {
-  try {
-    const { video_id, enable } = req.body;
+  async togglePaidStatus(req, res) {
+    try {
+      const { video_id, enable } = req.body;
 
-    console.log('🔄 Toggle paid status request:', { video_id, enable });
+      console.log('🔄 Toggle paid status request:', { video_id, enable });
 
-    if (!video_id) {
-      return res.status(400).json({
-        success: false,
-        message: '缺少视频ID'
-      });
-    }
+      if (!video_id) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少视频ID'
+        });
+      }
 
-    // ✅ เรียกใช้ Model method โดยไม่ต้องตรวจสอบ video existence
-    const result = await VideoPricingModel.togglePaidStatus(video_id, enable);
+      const result = await VideoPricingModel.togglePaidStatus(video_id, enable);
 
-    if (result.success) {
-      res.json({
-        success: true,
-        message: enable ? 'เปิดใช้งานการชำระเงินแล้ว' : 'ปิดใช้งานการชำระเงินแล้ว',
-        data: result
-      });
-    } else {
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+          data: result,
+          useGlobalPricing: result.useGlobalPricing,
+          hasPricing: enable
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: result.message || '操作失败',
+          error: result.error
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Toggle paid status error:', error);
       res.status(500).json({
         success: false,
-        message: result.message || '操作失败',
-        error: result.error
+        message: '服务器错误: ' + error.message
       });
     }
-
-  } catch (error) {
-    console.error('❌ Toggle paid status error:', error);
-    res.status(500).json({
-      success: false,
-      message: '服务器错误: ' + error.message
-    });
-  }
-},
+  },
 
   // ✅ ดึงการตั้งค่าราคาแบบกลุ่ม (6 ราคาเท่านั้น)
   async getBulkSettings(req, res) {
