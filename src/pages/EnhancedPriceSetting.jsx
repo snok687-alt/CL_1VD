@@ -6,13 +6,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   const { videoId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('single'); // 设置默认值为single
   const [pricingEnabled, setPricingEnabled] = useState(false);
-  
+
   // 定义6个初始套餐
   const [basePrices, setBasePrices] = useState({
     price_1: { amount: 1, days: 1, enabled: true },
@@ -71,7 +71,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         if (activeTab === 'single' && videoId && videoId !== 'all') {
           await loadPriceSettings(videoId);
         } else if (activeTab === 'bulk') {
@@ -93,21 +93,21 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   const loadPriceSettings = async (id) => {
     try {
       const response = await fetch(`/backend-api/video/pricing/settings/${id}`);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.success) {
           if (data.videoInfo) {
             setVideo(data.videoInfo);
           }
           setPricingEnabled(data.pricingEnabled || false);
-          
+
           if (data.originalPrices) {
             setOriginalPrices(data.originalPrices);
             setUsingBulkPricing(data.usingBulkPricing || false);
           }
-          
+
           if (data.basePrices) {
             const loadedPrices = { ...basePrices };
             Object.keys(data.basePrices).forEach(key => {
@@ -120,9 +120,9 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
           return;
         }
       }
-      
+
       await loadVideoInfo(id);
-      
+
     } catch (error) {
       console.error('加载价格设置时出错:', error);
       await loadVideoInfo(id);
@@ -157,6 +157,96 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
     }
   };
 
+  // ฟังก์ชันปิดการชำระเงินและใช้ราคารวม
+const handleDisablePricingAndUseGlobal = async () => {
+  try {
+    setSaving(true);
+
+    const result = await Swal.fire({
+      title: '关闭付费功能',
+      text: '您确定要关闭付费并改为使用全局价格吗？',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: '是的，关闭付费',
+      cancelButtonText: '取消',
+      customClass: {
+        popup: isDarkMode ? 'dark-swal' : ''
+      }
+    });
+
+    if (result.isConfirmed) {
+      const token = localStorage.getItem('token');
+
+      // 1. 关闭付费功能
+      await fetch('/backend-api/video/pricing/toggle-paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          video_id: parseInt(videoId),
+          enable: false
+        })
+      });
+
+      // 2. 保存为使用全局价格
+      const settingsData = {
+        settingType: 'single',
+        video_id: parseInt(videoId),
+        pricingEnabled: false,
+        useGlobalPricing: true
+      };
+
+      const response = await fetch('/backend-api/video/pricing/save-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(settingsData)
+      });
+
+      const saveResult = await response.json();
+
+      if (saveResult.success) {
+        // 更新组件状态
+        setPricingEnabled(false);
+        setUsingBulkPricing(true);
+
+        await Swal.fire({
+          icon: 'success',
+          title: '操作成功',
+          text: '已关闭付费并使用全局价格',
+          confirmButtonText: '确定',
+          customClass: {
+            popup: isDarkMode ? 'dark-swal' : ''
+          }
+        });
+
+        // 重新加载价格设置
+        await loadPriceSettings(videoId);
+      } else {
+        throw new Error(saveResult.message || '操作失败');
+      }
+    }
+  } catch (error) {
+    console.error('关闭付费失败:', error);
+    Swal.fire({
+      icon: 'error',
+      title: '操作失败',
+      text: error.message || '无法关闭付费功能',
+      confirmButtonText: '确定',
+      customClass: {
+        popup: isDarkMode ? 'dark-swal' : ''
+      }
+    });
+  } finally {
+    setSaving(false);
+  }
+};
+
+
   // 批量启用/禁用所有6个价格
   const toggleAllPrices = (enabled) => {
     const updatedPrices = { ...basePrices };
@@ -181,7 +271,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
       };
     });
     setBasePrices(updatedPrices);
-    
+
     Swal.fire({
       icon: 'success',
       title: '设置成功',
@@ -205,7 +295,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
   const handleBasePriceChange = (priceKey, field, value) => {
     const newValue = field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0;
-    
+
     setBasePrices(prev => ({
       ...prev,
       [priceKey]: {
@@ -230,7 +320,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
   const handleBulkTemplateChange = (templateKey, field, value) => {
     const newValue = field === 'amount' ? parseFloat(value) || 0 : parseInt(value) || 0;
-    
+
     setBulkPricing(prev => ({
       ...prev,
       priceTemplates: {
@@ -247,7 +337,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   const handleSaveAllSettings = async () => {
     try {
       setSaving(true);
-      
+
       let settingsData;
       const token = localStorage.getItem('token');
 
@@ -285,7 +375,7 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
 
       const response = await fetch('/backend-api/video/pricing/save-all', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -298,19 +388,19 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         await Swal.fire({
           icon: 'success',
           title: '保存成功',
-          text: activeTab === 'single' 
-            ? '视频价格设置已保存' 
+          text: activeTab === 'single'
+            ? '视频价格设置已保存'
             : '批量价格设置已保存',
           confirmButtonText: '确定',
           customClass: {
             popup: isDarkMode ? 'dark-swal' : ''
           }
         });
-        
+
         if (activeTab === 'single' && pricingEnabled) {
           await fetch('/backend-api/video/pricing/toggle-paid', {
             method: 'POST',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
@@ -397,23 +487,22 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
   }
 
   // 价格套餐卡片组件（可重复用于single和bulk）
-  const PricePackageCard = ({ 
-    item, 
-    keyName, 
-    isEnabled, 
-    onToggle, 
-    onChange, 
+  const PricePackageCard = ({
+    item,
+    keyName,
+    isEnabled,
+    onToggle,
+    onChange,
     type = 'single',
-    isDarkMode 
+    isDarkMode
   }) => {
     const isSingle = type === 'single';
-    
+
     return (
-      <div className={`p-2 sm:p-3 rounded-lg border transition-all min-h-[180px] ${
-        isEnabled 
-          ? (isSingle ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-green-500 bg-green-50 dark:bg-green-900/20') 
+      <div className={`p-2 sm:p-3 rounded-lg border transition-all min-h-[180px] ${isEnabled
+          ? (isSingle ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-green-500 bg-green-50 dark:bg-green-900/20')
           : 'border-gray-200 dark:border-gray-600'
-      }`}>
+        }`}>
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <div className="flex items-center space-x-2">
             <label className="relative inline-flex items-center cursor-pointer">
@@ -423,22 +512,20 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 onChange={onToggle}
                 className="sr-only peer"
               />
-              <div className={`w-9 h-5 rounded-full peer ${
-                isEnabled 
-                  ? (isSingle ? 'bg-blue-600' : 'bg-green-600') 
+              <div className={`w-9 h-5 rounded-full peer ${isEnabled
+                  ? (isSingle ? 'bg-blue-600' : 'bg-green-600')
                   : 'bg-gray-200 dark:bg-gray-600'
-              } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
+                } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all`}></div>
             </label>
             <span className={`text-sm font-medium whitespace-nowrap ${isEnabled ? (isSingle ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400') : 'text-gray-500'}`}>
               {item.days} 天
             </span>
           </div>
           {isEnabled && (
-            <span className={`px-1.5 py-0.5 text-[10px] sm:text-xs rounded ${
-              isSingle 
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' 
+            <span className={`px-1.5 py-0.5 text-[10px] sm:text-xs rounded ${isSingle
+                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                 : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-            }`}>
+              }`}>
               已启用
             </span>
           )}
@@ -452,12 +539,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 type="number"
                 value={item.amount}
                 onChange={(e) => onChange(keyName, 'amount', e.target.value)}
-                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${
-                  isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
-                } ${isDarkMode 
-                  ? 'bg-gray-600 border-gray-500 text-white' 
-                  : 'bg-white border-gray-300'
-                }`}
+                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
+                  } ${isDarkMode
+                    ? 'bg-gray-600 border-gray-500 text-white'
+                    : 'bg-white border-gray-300'
+                  }`}
                 min="0"
                 step="0.01"
               />
@@ -468,12 +554,11 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 type="number"
                 value={item.days}
                 onChange={(e) => onChange(keyName, 'days', e.target.value)}
-                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${
-                  isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
-                } ${isDarkMode 
-                  ? 'bg-gray-600 border-gray-500 text-white' 
-                  : 'bg-white border-gray-300'
-                }`}
+                className={`w-full px-2 py-1.5 text-sm border rounded focus:ring-2 ${isSingle ? 'focus:ring-blue-500' : 'focus:ring-green-500'
+                  } ${isDarkMode
+                    ? 'bg-gray-600 border-gray-500 text-white'
+                    : 'bg-white border-gray-300'
+                  }`}
                 min="1"
               />
             </div>
@@ -492,11 +577,10 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
         {/* Header和返回按钮 */}
         <div className="mb-4 sm:mb-6">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <button 
+            <button
               onClick={() => navigate('/video-management')}
-              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-200 border'
-              }`}
+              className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-200 border'
+                }`}
             >
               <svg className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -504,14 +588,14 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               返回
             </button>
           </div>
-          
+
           {/* 显示视频信息或批量定价信息 */}
           {activeTab === 'single' && video && (
             <div className={`p-3 sm:p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white shadow'}`}>
               <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                 {video.thumbnail && (
-                  <img 
-                    src={video.thumbnail} 
+                  <img
+                    src={video.thumbnail}
                     alt={video.title}
                     className="w-full sm:w-20 h-32 sm:h-16 object-cover rounded-lg"
                   />
@@ -529,28 +613,26 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                     </div>
                     <div>
                       <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>状态:</span>
-                      <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
-                        pricingEnabled 
-                          ? 'bg-green-500 text-white' 
+                      <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${pricingEnabled
+                          ? 'bg-green-500 text-white'
                           : 'bg-gray-500 text-white'
-                      }`}>
+                        }`}>
                         {pricingEnabled ? '开启' : '关闭'}
                       </span>
                     </div>
                     {originalPrices && (
                       <div>
                         <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>使用:</span>
-                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${
-                          usingBulkPricing 
-                            ? 'bg-purple-500 text-white' 
+                        <span className={`ml-1 px-1.5 py-0.5 rounded text-[10px] sm:text-xs ${usingBulkPricing
+                            ? 'bg-purple-500 text-white'
                             : 'bg-blue-500 text-white'
-                        }`}>
+                          }`}>
                           {usingBulkPricing ? '批量' : '自定义'}
                         </span>
                       </div>
                     )}
                   </div>
-                  
+
                   {originalPrices && (
                     <div className={`mt-3 p-2 sm:p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-blue-50'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
@@ -608,23 +690,21 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
               {videoId && videoId !== 'all' && (
                 <button
                   onClick={() => setActiveTab('single')}
-                  className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
-                    activeTab === 'single'
+                  className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${activeTab === 'single'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   单个
                 </button>
               )}
-              
+
               <button
                 onClick={() => setActiveTab('bulk')}
-                className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${
-                  activeTab === 'bulk'
+                className={`flex-1 py-2 sm:py-4 px-1 sm:px-6 text-center font-medium text-xs sm:text-sm border-b-2 transition-colors ${activeTab === 'bulk'
                     ? 'border-green-500 text-green-600 dark:text-green-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                }`}
+                  }`}
               >
                 批量
               </button>
@@ -650,17 +730,51 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                         onChange={() => setPricingEnabled(!pricingEnabled)}
                         className="sr-only peer"
                       />
-                      <div className={`w-10 h-5 sm:w-14 sm:h-7 rounded-full peer ${
-                        pricingEnabled 
-                          ? 'bg-blue-600' 
+                      <div className={`w-10 h-5 sm:w-14 sm:h-7 rounded-full peer ${pricingEnabled
+                          ? 'bg-blue-600'
                           : 'bg-gray-200 dark:bg-gray-600'
-                      } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 sm:after:h-6 sm:after:w-6 after:transition-all`}></div>
+                        } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 sm:after:h-6 sm:after:w-6 after:transition-all`}></div>
                     </label>
                   </div>
                 </div>
 
                 {pricingEnabled && (
                   <div>
+                    {/* ปุ่มปิดการชำระเงินและใช้ราคารวม */}
+                    <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+                        <div className="flex-1">
+                          <h3 className="text-sm sm:text-lg font-semibold text-red-600 dark:text-red-400">
+                            支付管理
+                          </h3>
+                          <p className={`text-xs sm:text-sm ${isDarkMode ? 'text-red-300' : 'text-red-600'}`}>
+                            您可以关闭支付并改为使用全局价格
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleDisablePricingAndUseGlobal}
+                          disabled={saving}
+                          className={`px-3 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm rounded-lg transition-colors whitespace-nowrap ${saving
+                              ? 'bg-gray-400 cursor-not-allowed'
+                              : 'bg-red-600 hover:bg-red-700 text-white'
+                            }`}
+                        >
+                          {saving ? (
+                            <span className="flex items-center">
+                              <svg className="animate-spin -ml-1 mr-2 h-3 w-3 sm:h-4 sm:w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              处理中...
+                            </span>
+                          ) : (
+                            '关闭支付并使用全局价格'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+
                     {/* 批量控制按钮 */}
                     <div className={`mb-4 sm:mb-6 p-3 sm:p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
@@ -799,13 +913,12 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
             <button
               onClick={handleSaveAllSettings}
               disabled={saving}
-              className={`flex-1 px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${
-                saving
+              className={`flex-1 px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${saving
                   ? 'bg-gray-400 cursor-not-allowed'
                   : activeTab === 'single'
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-green-600 hover:bg-green-700 text-white'
-              }`}
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
             >
               {saving ? (
                 <span className="flex items-center justify-center">
@@ -821,14 +934,13 @@ const EnhancedPriceSetting = ({ isDarkMode }) => {
                 '保存批量价格'
               )}
             </button>
-            
+
             <button
               onClick={() => navigate('/video-management')}
-              className={`px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${
-                isDarkMode 
-                  ? 'bg-gray-600 hover:bg-gray-500' 
+              className={`px-3 py-2 sm:px-6 sm:py-3 rounded-lg font-medium transition-colors text-xs sm:text-base ${isDarkMode
+                  ? 'bg-gray-600 hover:bg-gray-500'
                   : 'bg-gray-200 hover:bg-gray-300'
-              }`}
+                }`}
             >
               取消
             </button>

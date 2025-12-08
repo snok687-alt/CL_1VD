@@ -26,6 +26,9 @@ router.post('/pricing/enable-all-paid', authMiddleware, VideoPricingController.e
 // ✅ บันทึกการตั้งค่าราคา
 router.post('/pricing/save-all', authMiddleware, VideoPricingController.saveAllSettings);
 
+// ✅ ปิดการชำระเงินและใช้ราคารวม
+router.post('/pricing/disable-and-use-global', authMiddleware, VideoPricingController.disablePricingAndUseGlobal);
+
 // ✅ เพิ่ม route ใหม่ใน videoPricingRoutes.js
 router.get('/videos/:videoId/exists', async (req, res) => {
   try {

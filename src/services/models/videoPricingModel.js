@@ -2,45 +2,45 @@ const { pool } = require('../config/db');
 
 const VideoPricingModel = {
 
-// ✅ แก้ไข method getPricingSettings - ลบ JOIN ที่ไม่จำเป็น
-async getPricingSettings(videoId) {
-  try {
-    // ✅ ดึงข้อมูลจาก video_pricing โดยตรง ไม่ต้อง JOIN กับ videos
-    const [rows] = await pool.query(
-      `SELECT 
-          vp.*,
-          CASE 
-            WHEN vp.use_global_pricing = 1 THEN 'global'
-            WHEN vp.custom_pricing_enabled = 1 THEN 'custom'
-            ELSE 'none'
-          END as pricing_type
-        FROM video_pricing vp
-        WHERE vp.video_id = ?`,
-      [videoId]
-    );
+  // ✅ แก้ไข method getPricingSettings - ลบ JOIN ที่ไม่จำเป็น
+  async getPricingSettings(videoId) {
+    try {
+      // ✅ ดึงข้อมูลจาก video_pricing โดยตรง ไม่ต้อง JOIN กับ videos
+      const [rows] = await pool.query(
+        `SELECT 
+            vp.*,
+            CASE 
+              WHEN vp.use_global_pricing = 1 THEN 'global'
+              WHEN vp.custom_pricing_enabled = 1 THEN 'custom'
+              ELSE 'none'
+            END as pricing_type
+          FROM video_pricing vp
+          WHERE vp.video_id = ?`,
+        [videoId]
+      );
 
-    const videoPricing = rows[0];
+      const videoPricing = rows[0];
 
-    // หากวิดีโอนี้ใช้การตั้งค่าแบบกลุ่ม
-    if (!videoPricing || videoPricing.use_global_pricing) {
-      const globalSettings = await this.getActiveGlobalPricingSettings();
-      if (globalSettings) {
-        return {
-          ...globalSettings,
-          video_id: videoId,
-          use_global_pricing: true,
-          custom_pricing_enabled: false,
-          pricing_type: 'global'
-        };
+      // หากวิดีโอนี้ใช้การตั้งค่าแบบกลุ่ม
+      if (!videoPricing || videoPricing.use_global_pricing) {
+        const globalSettings = await this.getActiveGlobalPricingSettings();
+        if (globalSettings) {
+          return {
+            ...globalSettings,
+            video_id: videoId,
+            use_global_pricing: true,
+            custom_pricing_enabled: false,
+            pricing_type: 'global'
+          };
+        }
       }
-    }
 
-    return videoPricing || null;
-  } catch (error) {
-    console.error('Get pricing settings error:', error);
-    return null;
-  }
-},
+      return videoPricing || null;
+    } catch (error) {
+      console.error('Get pricing settings error:', error);
+      return null;
+    }
+  },
 
   // ✅ ดึงการตั้งค่าราคาแบบกลุ่มที่ใช้งานอยู่
   async getActiveGlobalPricingSettings() {
@@ -56,122 +56,218 @@ async getPricingSettings(videoId) {
   },
 
   // ✅ บันทึกการตั้งค่าราคาสำหรับวิดีโอเดียว
- async savePricingSettings(videoId, settings) {
-  try {
-    const {
-      pricingEnabled,
-      basePrices,
-      useGlobalPricing = false
-    } = settings;
+  async savePricingSettings(videoId, settings) {
+    try {
+      const { pricingEnabled, basePrices, useGlobalPricing = true } = settings;
+      
+      console.log('💾 Saving pricing settings for video:', {
+        videoId,
+        pricingEnabled,
+        useGlobalPricing,
+        hasBasePrices: !!basePrices
+      });
 
-    console.log('💾 Saving pricing for video:', videoId, {
-      pricingEnabled,
-      useGlobalPricing,
-      hasBasePrices: !!basePrices
-    });
+      // ✅ ตรวจสอบและสร้าง video entry ถ้ายังไม่มี
+      await this.ensureVideoExists(videoId);
 
-    // ตรวจสอบว่ามีการตั้งค่าอยู่แล้วหรือไม่
-    const existing = await this.getPricingSettings(videoId);
+      // ✅ ตรวจสอบว่ามีการตั้งค่าใน video_pricing แล้วหรือยัง
+      const [existingSettings] = await pool.query(
+        'SELECT * FROM video_pricing WHERE video_id = ?',
+        [videoId]
+      );
 
-    if (useGlobalPricing) {
-      // ✅ ใช้การตั้งค่าแบบกลุ่ม
-      if (existing) {
-        await pool.query(
-          `UPDATE video_pricing SET
-            pricing_enabled = ?,
-            use_global_pricing = TRUE,
-            custom_pricing_enabled = FALSE,
-            updated_at = NOW()
-          WHERE video_id = ?`,
-          [pricingEnabled, videoId]
-        );
-      } else {
-        await pool.query(
-          `INSERT INTO video_pricing 
-          (video_id, pricing_enabled, use_global_pricing, custom_pricing_enabled)
-          VALUES (?, ?, TRUE, FALSE)`,
-          [videoId, pricingEnabled]
-        );
-      }
-    } else {
-      // ✅ ใช้การตั้งค่าเฉพาะวิดีโอ - แก้ไขให้บันทึกข้อมูลทั้งหมด
-      if (existing) {
-        await pool.query(
-          `UPDATE video_pricing SET
-            pricing_enabled = ?,
-            use_global_pricing = FALSE,
-            custom_pricing_enabled = TRUE,
-            price_1_amount = ?, price_1_days = ?, price_1_enabled = ?,
-            price_7_amount = ?, price_7_days = ?, price_7_enabled = ?,
-            price_30_amount = ?, price_30_days = ?, price_30_enabled = ?,
-            price_90_amount = ?, price_90_days = ?, price_90_enabled = ?,
-            price_180_amount = ?, price_180_days = ?, price_180_enabled = ?,
-            price_365_amount = ?, price_365_days = ?, price_365_enabled = ?,
-            updated_at = NOW()
-          WHERE video_id = ?`,
-          [
-            pricingEnabled,
-            basePrices.price_1.amount, basePrices.price_1.days, basePrices.price_1.enabled,
-            basePrices.price_7.amount, basePrices.price_7.days, basePrices.price_7.enabled,
-            basePrices.price_30.amount, basePrices.price_30.days, basePrices.price_30.enabled,
-            basePrices.price_90.amount, basePrices.price_90.days, basePrices.price_90.enabled,
-            basePrices.price_180.amount, basePrices.price_180.days, basePrices.price_180.enabled,
-            basePrices.price_365.amount, basePrices.price_365.days, basePrices.price_365.enabled,
+      if (existingSettings.length > 0) {
+        // ✅ อัปเดตการตั้งค่าที่มีอยู่
+        if (useGlobalPricing) {
+          // เมื่อใช้ global pricing
+          await pool.query(`
+            UPDATE video_pricing SET
+              pricing_enabled = ?,
+              use_global_pricing = ?,
+              custom_pricing_enabled = ?,
+              price_1_amount = 1.00,
+              price_1_days = 1,
+              price_1_enabled = 0,
+              price_7_amount = 7.00,
+              price_7_days = 7,
+              price_7_enabled = 0,
+              price_30_amount = 30.00,
+              price_30_days = 30,
+              price_30_enabled = 0,
+              price_90_amount = 90.00,
+              price_90_days = 90,
+              price_90_enabled = 0,
+              price_180_amount = 180.00,
+              price_180_days = 180,
+              price_180_enabled = 0,
+              price_365_amount = 365.00,
+              price_365_days = 365,
+              price_365_enabled = 0,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE video_id = ?
+          `, [
+            pricingEnabled ? 1 : 0,
+            1, // use_global_pricing = true
+            0, // custom_pricing_enabled = false
             videoId
-          ]
-        );
+          ]);
+        } else {
+          // เมื่อใช้ custom pricing
+          await pool.query(`
+            UPDATE video_pricing SET
+              pricing_enabled = ?,
+              use_global_pricing = ?,
+              custom_pricing_enabled = ?,
+              price_1_amount = ?,
+              price_1_days = ?,
+              price_1_enabled = ?,
+              price_7_amount = ?,
+              price_7_days = ?,
+              price_7_enabled = ?,
+              price_30_amount = ?,
+              price_30_days = ?,
+              price_30_enabled = ?,
+              price_90_amount = ?,
+              price_90_days = ?,
+              price_90_enabled = ?,
+              price_180_amount = ?,
+              price_180_days = ?,
+              price_180_enabled = ?,
+              price_365_amount = ?,
+              price_365_days = ?,
+              price_365_enabled = ?,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE video_id = ?
+          `, [
+            pricingEnabled ? 1 : 0,
+            0, // use_global_pricing = false
+            1, // custom_pricing_enabled = true
+            basePrices.price_1.amount,
+            basePrices.price_1.days,
+            basePrices.price_1.enabled ? 1 : 0,
+            basePrices.price_7.amount,
+            basePrices.price_7.days,
+            basePrices.price_7.enabled ? 1 : 0,
+            basePrices.price_30.amount,
+            basePrices.price_30.days,
+            basePrices.price_30.enabled ? 1 : 0,
+            basePrices.price_90.amount,
+            basePrices.price_90.days,
+            basePrices.price_90.enabled ? 1 : 0,
+            basePrices.price_180.amount,
+            basePrices.price_180.days,
+            basePrices.price_180.enabled ? 1 : 0,
+            basePrices.price_365.amount,
+            basePrices.price_365.days,
+            basePrices.price_365.enabled ? 1 : 0,
+            videoId
+          ]);
+        }
       } else {
-        await pool.query(
-          `INSERT INTO video_pricing 
-          (video_id, pricing_enabled, use_global_pricing, custom_pricing_enabled,
-           price_1_amount, price_1_days, price_1_enabled,
-           price_7_amount, price_7_days, price_7_enabled,
-           price_30_amount, price_30_days, price_30_enabled,
-           price_90_amount, price_90_days, price_90_enabled,
-           price_180_amount, price_180_days, price_180_enabled,
-           price_365_amount, price_365_days, price_365_enabled)
-          VALUES (?, ?, FALSE, TRUE, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            videoId, pricingEnabled,
-            basePrices.price_1.amount, basePrices.price_1.days, basePrices.price_1.enabled,
-            basePrices.price_7.amount, basePrices.price_7.days, basePrices.price_7.enabled,
-            basePrices.price_30.amount, basePrices.price_30.days, basePrices.price_30.enabled,
-            basePrices.price_90.amount, basePrices.price_90.days, basePrices.price_90.enabled,
-            basePrices.price_180.amount, basePrices.price_180.days, basePrices.price_180.enabled,
-            basePrices.price_365.amount, basePrices.price_365.days, basePrices.price_365.enabled
-          ]
-        );
+        // ✅ สร้างการตั้งค่าใหม่
+        if (useGlobalPricing) {
+          await pool.query(`
+            INSERT INTO video_pricing (
+              video_id,
+              pricing_enabled,
+              use_global_pricing,
+              custom_pricing_enabled,
+              created_at,
+              updated_at
+            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          `, [
+            videoId,
+            pricingEnabled ? 1 : 0,
+            1, // use_global_pricing = true
+            0  // custom_pricing_enabled = false
+          ]);
+        } else {
+          await pool.query(`
+            INSERT INTO video_pricing (
+              video_id,
+              pricing_enabled,
+              use_global_pricing,
+              custom_pricing_enabled,
+              price_1_amount, price_1_days, price_1_enabled,
+              price_7_amount, price_7_days, price_7_enabled,
+              price_30_amount, price_30_days, price_30_enabled,
+              price_90_amount, price_90_days, price_90_enabled,
+              price_180_amount, price_180_days, price_180_enabled,
+              price_365_amount, price_365_days, price_365_enabled,
+              created_at,
+              updated_at
+            ) VALUES (
+              ?, ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              ?, ?, ?,
+              CURRENT_TIMESTAMP,
+              CURRENT_TIMESTAMP
+            )
+          `, [
+            videoId,
+            pricingEnabled ? 1 : 0,
+            0, // use_global_pricing = false
+            1, // custom_pricing_enabled = true
+            basePrices.price_1.amount,
+            basePrices.price_1.days,
+            basePrices.price_1.enabled ? 1 : 0,
+            basePrices.price_7.amount,
+            basePrices.price_7.days,
+            basePrices.price_7.enabled ? 1 : 0,
+            basePrices.price_30.amount,
+            basePrices.price_30.days,
+            basePrices.price_30.enabled ? 1 : 0,
+            basePrices.price_90.amount,
+            basePrices.price_90.days,
+            basePrices.price_90.enabled ? 1 : 0,
+            basePrices.price_180.amount,
+            basePrices.price_180.days,
+            basePrices.price_180.enabled ? 1 : 0,
+            basePrices.price_365.amount,
+            basePrices.price_365.days,
+            basePrices.price_365.enabled ? 1 : 0
+          ]);
+        }
       }
+
+      return {
+        success: true,
+        videoId,
+        pricingEnabled,
+        useGlobalPricing
+      };
+
+    } catch (error) {
+      console.error('❌ Save pricing settings error:', error);
+      throw error;
     }
+  },
 
-    console.log('✅ Pricing settings saved successfully');
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Save pricing settings error:', error);
-    throw error;
-  }
-},
-async refreshAllVideoPricing() {
-  try {
-    const [videos] = await pool.query(`
-      SELECT 
-        v.*,
-        COALESCE(vp.pricing_enabled, 0) as pricing_enabled,
-        COALESCE(vp.use_global_pricing, 1) as use_global_pricing,
-        COALESCE(vp.custom_pricing_enabled, 0) as custom_pricing_enabled,
-        vp.updated_at as pricing_updated
-      FROM videos v
-      LEFT JOIN video_pricing vp ON v.id = vp.video_id
-      ORDER BY v.created_at DESC
-    `);
-    return videos;
-  } catch (error) {
-    console.error('Refresh all video pricing error:', error);
-    return [];
-  }
-},
+  async refreshAllVideoPricing() {
+    try {
+      const [videos] = await pool.query(`
+        SELECT 
+          v.*,
+          COALESCE(vp.pricing_enabled, 0) as pricing_enabled,
+          COALESCE(vp.use_global_pricing, 1) as use_global_pricing,
+          COALESCE(vp.custom_pricing_enabled, 0) as custom_pricing_enabled,
+          vp.updated_at as pricing_updated
+        FROM videos v
+        LEFT JOIN video_pricing vp ON v.id = vp.video_id
+        ORDER BY v.created_at DESC
+      `);
+      return videos;
+    } catch (error) {
+      console.error('Refresh all video pricing error:', error);
+      return [];
+    }
+  },
 
-   async checkPriceStatus(videoId) {
+  async checkPriceStatus(videoId) {
     try {
       const [settings] = await pool.query(
         'SELECT pricing_enabled, use_global_pricing, custom_pricing_enabled FROM video_pricing WHERE video_id = ?',
@@ -206,7 +302,7 @@ async refreshAllVideoPricing() {
     }
   },
 
- async getVideoInfo(videoId) {
+  async getVideoInfo(videoId) {
     try {
       const [video] = await pool.query(
         'SELECT id, title FROM videos WHERE id = ?',
@@ -298,6 +394,7 @@ async refreshAllVideoPricing() {
       };
     }
   },
+
   // ✅ ดึงการตั้งค่าราคาแบบกลุ่ม (6 ราคาเท่านั้น)
   async getGlobalPricingSettings() {
     try {
@@ -463,6 +560,46 @@ async refreshAllVideoPricing() {
       return [];
     }
   },
+
+  // ✅ เพิ่มฟังก์ชันปิดการชำระเงินและใช้ราคารวม
+  async disablePricingAndUseGlobal(videoId) {
+    try {
+      console.log('🔄 Disabling pricing and using global for video:', videoId);
+
+      // 1. ปิดการชำระเงิน
+      const toggleResult = await this.togglePaidStatus(videoId, false);
+      
+      if (!toggleResult.success) {
+        throw new Error(toggleResult.message || 'Failed to disable pricing');
+      }
+
+      // 2. ตั้งค่าให้ใช้ global pricing
+      const saveResult = await this.savePricingSettings(videoId, {
+        pricingEnabled: false,
+        basePrices: {
+          price_1: { amount: 1, days: 1, enabled: false },
+          price_7: { amount: 7, days: 7, enabled: false },
+          price_30: { amount: 30, days: 30, enabled: false },
+          price_90: { amount: 90, days: 90, enabled: false },
+          price_180: { amount: 180, days: 180, enabled: false },
+          price_365: { amount: 365, days: 365, enabled: false }
+        },
+        useGlobalPricing: true
+      });
+
+      return {
+        success: true,
+        videoId,
+        pricingEnabled: false,
+        useGlobalPricing: true,
+        message: 'Successfully disabled pricing and switched to global pricing'
+      };
+
+    } catch (error) {
+      console.error('❌ Disable pricing and use global error:', error);
+      throw error;
+    }
+  }
 
 };
 

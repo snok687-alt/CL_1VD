@@ -2,7 +2,7 @@ const VideoPricingModel = require('../models/videoPricingModel');
 
 const VideoPricingController = {
 
-// ✅ แก้ไข method getPricingSettings
+  // ✅ แก้ไข method getPricingSettings
   async getPricingSettings(req, res) {
     try {
       const { videoId } = req.params;
@@ -76,63 +76,98 @@ const VideoPricingController = {
   },
 
   // ✅ บันทึกการตั้งค่าราคา
-async saveAllSettings(req, res) {
-  try {
-    const { settingType, video_id, pricingEnabled, basePrices, bulkPricing, useGlobalPricing } = req.body;
+  async saveAllSettings(req, res) {
+    try {
+      const { settingType, video_id, pricingEnabled, basePrices, bulkPricing, useGlobalPricing } = req.body;
 
-    console.log('📦 Received save request:', { settingType, video_id, pricingEnabled, useGlobalPricing });
+      console.log('📦 Received save request:', { 
+        settingType, 
+        video_id, 
+        pricingEnabled, 
+        useGlobalPricing,
+        hasBasePrices: !!basePrices
+      });
 
-    if (settingType === 'single') {
-      if (!video_id) {
-        return res.status(400).json({
+      if (settingType === 'single') {
+        if (!video_id) {
+          return res.status(400).json({
+            success: false,
+            message: '缺少视频ID'
+          });
+        }
+
+        // ✅ ถ้า useGlobalPricing เป็น true ให้ตั้งค่าใช้ global pricing
+        if (useGlobalPricing === true) {
+          console.log(`🌍 Setting video ${video_id} to use global pricing`);
+          
+          // ✅ บันทึกการตั้งค่าเป็น global pricing
+          const result = await VideoPricingModel.savePricingSettings(video_id, {
+            pricingEnabled: false, // เมื่อใช้ global pricing ไม่ต้องเปิด pricingEnabled
+            basePrices: {
+              price_1: { amount: 1, days: 1, enabled: false },
+              price_7: { amount: 7, days: 7, enabled: false },
+              price_30: { amount: 30, days: 30, enabled: false },
+              price_90: { amount: 90, days: 90, enabled: false },
+              price_180: { amount: 180, days: 180, enabled: false },
+              price_365: { amount: 365, days: 365, enabled: false }
+            },
+            useGlobalPricing: true
+          });
+
+          res.json({
+            success: true,
+            message: '已设置为使用全局价格',
+            data: result,
+            useGlobalPricing: true
+          });
+        } else {
+          // ✅ ถ้า useGlobalPricing เป็น false ให้ตั้งค่าใช้ custom pricing
+          console.log(`🎯 Setting video ${video_id} to use custom pricing`);
+          
+          const result = await VideoPricingModel.savePricingSettings(video_id, {
+            pricingEnabled: pricingEnabled || true, // เมื่อใช้ custom pricing ต้องเปิด pricingEnabled
+            basePrices: basePrices,
+            useGlobalPricing: false
+          });
+
+          res.json({
+            success: true,
+            message: '单个视频价格设置已保存',
+            data: result,
+            useGlobalPricing: false
+          });
+        }
+
+      } else if (settingType === 'bulk') {
+        // ✅ บันทึกการตั้งค่าแบบกลุ่ม
+        await VideoPricingModel.saveGlobalPricingSettings(bulkPricing);
+
+        // ✅ นำการตั้งค่าแบบกลุ่มไปใช้กับวิดีโอทั้งหมด
+        if (bulkPricing.applyToAll) {
+          await VideoPricingModel.applyGlobalPricingToAllVideos();
+        }
+
+        res.json({
+          success: true,
+          message: '全局价格设置已保存并激活'
+        });
+
+      } else {
+        res.status(400).json({
           success: false,
-          message: '缺少视频ID'
+          message: '无效的设置类型'
         });
       }
 
-      // ✅ บันทึกราคาสำหรับวิดีโอเดียว - สำคัญ!
-      const result = await VideoPricingModel.savePricingSettings(video_id, {
-        pricingEnabled,
-        basePrices,
-        useGlobalPricing: useGlobalPricing || false // ✅ ตั้งค่าให้ชัดเจน
-      });
-
-      res.json({
-        success: true,
-        message: useGlobalPricing ? '已设置为使用全局价格' : '单个视频价格设置已保存',
-        data: result
-      });
-
-    } else if (settingType === 'bulk') {
-      // ✅ บันทึกการตั้งค่าแบบกลุ่ม
-      await VideoPricingModel.saveGlobalPricingSettings(bulkPricing);
-
-      // ✅ นำการตั้งค่าแบบกลุ่มไปใช้กับวิดีโอทั้งหมด (ถ้า applyToAll เป็น true)
-      if (bulkPricing.applyToAll) {
-        await VideoPricingModel.applyGlobalPricingToAllVideos();
-      }
-
-      res.json({
-        success: true,
-        message: '全局价格设置已保存并激活'
-      });
-
-    } else {
-      res.status(400).json({
+    } catch (error) {
+      console.error('❌ Save settings error:', error);
+      res.status(500).json({
         success: false,
-        message: '无效的设置类型'
+        message: '保存设置失败',
+        error: error.message
       });
     }
-
-  } catch (error) {
-    console.error('❌ Save settings error:', error);
-    res.status(500).json({
-      success: false,
-      message: '保存设置失败',
-      error: error.message
-    });
-  }
-},
+  },
 
   // ✅ ตรวจสอบสถานะราคาของวิดีโอ
   async checkPriceStatus(req, res) {
@@ -162,7 +197,7 @@ async saveAllSettings(req, res) {
     }
   },
 
-// ✅ แก้ไข method togglePaidStatus ให้จัดการ error ดีขึ้น
+  // ✅ แก้ไข method togglePaidStatus ให้จัดการ error ดีขึ้น
   async togglePaidStatus(req, res) {
     try {
       const { video_id, enable } = req.body;
@@ -295,48 +330,106 @@ async saveAllSettings(req, res) {
   },
 
   // ✅ เปิดการชำระเงินทั้งหมดในระบบ
-async enableAllPaid(req, res) {
-  try {
-    console.log('🚀 Enabling paid status for all videos in system');
+  async enableAllPaid(req, res) {
+    try {
+      console.log('🚀 Enabling paid status for all videos in system');
 
-    // ดึงวิดีโอทั้งหมด
-    const [videos] = await pool.query('SELECT id FROM videos');
-    
-    let successCount = 0;
-    let failCount = 0;
+      // ดึงวิดีโอทั้งหมด
+      const [videos] = await pool.query('SELECT id FROM videos');
+      
+      let successCount = 0;
+      let failCount = 0;
 
-    for (const video of videos) {
-      try {
-        // ✅ ใช้ method togglePaidStatus ที่แก้ไขแล้ว
-        const result = await VideoPricingModel.togglePaidStatus(video.id, true);
-        
-        if (result.success) {
-          successCount++;
-        } else {
+      for (const video of videos) {
+        try {
+          // ✅ ใช้ method togglePaidStatus ที่แก้ไขแล้ว
+          const result = await VideoPricingModel.togglePaidStatus(video.id, true);
+          
+          if (result.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`Enable paid for video ${video.id} error:`, error);
           failCount++;
         }
-      } catch (error) {
-        console.error(`Enable paid for video ${video.id} error:`, error);
-        failCount++;
       }
+
+      res.json({
+        success: true,
+        message: `เปิดใช้งานการชำระเงินสำเร็จสำหรับ ${successCount} วิดีโอ`,
+        totalVideos: videos.length,
+        successCount,
+        failCount
+      });
+
+    } catch (error) {
+      console.error('❌ Enable all paid error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'เปิดใช้งานการชำระเงินทั้งหมดไม่สำเร็จ'
+      });
     }
+  },
 
-    res.json({
-      success: true,
-      message: `เปิดใช้งานการชำระเงินสำเร็จสำหรับ ${successCount} วิดีโอ`,
-      totalVideos: videos.length,
-      successCount,
-      failCount
-    });
+  // ✅ เพิ่มฟังก์ชันปิดการชำระเงินและใช้ราคารวม
+  async disablePricingAndUseGlobal(req, res) {
+    try {
+      const { video_id } = req.body;
 
-  } catch (error) {
-    console.error('❌ Enable all paid error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'เปิดใช้งานการชำระเงินทั้งหมดไม่สำเร็จ'
-    });
+      console.log('🔄 Disable pricing and use global for video:', video_id);
+
+      if (!video_id) {
+        return res.status(400).json({
+          success: false,
+          message: '缺少视频ID'
+        });
+      }
+
+      // 1. ปิดการชำระเงิน
+      const toggleResult = await VideoPricingModel.togglePaidStatus(video_id, false);
+      
+      if (!toggleResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: toggleResult.message || '关闭付费功能失败'
+        });
+      }
+
+      // 2. ตั้งค่าให้ใช้ global pricing
+      const saveResult = await VideoPricingModel.savePricingSettings(video_id, {
+        pricingEnabled: false,
+        basePrices: {
+          price_1: { amount: 1, days: 1, enabled: false },
+          price_7: { amount: 7, days: 7, enabled: false },
+          price_30: { amount: 30, days: 30, enabled: false },
+          price_90: { amount: 90, days: 90, enabled: false },
+          price_180: { amount: 180, days: 180, enabled: false },
+          price_365: { amount: 365, days: 365, enabled: false }
+        },
+        useGlobalPricing: true
+      });
+
+      res.json({
+        success: true,
+        message: '已关闭付费功能并使用全局价格',
+        data: {
+          video_id,
+          pricingEnabled: false,
+          useGlobalPricing: true
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Disable pricing and use global error:', error);
+      res.status(500).json({
+        success: false,
+        message: '关闭付费功能并使用全局价格失败',
+        error: error.message
+      });
+    }
   }
-}
 };
 
 module.exports = VideoPricingController;
