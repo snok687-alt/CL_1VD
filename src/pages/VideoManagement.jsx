@@ -78,9 +78,6 @@ const VideoManagement = ({ isDarkMode }) => {
               loadCustomVideoPrice(video.id)
             ]);
 
-            // ✅ ตรวจสอบว่าวิดีโอนี้ใช้ global pricing หรือไม่
-            const useGlobal = !customPriceData;
-            // ✅ เลือกข้อมูลราคาที่ถูกต้อง
             const priceData = customPriceData || globalPrices?.priceTemplates;
 
             return {
@@ -91,7 +88,7 @@ const VideoManagement = ({ isDarkMode }) => {
               pricing_enabled: priceStatus.hasPricing,
               ratingData: rating,
               priceData: priceData,
-              useGlobalPricing: useGlobal, // ✅ ระบุชัดเจนว่าใช้ global หรือ custom
+              useGlobalPricing: !customPriceData,
               customPriceData: customPriceData
             };
           } catch (error) {
@@ -103,7 +100,7 @@ const VideoManagement = ({ isDarkMode }) => {
               pricing_enabled: false,
               ratingData: null,
               priceData: globalPrices?.priceTemplates,
-              useGlobalPricing: true, // ✅ ใช้ global เป็น default
+              useGlobalPricing: true,
               customPriceData: null
             };
           }
@@ -150,7 +147,6 @@ const VideoManagement = ({ isDarkMode }) => {
                 loadCustomVideoPrice(video.id)
               ]);
 
-              const useGlobal = !customPriceData;
               const priceData = customPriceData || globalPricing?.priceTemplates;
 
               return {
@@ -161,7 +157,7 @@ const VideoManagement = ({ isDarkMode }) => {
                 pricing_enabled: priceStatus.hasPricing,
                 ratingData: rating,
                 priceData: priceData,
-                useGlobalPricing: useGlobal,
+                useGlobalPricing: !customPriceData,
                 customPriceData: customPriceData
               };
             } catch (error) {
@@ -311,21 +307,184 @@ const VideoManagement = ({ isDarkMode }) => {
     });
   };
 
+  // ==================== 系统关闭付款功能 ====================
+
+  // 1. 关闭系统中所有视频的付款功能
+  const handleDisableAllVideosInSystem = async () => {
+    try {
+      const result = await Swal.fire({
+        title: '关闭系统中所有视频的付款功能',
+        text: `您确定要关闭系统中所有视频的付款功能吗？此操作无法撤销`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '全部关闭',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+
+      if (result.isConfirmed) {
+        const progressSwal = Swal.fire({
+          title: '正在处理...',
+          html: `正在关闭系统中所有视频的付款功能...`,
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        try {
+          const response = await fetch('/backend-api/video/pricing/disable-all-paid', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+
+          const resultData = await response.json();
+
+          await progressSwal.close();
+
+          if (response.ok && resultData.success) {
+            await loadInitialVideos();
+
+            Swal.fire({
+              icon: 'success',
+              title: '操作成功',
+              html: `
+            <div>
+              <p>已成功关闭系统中所有视频的付款功能</p>
+              <p class="text-sm text-gray-600">视频总数: ${resultData.totalVideos || '全部'} 个视频</p>
+              <p class="text-sm text-green-600">成功: ${resultData.successCount} 个视频</p>
+              ${resultData.failCount > 0 ? `<p class="text-sm text-red-600">失败: ${resultData.failCount} 个视频</p>` : ''}
+            </div>
+          `,
+              confirmButtonText: '确定'
+            });
+          } else {
+            throw new Error(resultData.message || '关闭操作失败');
+          }
+        } catch (error) {
+          await progressSwal.close();
+          throw error;
+        }
+      }
+    } catch (error) {
+      console.error('关闭系统中所有视频付款功能失败:', error);
+      Swal.fire('错误', '操作失败: ' + error.message, 'error');
+    }
+  };
+
+  // 2. 关闭当前页面所有视频的付款功能
+  const handleDisableAllVideosInPage = async () => {
+    try {
+      const currentPageVideoIds = filteredVideos.map(video => video.id);
+
+      if (currentPageVideoIds.length === 0) {
+        Swal.fire('提示', '当前页面没有视频', 'warning');
+        return;
+      }
+
+      const result = await Swal.fire({
+        title: '关闭当前页面所有视频的付款功能',
+        text: `您确定要关闭当前页面 ${currentPageVideoIds.length} 个视频的付款功能吗？`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: '关闭当前页面',
+        cancelButtonText: '取消',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+
+      if (result.isConfirmed) {
+        const progressSwal = Swal.fire({
+          title: '正在处理...',
+          html: `正在关闭 ${currentPageVideoIds.length} 个视频的付款功能...`,
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const videoId of currentPageVideoIds) {
+          try {
+            const response = await fetch('/backend-api/video/pricing/toggle-paid', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              },
+              body: JSON.stringify({
+                video_id: videoId,
+                enable: false
+              })
+            });
+
+            const resultData = await response.json();
+
+            if (response.ok && resultData.success) {
+              successCount++;
+
+              setVideos(prev => prev.map(video =>
+                video.id === videoId
+                  ? {
+                    ...video,
+                    hasPricing: false,
+                    pricing_enabled: false
+                  }
+                  : video
+              ));
+            } else {
+              throw new Error(resultData.message || '关闭操作失败');
+            }
+          } catch (error) {
+            console.error(`关闭视频 ${videoId} 付款功能失败:`, error);
+            failCount++;
+          }
+        }
+
+        await progressSwal.close();
+
+        Swal.fire({
+          icon: successCount > 0 ? 'success' : 'error',
+          title: '操作完成',
+          html: `
+          <div>
+            <p>成功关闭付款功能: ${successCount} 个视频</p>
+            ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
+          </div>
+        `,
+          confirmButtonText: '确定'
+        });
+      }
+    } catch (error) {
+      console.error('关闭当前页面所有视频付款功能失败:', error);
+      Swal.fire('错误', '操作失败', 'error');
+    }
+  };
+
+  // 3. 开启系统中所有视频的付款功能
   const handleEnableAllVideosInSystem = async () => {
     try {
       const result = await Swal.fire({
-        title: '为系统中所有视频启用付费功能',
-        text: `您确定要为系统中所有视频启用付费功能吗？`,
+        title: '开启系统中所有视频的付款功能',
+        text: `您确定要开启系统中所有视频的付款功能吗？`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: '全部启用',
+        confirmButtonText: '全部开启',
         cancelButtonText: '取消'
       });
 
       if (result.isConfirmed) {
         const progressSwal = Swal.fire({
           title: '正在处理...',
-          html: `正在为系统中所有视频启用付费功能...`,
+          html: `正在开启系统中所有视频的付款功能...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -351,19 +510,19 @@ const VideoManagement = ({ isDarkMode }) => {
 
             Swal.fire({
               icon: 'success',
-              title: '操作完成',
+              title: '操作成功',
               html: `
             <div>
-              <p>已成功为所有视频启用付费功能</p>
-              <p class="text-sm text-gray-600">视频数量: ${resultData.totalVideos || '全部'} 个</p>
-              <p class="text-sm text-gray-600">成功: ${resultData.successCount} 个</p>
-              ${resultData.failCount > 0 ? `<p class="text-sm text-red-600">失败: ${resultData.failCount} 个</p>` : ''}
+              <p>已成功开启系统中所有视频的付款功能</p>
+              <p class="text-sm text-gray-600">视频总数: ${resultData.totalVideos || '全部'} 个视频</p>
+              <p class="text-sm text-green-600">成功: ${resultData.successCount} 个视频</p>
+              ${resultData.failCount > 0 ? `<p class="text-sm text-red-600">失败: ${resultData.failCount} 个视频</p>` : ''}
             </div>
           `,
               confirmButtonText: '确定'
             });
           } else {
-            throw new Error(resultData.message || '启用失败');
+            throw new Error(resultData.message || '开启操作失败');
           }
         } catch (error) {
           await progressSwal.close();
@@ -371,11 +530,12 @@ const VideoManagement = ({ isDarkMode }) => {
         }
       }
     } catch (error) {
-      console.error('启用所有视频付费功能失败:', error);
+      console.error('开启系统中所有视频付款功能失败:', error);
       Swal.fire('错误', '操作失败: ' + error.message, 'error');
     }
   };
 
+  // 4. 开启当前页面所有视频的付款功能
   const handleEnableAllVideosInPage = async () => {
     try {
       const currentPageVideoIds = filteredVideos.map(video => video.id);
@@ -386,18 +546,18 @@ const VideoManagement = ({ isDarkMode }) => {
       }
 
       const result = await Swal.fire({
-        title: '为本页所有视频启用付费功能',
-        text: `您确定要为本页${currentPageVideoIds.length}个视频启用付费功能吗？`,
+        title: '开启当前页面所有视频的付款功能',
+        text: `您确定要开启当前页面 ${currentPageVideoIds.length} 个视频的付款功能吗？`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: '启用',
+        confirmButtonText: '开启当前页面',
         cancelButtonText: '取消'
       });
 
       if (result.isConfirmed) {
         const progressSwal = Swal.fire({
           title: '正在处理...',
-          html: `正在为${currentPageVideoIds.length}个视频启用付费功能...`,
+          html: `正在开启 ${currentPageVideoIds.length} 个视频的付款功能...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -432,16 +592,15 @@ const VideoManagement = ({ isDarkMode }) => {
                   ? {
                     ...video,
                     hasPricing: true,
-                    pricing_enabled: true,
-                    useGlobalPricing: true // ✅ เปิดชำระเงินใหม่ใช้ global pricing
+                    pricing_enabled: true
                   }
                   : video
               ));
             } else {
-              throw new Error(resultData.message || '启用失败');
+              throw new Error(resultData.message || '开启操作失败');
             }
           } catch (error) {
-            console.error(`启用视频${videoId}失败:`, error);
+            console.error(`开启视频 ${videoId} 付款功能失败:`, error);
             failCount++;
           }
         }
@@ -453,7 +612,7 @@ const VideoManagement = ({ isDarkMode }) => {
           title: '操作完成',
           html: `
           <div>
-            <p>启用成功: ${successCount} 个视频</p>
+            <p>成功开启付款功能: ${successCount} 个视频</p>
             ${failCount > 0 ? `<p style="color: red;">失败: ${failCount} 个视频</p>` : ''}
           </div>
         `,
@@ -461,7 +620,7 @@ const VideoManagement = ({ isDarkMode }) => {
         });
       }
     } catch (error) {
-      console.error('启用页面所有视频失败:', error);
+      console.error('开启当前页面所有视频付款功能失败:', error);
       Swal.fire('错误', '操作失败', 'error');
     }
   };
@@ -495,8 +654,6 @@ const VideoManagement = ({ isDarkMode }) => {
               ? {
                 ...video,
                 ...newPricing,
-                // ✅ เมื่อเปิดชำระเงินใหม่ ให้ใช้ global pricing เป็น default
-                useGlobalPricing: enable ? true : video.useGlobalPricing
               }
               : video
           )
@@ -504,7 +661,7 @@ const VideoManagement = ({ isDarkMode }) => {
 
         Swal.fire({
           icon: 'success',
-          title: enable ? '已开启付费' : '已关闭付费',
+          title: enable ? '已开启付款功能' : '已关闭付款功能',
           text: result.message,
           timer: 1500
         });
@@ -536,7 +693,7 @@ const VideoManagement = ({ isDarkMode }) => {
         customPriceData: customPriceData
       };
     } catch (error) {
-      console.error(`加载视频${videoId}数据失败:`, error);
+      console.error(`加载视频 ${videoId} 数据失败:`, error);
       return {
         hasPricing: false,
         isPaid: false,
@@ -548,119 +705,44 @@ const VideoManagement = ({ isDarkMode }) => {
     }
   };
 
-  const renderGlobalPrices = (priceTemplates, label) => {
-    const enabledPrices = Object.entries(priceTemplates)
-      .filter(([key, price]) => price.enabled && price.amount > 0);
-
-    if (enabledPrices.length === 0) {
-      return (
-        <div className="text-xs text-gray-500 text-center mt-1">
-          全局价格未设置
-        </div>
-      );
-    }
-
-    return (
-      <div className="mt-2">
-        <div className="text-[10px] text-blue-600 font-medium mb-1 text-center">
-          {label}
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          {enabledPrices.map(([key, price], index) => (
-            <div
-              key={key}
-              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border 
-                ${index % 2 === 0
-                  ? 'bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-800 border-blue-200'
-                  : 'bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-800 border-indigo-200'
-                }`}
-            >
-              <span className="font-bold">¥{price.amount}</span>
-              <span className="text-[10px]">{price.days} 天</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderCustomPrices = (priceData, label) => {
-    const enabledPrices = Object.entries(priceData)
-      .filter(([key, price]) => price.enabled && price.amount > 0);
-
-    if (enabledPrices.length === 0) {
-      return (
-        <div className="text-xs text-gray-500 text-center mt-1">
-          自定义价格未启用
-        </div>
-      );
-    }
-
-    return (
-      <div className="mt-2">
-        <div className="text-[10px] text-green-600 font-medium mb-1 text-center">
-          {label}
-        </div>
-        <div className="grid grid-cols-2 gap-1">
-          {enabledPrices.map(([key, price], index) => (
-            <div
-              key={key}
-              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border 
-                ${index % 2 === 0
-                  ? 'bg-gradient-to-br from-green-50 to-emerald-50 text-green-800 border-green-200'
-                  : 'bg-gradient-to-br from-emerald-50 to-teal-50 text-emerald-800 border-emerald-200'
-                }`}
-            >
-              <span className="font-bold">¥{price.amount}</span>
-              <span className="text-[10px]">{price.days} 天</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderVideoPrices = (video) => {
-    // ถ้าวิดีโอใช้ global pricing และ global pricing มีข้อมูล
-    if (video.useGlobalPricing && globalPricing && globalPricing.priceTemplates) {
-      return renderGlobalPrices(globalPricing.priceTemplates, '使用全局价格');
+    if (!video.priceData) {
+      return (
+        <div className="text-xs text-gray-500 text-center mt-1">
+          未设置价格
+        </div>
+      );
     }
-    
-    // ถ้าวิดีโอมี custom pricing
-    if (video.priceData && !video.useGlobalPricing) {
-      return renderCustomPrices(video.priceData, '自定义价格');
+
+    const enabledPrices = Object.entries(video.priceData)
+      .filter(([key, price]) => price.enabled && price.amount > 0);
+
+    if (enabledPrices.length === 0) {
+      return (
+        <div className="text-xs text-gray-500 text-center mt-1">
+          未设置价格
+        </div>
+      );
     }
-    
-    // ถ้าไม่มีราคาทั้งสองแบบ
+
     return (
-      <div className="text-xs text-gray-500 text-center mt-1">
-        未设置价格
+      <div className="flex flex-col gap-1.5 mt-2">
+        <div className="grid grid-cols-2 gap-1">
+          {enabledPrices.map(([key, price], index) => (
+            <div
+              key={key}
+              className={`flex flex-col items-center px-1 py-1 text-xs rounded-md border ${index % 2 === 0
+                  ? 'bg-gradient-to-br from-green-50 to-blue-50 text-green-800 border-green-200'
+                  : 'bg-gradient-to-br from-emerald-50 to-cyan-50 text-emerald-800 border-emerald-200'
+                }`}
+            >
+              <span className="font-bold">¥{price.amount}</span>
+              <span className="text-[10px]">{price.days} 天</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
-  };
-
-  const renderPriceTypeBadge = (video) => {
-    if (video.useGlobalPricing && video.hasPricing) {
-      return (
-        <div className="absolute top-8 left-1">
-          <span className="px-1.5 py-0.5 text-[10px] bg-blue-600 text-white rounded-full border border-blue-700 shadow-sm">
-            全局价
-          </span>
-        </div>
-      );
-    }
-    
-    if (!video.useGlobalPricing && video.hasPricing) {
-      return (
-        <div className="absolute top-8 left-1">
-          <span className="px-1.5 py-0.5 text-[10px] bg-green-600 text-white rounded-full border border-green-700 shadow-sm">
-            自定义价
-          </span>
-        </div>
-      );
-    }
-    
-    return null;
   };
 
   const handleSelectVideo = (videoId) => {
@@ -696,13 +778,16 @@ const VideoManagement = ({ isDarkMode }) => {
     }
 
     try {
+      const actionText = bulkAction === 'enable' ? '开启付款功能' : '关闭付款功能';
+      
       const result = await Swal.fire({
         title: '确认操作',
-        text: `您确定要对${selectedVideos.size}个视频执行"${bulkAction === 'enable' ? '启用付费功能' : '禁用付费功能'}"操作吗？`,
+        text: `您确定要对 ${selectedVideos.size} 个视频执行${actionText}吗？`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonText: '执行',
-        cancelButtonText: '取消'
+        confirmButtonText: '执行操作',
+        cancelButtonText: '取消',
+        confirmButtonColor: bulkAction === 'enable' ? '#3085d6' : '#d33'
       });
 
       if (result.isConfirmed) {
@@ -710,7 +795,7 @@ const VideoManagement = ({ isDarkMode }) => {
 
         const progressSwal = Swal.fire({
           title: '正在处理...',
-          html: `正在处理${videoIds.length}个视频...`,
+          html: `正在对 ${videoIds.length} 个视频执行操作...`,
           allowOutsideClick: false,
           showConfirmButton: false,
           didOpen: () => {
@@ -745,8 +830,7 @@ const VideoManagement = ({ isDarkMode }) => {
                   return {
                     ...video,
                     hasPricing: bulkAction === 'enable',
-                    pricing_enabled: bulkAction === 'enable',
-                    useGlobalPricing: bulkAction === 'enable' ? true : video.useGlobalPricing
+                    pricing_enabled: bulkAction === 'enable'
                   };
                 }
                 return video;
@@ -786,20 +870,20 @@ const VideoManagement = ({ isDarkMode }) => {
     const viewCount = views || 0;
     if (viewCount >= 1000000) {
       return {
-        text: `${(viewCount / 1000000).toFixed(1)}M 观看`,
+        text: `${(viewCount / 1000000).toFixed(1)}M 次观看`,
         isPopular: true,
         level: 'mega'
       };
     }
     if (viewCount >= 1000) {
       return {
-        text: `${(viewCount / 1000).toFixed(0)}K 观看`,
+        text: `${(viewCount / 1000).toFixed(0)}K 次观看`,
         isPopular: true,
         level: 'popular'
       };
     }
     return {
-      text: `${viewCount} 观看`,
+      text: `${viewCount} 次观看`,
       isPopular: false,
       level: 'normal'
     };
@@ -911,28 +995,51 @@ const VideoManagement = ({ isDarkMode }) => {
             </button>
             <div>
               <h1 className="text-3xl font-bold mb-2">视频价格管理</h1>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                <span className="inline-flex items-center mr-3">
-                  <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
-                  全局价格
-                </span>
-                <span className="inline-flex items-center">
-                  <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
-                  自定义价格
-                </span>
-              </p>
             </div>
             <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
+              {/* 关闭系统中所有视频付款功能按钮 */}
+              <button
+                onClick={handleDisableAllVideosInSystem}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
+                    ? 'bg-red-800 hover:bg-red-700 text-white'
+                    : 'bg-red-700 hover:bg-red-800 text-white'
+                  }`}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                关闭系统中所有视频付款功能
+              </button>
+
+              {/* 关闭当前页面所有视频付款功能按钮 */}
+              <button
+                onClick={handleDisableAllVideosInPage}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
+                    ? 'bg-orange-700 hover:bg-orange-600 text-white'
+                    : 'bg-orange-600 hover:bg-orange-700 text-white'
+                  }`}
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                关闭当前页面所有视频付款功能
+              </button>
+
+              {/* 开启系统中所有视频付款功能按钮 */}
               <button
                 onClick={handleEnableAllVideosInSystem}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
-                    ? 'bg-red-700 hover:bg-red-600 text-white'
-                    : 'bg-red-600 hover:bg-red-700 text-white'
+                    ? 'bg-green-700 hover:bg-green-600 text-white'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
                   }`}
               >
-                启用系统中所有视频付费
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                开启系统中所有视频付款功能
               </button>
 
+              {/* 开启当前页面所有视频付款功能按钮 */}
               <button
                 onClick={handleEnableAllVideosInPage}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
@@ -940,22 +1047,30 @@ const VideoManagement = ({ isDarkMode }) => {
                     : 'bg-purple-600 hover:bg-purple-700 text-white'
                   }`}
               >
-                启用本页所有视频付费
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                开启当前页面所有视频付款功能
               </button>
 
+              {/* 设置所有视频价格按钮 */}
               <button
                 onClick={handleAllVideosPricing}
                 className={`px-4 py-2 rounded-lg transition-colors flex items-center ${isDarkMode
-                    ? 'bg-green-700 hover:bg-green-600 text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
+                    ? 'bg-blue-700 hover:bg-blue-600 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
               >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 设置所有视频价格
               </button>
             </div>
           </div>
         </div>
 
+        {/* 视频选择提示部分 */}
         {selectedVideos.size > 0 && (
           <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
             }`}>
@@ -971,14 +1086,14 @@ const VideoManagement = ({ isDarkMode }) => {
                     }`}
                 >
                   <option value="">选择操作</option>
-                  <option value="enable">启用付费功能</option>
-                  <option value="disable">禁用付费功能</option>
+                  <option value="enable">开启付款功能</option>
+                  <option value="disable">关闭付款功能</option>
                 </select>
                 <button
                   onClick={handleBulkAction}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  执行
+                  执行操作
                 </button>
               </div>
               <div className="flex items-center space-x-3">
@@ -1029,7 +1144,7 @@ const VideoManagement = ({ isDarkMode }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">付费状态</label>
+              <label className="block text-sm font-medium mb-2">付款状态</label>
               <select
                 value={priceFilter}
                 onChange={(e) => setPriceFilter(e.target.value)}
@@ -1038,7 +1153,7 @@ const VideoManagement = ({ isDarkMode }) => {
                     : 'bg-white border-gray-300'
                   }`}
               >
-                <option value="all">所有视频</option>
+                <option value="all">全部视频</option>
                 <option value="paid">付费视频</option>
                 <option value="free">免费视频</option>
               </select>
@@ -1047,16 +1162,9 @@ const VideoManagement = ({ isDarkMode }) => {
             <div>
               <label className="block text-sm font-medium mb-2">统计</label>
               <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                <div>总视频数: {videos.length} 个</div>
+                <div>视频总数: {videos.length} 个</div>
                 <div>付费视频: {videos.filter(v => v.hasPricing).length} 个</div>
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
-                  全局价格: {videos.filter(v => v.hasPricing && v.useGlobalPricing).length} 个
-                </div>
-                <div className="flex items-center">
-                  <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
-                  自定义价格: {videos.filter(v => v.hasPricing && !v.useGlobalPricing).length} 个
-                </div>
+                <div>免费视频: {videos.filter(v => !v.hasPricing).length} 个</div>
               </div>
             </div>
           </div>
@@ -1067,7 +1175,7 @@ const VideoManagement = ({ isDarkMode }) => {
                 onClick={handleSelectAll}
                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
-                全选本页
+                全选当前页面
               </button>
               <button
                 onClick={handleDeselectAll}
@@ -1109,9 +1217,6 @@ const VideoManagement = ({ isDarkMode }) => {
                       onError={handleImageError}
                     />
 
-                    {/* Badge ประเภทราคา */}
-                    {renderPriceTypeBadge(video)}
-
                     <div className="absolute top-1 left-1 text-yellow-400 text-xs px-1.5 py-0.5 flex items-center space-x-0.5">
                       {maxStar > 0 ? (
                         renderStars(maxStar)
@@ -1134,7 +1239,7 @@ const VideoManagement = ({ isDarkMode }) => {
                       <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-white text-xs text-center">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-1"></div>
-                          处理中...
+                          正在处理...
                         </div>
                       </div>
                     )}
@@ -1186,7 +1291,7 @@ const VideoManagement = ({ isDarkMode }) => {
                             : 'bg-green-600 hover:bg-green-700 text-white'
                           } ${loadingVideos[video.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {video.pricing_enabled ? '关闭付费' : '开启付费'}
+                        {video.pricing_enabled ? '关闭付款功能' : '开启付款功能'}
                       </button>
                     </div>
                   </div>
@@ -1234,18 +1339,8 @@ const VideoManagement = ({ isDarkMode }) => {
         {!hasMore && filteredVideos.length > 0 && (
           <div className="text-center py-6">
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              🎉 已显示所有视频 ({filteredVideos.length} 个)
+              🎉 已显示全部视频 ({filteredVideos.length} 个)
             </p>
-            <div className="text-xs text-gray-500 mt-2">
-              <span className="inline-flex items-center mr-3">
-                <span className="w-3 h-3 bg-blue-600 rounded-full mr-1"></span>
-                全局价格: {videos.filter(v => v.hasPricing && v.useGlobalPricing).length} 个
-              </span>
-              <span className="inline-flex items-center">
-                <span className="w-3 h-3 bg-green-600 rounded-full mr-1"></span>
-                自定义价格: {videos.filter(v => v.hasPricing && !v.useGlobalPricing).length} 个
-              </span>
-            </div>
           </div>
         )}
       </div>

@@ -24,18 +24,12 @@ const getTotalViewsCount = async (startDate) => {
   }
 };
 
-// ✅ ฟังก์ชันคำนวณ Unique IPs แบบจัดกลุ่ม (เหมือนใน ip.js)
+// ✅ ฟังก์ชันคำนวณ Unique IPs แบบจัดกลุ่มทั้งหมด (ไม่ใช่แค่ Cloudflare)
 const getUniqueIPsCount = async (startDate) => {
   try {
     const [uniqueIPsResult] = await pool.query(`
       SELECT COUNT(DISTINCT 
-        CASE 
-          WHEN ip LIKE '104.28.%' THEN 'cloudflare_104_28'
-          WHEN ip LIKE '104.27.%' THEN 'cloudflare_104_27'
-          WHEN ip LIKE '172.67.%' THEN 'cloudflare_172_67'
-          WHEN ip LIKE '172.64.%' THEN 'cloudflare_172_64'
-          ELSE ip 
-        END
+        CONCAT(SUBSTRING_INDEX(ip, '.', 2), '.x.x')
       ) as unique_ips 
       FROM access_logs 
       WHERE last_access >= ?
@@ -106,7 +100,7 @@ const getViewsStatistics = async (startDate) => {
   }
 };
 
-// ✅ ฟังก์ชันคำนวณการเปลี่ยนแปลงของ User (แบบจัดกลุ่ม)
+// ✅ ฟังก์ชันคำนวณการเปลี่ยนแปลงของ User (แบบจัดกลุ่มทั้งหมด)
 const calculateUserChange = async () => {
   try {
     const today = new Date();
@@ -114,13 +108,7 @@ const calculateUserChange = async () => {
     
     const [todayResult] = await pool.query(`
       SELECT COUNT(DISTINCT 
-        CASE 
-          WHEN ip LIKE '104.28.%' THEN 'cloudflare_104_28'
-          WHEN ip LIKE '104.27.%' THEN 'cloudflare_104_27'
-          WHEN ip LIKE '172.67.%' THEN 'cloudflare_172_67'
-          WHEN ip LIKE '172.64.%' THEN 'cloudflare_172_64'
-          ELSE ip 
-        END
+        CONCAT(SUBSTRING_INDEX(ip, '.', 2), '.x.x')
       ) as today_groups 
       FROM access_logs 
       WHERE DATE(last_access) = DATE(?)
@@ -131,13 +119,7 @@ const calculateUserChange = async () => {
     
     const [yesterdayResult] = await pool.query(`
       SELECT COUNT(DISTINCT 
-        CASE 
-          WHEN ip LIKE '104.28.%' THEN 'cloudflare_104_28'
-          WHEN ip LIKE '104.27.%' THEN 'cloudflare_104_27'
-          WHEN ip LIKE '172.67.%' THEN 'cloudflare_172_67'
-          WHEN ip LIKE '172.64.%' THEN 'cloudflare_172_64'
-          ELSE ip 
-        END
+        CONCAT(SUBSTRING_INDEX(ip, '.', 2), '.x.x')
       ) as yesterday_groups 
       FROM access_logs 
       WHERE DATE(last_access) = DATE(?)
@@ -156,27 +138,17 @@ const calculateUserChange = async () => {
     return parseFloat(userChange);
   } catch (error) {
     console.error('❌ Error calculating user change:', error);
-    return 15.3;
+    return 0;
   }
 };
 
-// ✅ ฟังก์ชันดึงข้อมูล IP Statistics (แบบจัดกลุ่ม)
+// ✅ ฟังก์ชันดึงข้อมูล IP Statistics (แบบจัดกลุ่มทั้งหมด)
 const getIPStatistics = async (startDate) => {
   try {
     // นับ suspicious IPs (แบบจัดกลุ่ม)
     const [suspiciousResult] = await pool.query(`
       SELECT COUNT(DISTINCT 
-        CASE 
-          WHEN ip LIKE '10.%' THEN 'private_10'
-          WHEN ip LIKE '172.1%' THEN 'private_172_16_31'
-          WHEN ip LIKE '172.2%' THEN 'private_172_16_31'
-          WHEN ip LIKE '172.3%' THEN 'private_172_16_31'
-          WHEN ip LIKE '192.168.%' THEN 'private_192_168'
-          WHEN ip = '127.0.0.1' THEN 'localhost'
-          WHEN ip = '::1' THEN 'localhost_ipv6'
-          WHEN ip = 'localhost' THEN 'localhost_hostname'
-          ELSE ip
-        END
+        CONCAT(SUBSTRING_INDEX(ip, '.', 2), '.x.x')
       ) as suspicious 
       FROM access_logs 
       WHERE last_access >= ? AND (
@@ -297,7 +269,7 @@ const calculateGiftAccountChange = async () => {
   }
 };
 
-// ✅ ดึงข้อมูล Dashboard (ปรับปรุงใหม่)
+// ✅ ดึงข้อมูล Dashboard (ปรับปรุงใหม่ - จัดกลุ่มทุก IP)
 router.get('/dashboard', async (req, res) => {
   try {
     const { period = '7d' } = req.query;
@@ -326,7 +298,7 @@ router.get('/dashboard', async (req, res) => {
     );
     const totalVideos = totalVideosResult[0]?.total_videos || 0;
 
-    // ✅ 4. ดึงจำนวน IP ที่ไม่ซ้ำ (จัดกลุ่มแล้ว)
+    // ✅ 4. ดึงจำนวน IP ที่ไม่ซ้ำ (จัดกลุ่มทั้งหมดแล้ว)
     const uniqueIPs = await getUniqueIPsCount(startDate);
     
     // ✅ 5. ดึงข้อมูลเพิ่มเติมสำหรับ IP stats
@@ -361,20 +333,14 @@ router.get('/dashboard', async (req, res) => {
       console.error('❌ Error fetching daily views:', viewsError);
     }
 
-    // ✅ 9. ดึงข้อมูล user growth (จัดกลุ่มแล้ว)
+    // ✅ 9. ดึงข้อมูล user growth (จัดกลุ่มทั้งหมดแล้ว)
     let userGrowth = [];
     try {
       [userGrowth] = await pool.query(`
         SELECT 
           DATE(last_access) as date,
           COUNT(DISTINCT 
-            CASE 
-              WHEN ip LIKE '104.28.%' THEN 'cloudflare_104_28'
-              WHEN ip LIKE '104.27.%' THEN 'cloudflare_104_27'
-              WHEN ip LIKE '172.67.%' THEN 'cloudflare_172_67'
-              WHEN ip LIKE '172.64.%' THEN 'cloudflare_172_64'
-              ELSE ip 
-            END
+            CONCAT(SUBSTRING_INDEX(ip, '.', 2), '.x.x')
           ) as daily_users,
           COUNT(*) as hits,
           COUNT(CASE WHEN device = 'Mobile' THEN 1 END) as mobile_users,
@@ -491,7 +457,7 @@ router.get('/dashboard', async (req, res) => {
       date: day.date
     })) : [];
 
-    // ✅ 13. User growth data (จัดกลุ่มแล้ว)
+    // ✅ 13. User growth data (จัดกลุ่มทั้งหมดแล้ว)
     const userGrowthData = userGrowth.length > 0 ? userGrowth.map(day => ({
       name: new Date(day.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
       users: day.daily_users || 0,
@@ -543,12 +509,12 @@ router.get('/dashboard', async (req, res) => {
         totalViews: totalViews,
         totalVideos: totalVideos,
         totalRevenue: 0,
-        uniqueIPs: uniqueIPs, // ✅ ใช้ค่า IP ที่จัดกลุ่มแล้ว
-        giftAccounts: giftAccountData.totalAccounts, // ✅ เพิ่มจำนวนบัญชีผู้รับของขวัญ
+        uniqueIPs: uniqueIPs, // ✅ ใช้ค่า IP ที่จัดกลุ่มทั้งหมดแล้ว
+        giftAccounts: giftAccountData.totalAccounts,
         viewChange: viewsStats.viewChange,
         videoChange: 8.2,
-        userChange: userChange, // ✅ ใช้ค่าที่คำนวณจาก IP groups
-        giftAccountChange: giftAccountChange, // ✅ เพิ่มการเปลี่ยนแปลงของบัญชี
+        userChange: userChange, // ✅ ใช้ค่าที่คำนวณจาก IP groups ทั้งหมด
+        giftAccountChange: giftAccountChange,
         revenueChange: 0,
         todayViews: viewsStats.todayViews,
         yesterdayViews: viewsStats.yesterdayViews

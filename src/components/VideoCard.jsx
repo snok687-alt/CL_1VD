@@ -363,9 +363,8 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
 
           {/* ✅ แสดงไอคอนชำระเงินถ้าวิดีโอนี้ต้องชำระเงิน */}
           {hasPricing && (
-            <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-lg">
+            <div className="absolute top-2 right-2 text-white text-xs px-2 py-1 flex items-center gap-1 shadow-lg">
               <span className="text-xs">💰</span>
-              <span>付费</span>
             </div>
           )}
 

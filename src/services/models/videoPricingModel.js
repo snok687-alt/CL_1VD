@@ -319,9 +319,12 @@ const VideoPricingModel = {
   // ✅ เพิ่ม method เพื่อสร้าง video entry ถ้ายังไม่มี
   async ensureVideoExists(videoId) {
     try {
-      const videoInfo = await this.getVideoInfo(videoId);
+      const [video] = await pool.query(
+        'SELECT id FROM videos WHERE id = ?',
+        [videoId]
+      );
       
-      if (!videoInfo) {
+      if (video.length === 0) {
         console.log(`📝 Creating video entry for ${videoId}`);
         await pool.query(
           'INSERT INTO videos (id, title) VALUES (?, ?)',
@@ -599,7 +602,40 @@ const VideoPricingModel = {
       console.error('❌ Disable pricing and use global error:', error);
       throw error;
     }
+  },
+  async disableMultipleVideosPricing(videoIds) {
+  try {
+    console.log('🔄 ปิดการชำระเงินสำหรับวิดีโอหลายรายการ:', videoIds.length);
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const videoId of videoIds) {
+      try {
+        const result = await this.togglePaidStatus(videoId, false);
+        
+        if (result.success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`ปิดการชำระเงินวิดีโอ ${videoId} ล้มเหลว:`, error);
+        failCount++;
+      }
+    }
+
+    return {
+      success: true,
+      totalVideos: videoIds.length,
+      successCount,
+      failCount
+    };
+  } catch (error) {
+    console.error('❌ ปิดการชำระเงินหลายวิดีโอล้มเหลว:', error);
+    throw error;
   }
+}
 
 };
 
