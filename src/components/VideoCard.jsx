@@ -10,6 +10,7 @@ import GiftModal from '../ci/GiftModal';
 import PaymentModal from '../mod/Payment_modal';
 
 const VideoCard = ({ video, onClick, isDarkMode }) => {
+  console.log('VideoCard received video:', video);
   const navigate = useNavigate();
   const [ratingData, setRatingData] = useState(null);
   const [loadingRating, setLoadingRating] = useState(true);
@@ -25,6 +26,9 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [hasPricing, setHasPricing] = useState(false);
   const [pricingLoading, setPricingLoading] = useState(false);
+  
+  // ✅ เพิ่ม state สำหรับควบคุมสถานะ Login ใน GiftModal
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // ✅ ใช้ Hook โดยใช้ video.id เพื่อแยก state เป็นรายวิดีโอ
   const { viewCount, locked, increment, reset } = useTotle(video.id);
@@ -74,18 +78,21 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     const savedLocked = localStorage.getItem("totle_locked_global");
     const isCurrentlyLocked = savedLocked === "true";
     
-    // ❗ ถ้าถูกล็อก → เด้งให้ Login
+    // ❗ ถ้าถูกล็อก → แสดงเฉพาะหน้า Login (ไม่แสดง GiftModal)
     if (isCurrentlyLocked) {
-      setShowGiftModal(true);
+      // ตั้งค่าให้แสดงเฉพาะ Login โดยไม่แสดงส่วนอื่นของ GiftModal
+      setIsLoggedIn(false); // ตั้งค่าให้แสดงหน้า Login
+      setShowGiftModal(true); // แสดง Modal แต่จะแสดงเฉพาะหน้า Login
       return;
     }
 
     // เพิ่มจำนวนครั้ง
     const justLocked = increment();
 
-    // ถ้าเพิ่งครบ 3 → ล็อก + เด้ง GiftModal
+    // ถ้าเพิ่งครบ 3 → ล็อก + แสดงเฉพาะหน้า Login
     if (justLocked) {
-      setShowGiftModal(true);
+      setIsLoggedIn(false); // ตั้งค่าให้แสดงหน้า Login
+      setShowGiftModal(true); // แสดง Modal แต่จะแสดงเฉพาะหน้า Login
       return;
     }
 
@@ -136,7 +143,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   //   };
   // }, [video?.id]);
 
-  // ✅ ฟังก์ชันดึง rating และยอดวิว
+  // ✅ ฟังก์ชันดึง rating และยอดวิว - ใช้ API ใหม่ตามเวอร์ชันเก่า
   const fetchRatingAndViews = async () => {
     try {
       setLoadingRating(true);
@@ -482,9 +489,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           isOpen={showGiftModal}
           onClose={() => setShowGiftModal(false)}
           isDarkMode={isDarkMode}
+          isLoggedIn={isLoggedIn} // ส่ง state นี้ไป
+          setIsLoggedIn={setIsLoggedIn} // ส่ง setter ไป
           onLoginSuccess={() => {
             reset();
             setShowGiftModal(false);
+            setIsLoggedIn(true); // ตั้งค่าเป็น logged in เมื่อล็อกอินสำเร็จ
             // ✅ รีเฟรชสถานะล็อกทันทีหลังจากล็อกอินสำเร็จ
             setTimeout(() => {
               refreshLockStatus();

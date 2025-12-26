@@ -262,7 +262,7 @@ async function initializeDatabase() {
         INDEX idx_purchase_date (purchase_date)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-            CREATE TABLE IF NOT EXISTS ip_groups (
+      CREATE TABLE IF NOT EXISTS ip_groups (
         id INT AUTO_INCREMENT PRIMARY KEY,
         group_key VARCHAR(100) NOT NULL UNIQUE,
         display_name VARCHAR(100) NOT NULL,
@@ -273,13 +273,6 @@ async function initializeDatabase() {
         INDEX idx_group_key (group_key),
         INDEX idx_ip_pattern (ip_pattern)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-      -- ✅ เพิ่มข้อมูลกลุ่ม IP เริ่มต้น
-      INSERT IGNORE INTO ip_groups (group_key, display_name, ip_pattern, description) VALUES
-      ('cloudflare_104_28', 'Cloudflare 104.28.x.x', '104.28.%', 'Cloudflare CDN IP Range'),
-      ('cloudflare_104_27', 'Cloudflare 104.27.x.x', '104.27.%', 'Cloudflare CDN IP Range'),
-      ('cloudflare_172_67', 'Cloudflare 172.67.x.x', '172.67.%', 'Cloudflare CDN IP Range'),
-      ('cloudflare_172_64', 'Cloudflare 172.64.x.x', '172.64.%', 'Cloudflare CDN IP Range');
     `;
 
     await connection.query(createTablesSQL);

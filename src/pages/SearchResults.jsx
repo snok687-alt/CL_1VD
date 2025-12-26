@@ -1,3 +1,5 @@
+// [file name]: SearchResults.jsx
+// [file content begin]
 // SearchResults.jsx
 import React, { useEffect, useState } from 'react';
 import { useLocation, useOutletContext } from 'react-router-dom';
@@ -11,19 +13,18 @@ const SearchResults = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ดึงข้อมูลการค้นหาจากหลายแหล่ง
   const searchQuery = location.state?.searchTerm || 
     new URLSearchParams(location.search).get('q') || 
     searchTerm || 
     '';
 
-  // ตรวจสอบว่าอยู่ในหมวดหมู่ใด
   const fromCategory = location.state?.fromCategory || currentCategory;
   const isHomePage = location.pathname === '/' && !searchQuery;
 
   useEffect(() => {
     if (isHomePage) {
-      loadCategoryVideos('32');
+      // ✅ เปลี่ยนเป็นหมวดหมู่เริ่มต้นของ API ใหม่
+      loadCategoryVideos('1');
     } else if (searchQuery) {
       setSearchTerm(searchQuery);
       performSearch(searchQuery);
@@ -70,7 +71,6 @@ const SearchResults = () => {
       if (newSearchTerm) {
         performSearch(newSearchTerm);
       } else if (searchFromCategory) {
-        // ถ้ายกเลิกการค้นหาและมีหมวดหมู่เดิม ให้โหลดวิดีโอจากหมวดหมู่นั้น
         loadCategoryVideos(searchFromCategory);
       } else {
         setResults([]);
@@ -83,27 +83,38 @@ const SearchResults = () => {
     };
   }, []);
 
-  // แสดงชื่อหมวดหมู่ถ้ามี
+  // ✅ อัปเดตชื่อหมวดหมู่ใหม่
   const getCategoryName = (categoryId) => {
     const categories = {
-      '32': '国产视频',
-      '33': '国产主播',
-      '34': '91大神',
-      '35': '热门事件',
-      '36': '传媒自拍',
-      '38': '日本有码',
-      '39': '日本无码',
-      '40': '日韩主播',
-      '41': '动漫肉番',
-      '42': '女同性恋',
-      '43': '中文字幕',
-      '44': '强奸乱伦',
-      '45': '熟女人妻',
-      '46': '制服诱惑',
-      '47': 'AV解说',
-      '48': '女星换脸',
-      '49': '百万三区',
-      '50': '欧美精品'
+      '1': '视频一区',
+      '2': '视频二区',
+      '3': '欧美精品',
+      '6': '偷拍自拍',
+      '7': '国产大制作',
+      '8': '乱伦毁三观',
+      '9': '主播女网红',
+      '10': '黑料网曝',
+      '13': '高清无码',
+      '14': '中文字幕',
+      '20': '欧美精品',
+      '21': '淫乱学生妹',
+      '22': '动漫精选',
+      '23': '动漫精选',
+      '24': '高清有码',
+      '25': '日本素人',
+      '26': '视频三区',
+      '27': '无码流出',
+      '28': 'FC2',
+      '29': '会所技师',
+      '30': '国产推荐',
+      '31': '探花约炮',
+      '32': '韩国直播',
+      '33': '国产直播',
+      '34': '淫妻绿帽',
+      '35': '制服诱惑',
+      '36': '重口猎奇',
+      '37': '东京热',
+      '38': '一本道'
     };
     return categories[categoryId] || `หมวดหมู่ ${categoryId}`;
   };
@@ -128,7 +139,7 @@ const SearchResults = () => {
       <div className="max-w-7xl mx-auto">
         <h1 className={`text-xl md:text-2xl text-start font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-black'}`}>
           {isHomePage
-            ? '国产视频'
+            ? '视频一区'
             : searchQuery
               ? `搜索结果: "${searchQuery}"`
               : fromCategory
@@ -188,3 +199,4 @@ const SearchResults = () => {
 };
 
 export default SearchResults;
+// [file content end]

@@ -1,6 +1,9 @@
+// [file name]: Dashboard.jsx
+// [file content begin]
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
+import Footer from './Footer';
 import GiftModal from "../ci/GiftModal"; // ✅ นำเข้า GiftModal
 import useTotle from "../ci/useTotle"; // ✅ นำเข้า Hook
 
@@ -22,7 +25,6 @@ const Dashboard = () => {
   const isSearchPage = location.pathname === '/search';
   const isProfilePage = location.pathname.startsWith('/profile');
   const isCategoryPage = location.pathname.startsWith('/category/');
-  // ✅ เพิ่มเงื่อนไขสำหรับหน้า VideoManagement
   const isVideoManagementPage = location.pathname.startsWith('/video-management') ||
     location.pathname.includes('pricing') ||
     location.pathname.includes('enhanced-price-setting/all')
@@ -77,7 +79,7 @@ const Dashboard = () => {
           if (currentCategory) {
             navigate(`/category/${currentCategory}`);
           } else {
-            navigate('/');
+            navigate('/category/1'); // ✅ เปลี่ยนเป็นหมวดหมู่เริ่มต้นของ API ใหม่
           }
         }
       }
@@ -169,7 +171,7 @@ const Dashboard = () => {
           setSearchTerm,
           currentCategory
         }} />
-        
+
         {/* ✅ Gift Modal */}
         <GiftModal
           isOpen={giftOpen}
@@ -178,8 +180,13 @@ const Dashboard = () => {
           onLoginSuccess={reset} // ✅ รีเซ็ต counter เมื่อ login สำเร็จ
         />
       </main>
+      <Footer
+        isDarkMode={isDarkMode}
+        isVisible={isFooterVisible}
+      />
     </div>
   );
 };
 
 export default Dashboard;
+// [file content end]

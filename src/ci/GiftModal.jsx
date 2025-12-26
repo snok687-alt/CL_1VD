@@ -17,7 +17,14 @@ import {
   LogOut
 } from 'lucide-react';
 
-const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
+const GiftModal = ({ 
+  isOpen, 
+  onClose, 
+  isDarkMode, 
+  onLoginSuccess,
+  isLoggedIn: initialIsLoggedIn, // รับจาก parent
+  setIsLoggedIn: setParentIsLoggedIn // รับจาก parent
+}) => {
   if (!isOpen) return null;
 
   // ตัวแปรหลัก
@@ -36,8 +43,24 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // ✅ ใช้ค่า initial จาก parent แทนการตั้งค่าเริ่มต้นเอง
+  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn || false);
   const [showRegister, setShowRegister] = useState(false);
+
+  // ✅ เมื่อ isLoggedIn เปลี่ยนแปลงใน GiftModal ให้อัพเดท parent ด้วย
+  useEffect(() => {
+    if (setParentIsLoggedIn) {
+      setParentIsLoggedIn(isLoggedIn);
+    }
+  }, [isLoggedIn, setParentIsLoggedIn]);
+
+  // ✅ เมื่อได้รับ initialIsLoggedIn จาก parent ให้อัพเดท state
+  useEffect(() => {
+    if (initialIsLoggedIn !== undefined) {
+      setIsLoggedIn(initialIsLoggedIn);
+    }
+  }, [initialIsLoggedIn]);
 
   // ฟังก์ชันช่วยเหลือ: ดึงข้อมูลจาก API
   const apiFetch = async (url, opts = {}) => {
@@ -75,8 +98,8 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
     setLoading(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
-    setIsLoggedIn(false);
     setShowRegister(false);
+    // ไม่รีเซ็ต isLoggedIn เพราะ parent ควบคุม
   };
 
   // ============================================================
@@ -151,6 +174,15 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
   // ============================================================
   useEffect(() => {
     if (!isOpen) return;
+    
+    // ✅ ตรวจสอบว่า parent บังคับให้แสดงหน้า Login หรือไม่
+    if (initialIsLoggedIn === false) {
+      // ถ้า parent บังคับให้แสดงหน้า Login (locked state)
+      setIsLoggedIn(false);
+      setMessage("🔒 请登录以解锁视频");
+      return;
+    }
+    
     const token = localStorage.getItem("gift_token");
     const savedUsername = localStorage.getItem("gift_username");
     if (token && savedUsername) {
@@ -161,7 +193,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
       loadClaimStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
+  }, [isOpen, initialIsLoggedIn]);
 
   // ============================================================
   // ปุ่มรีเฟรช
@@ -394,14 +426,14 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
               <Sparkles className="w-5 h-5 text-yellow-500" />
             </h2>
             <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
-              登录后您可以解锁所有视频，并领取每日礼物。
+              {isLoggedIn ? "领取每日奖励并解锁所有功能" : "登录后您可以解锁所有视频，并领取每日礼物。"}
             </p>
             <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-600"}`}>
               {isLoggedIn ? `欢迎, ${username}` : "登录以访问完整内容"}
             </p>
           </div>
 
-          {/* แบบฟอร์มเข้าสู่ระบบ - โทนเหล็ก */}
+          {/* ✅ แบบฟอร์มเข้าสู่ระบบ - แสดงเมื่อไม่ได้ล็อกอิน */}
           {!isLoggedIn && !showRegister && (
             <div className="space-y-4">
               <div className="relative">
@@ -470,7 +502,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
             </div>
           )}
 
-          {/* แบบฟอร์มลงทะเบียน - โทนเหล็ก */}
+          {/* ✅ แบบฟอร์มลงทะเบียน - แสดงเมื่อไม่ได้ล็อกอินและต้องการสมัครสมาชิก */}
           {!isLoggedIn && showRegister && (
             <div className="space-y-4">
               <div className="relative">
@@ -562,7 +594,7 @@ const GiftModal = ({ isOpen, onClose, isDarkMode, onLoginSuccess }) => {
             </div>
           )}
 
-          {/* มุมมองหลังเข้าสู่ระบบ - โทนเหล็ก */}
+          {/* ✅ มุมมองหลังเข้าสู่ระบบ - แสดงเฉพาะเมื่อล็อกอินแล้ว */}
           {isLoggedIn && (
             <div className="space-y-5">
               <div className={`p-6 rounded-2xl border-2 ${isDarkMode
