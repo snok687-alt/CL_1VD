@@ -1,10 +1,45 @@
 /* ในไฟล์ CSS หลักของคุณ */
 main {
-  padding-bottom: 4rem; /* พื้นที่สำหรับ Footer */
+  padding-bottom: 4rem;
 }
 
 @media (min-width: 1024px) {
   main {
-    padding-bottom: 0; /* บนหน้าจอใหญ่ไม่ต้องมี padding */
+    padding-bottom: 0; 
   }
+}
+
+.footer {
+  display: flex;
+  justify-content: space-around; /* ✅ จัดเรียงไอคอนแบบรอบๆ */
+  align-items: center;
+  height: 60px; /* ปรับตามต้องการ */
+  background-color: #fff; /* สีพื้นหลังของ Light Mode */
+  border-top: 1px solid #ccc;
+}
+
+.footer-dark {
+  background-color: #1a1a1a; /* สีพื้นหลังของ Dark Mode */
+  border-top: 1px solid #444;
+}
+
+.footer-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.footer-item .icon {
+  font-size: 24px; /* ขนาดไอคอน */
+}
+
+.footer-item .text {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.footer-item.active .icon,
+.footer-item.active .text {
+  font-weight: bold; /* ไฮไลท์เมนูที่ active */
 }

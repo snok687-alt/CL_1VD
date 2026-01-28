@@ -10,7 +10,6 @@ import GiftModal from '../ci/GiftModal';
 import PaymentModal from '../mod/Payment_modal';
 
 const VideoCard = ({ video, onClick, isDarkMode }) => {
-  console.log('VideoCard received video:', video);
   const navigate = useNavigate();
   const [ratingData, setRatingData] = useState(null);
   const [loadingRating, setLoadingRating] = useState(true);
@@ -26,28 +25,14 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [hasPricing, setHasPricing] = useState(false);
   const [pricingLoading, setPricingLoading] = useState(false);
-  
-  // ✅ เพิ่ม state สำหรับควบคุมสถานะ Login ใน GiftModal
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // ✅ ใช้ Hook โดยใช้ video.id เพื่อแยก state เป็นรายวิดีโอ
-  const { viewCount, locked, increment, reset } = useTotle(video.id);
+  const { viewCount, locked, increment, handleLoginSuccess, authenticated } = useTotle(video.id);
 
   // ✅ ตรวจสอบว่าวิดีโอนี้มีการเปิดชำระเงินหรือไม่
   useEffect(() => {
     checkVideoPricingStatus();
   }, [video.id]);
-
-  // ✅ ฟังก์ชันรีเฟรชสถานะล็อกจาก localStorage
-  const refreshLockStatus = () => {
-    // อ่านค่า locked จาก localStorage โดยตรงเพื่อให้ได้ค่าล่าสุด
-    const savedLocked = localStorage.getItem("totle_locked_global");
-    const isCurrentlyLocked = savedLocked === "true";
-    
-    // ใช้ force update เพื่อให้ component เรนเดอร์ใหม่
-    // โดยการเปลี่ยน state เล็กน้อยเพื่อ trigger re-render
-    setCurrentViews(prev => prev); // เปลี่ยนค่าเล็กน้อยเพื่อ trigger re-render
-  };
 
   const checkVideoPricingStatus = async () => {
     try {
@@ -74,25 +59,27 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
       return;
     }
 
-    // ✅ อ่านค่า locked จาก localStorage โดยตรงเพื่อตรวจสอบสถานะล่าสุด
+    // ✅ ตรวจสอบสถานะจาก localStorage โดยตรง (real-time)
+    const savedAuth = localStorage.getItem("totle_authenticated_global");
     const savedLocked = localStorage.getItem("totle_locked_global");
-    const isCurrentlyLocked = savedLocked === "true";
     
-    // ❗ ถ้าถูกล็อก → แสดงเฉพาะหน้า Login (ไม่แสดง GiftModal)
-    if (isCurrentlyLocked) {
-      // ตั้งค่าให้แสดงเฉพาะ Login โดยไม่แสดงส่วนอื่นของ GiftModal
-      setIsLoggedIn(false); // ตั้งค่าให้แสดงหน้า Login
-      setShowGiftModal(true); // แสดง Modal แต่จะแสดงเฉพาะหน้า Login
+    // ✅ ตรวจสอบว่ามี session ทำงานอยู่หรือไม่
+    const hasSession = sessionStorage.getItem("totle_session_active");
+    const isUserAuthenticated = savedAuth === "true" && hasSession === "true";
+    const isCurrentlyLocked = savedLocked === "true" && !isUserAuthenticated;
+
+    // ✅ ถ้ายังไม่ล็อกอิน และถูกล็อก → แสดง GiftModal
+    if (!isUserAuthenticated && isCurrentlyLocked) {
+      setShowGiftModal(true);
       return;
     }
 
     // เพิ่มจำนวนครั้ง
     const justLocked = increment();
 
-    // ถ้าเพิ่งครบ 3 → ล็อก + แสดงเฉพาะหน้า Login
-    if (justLocked) {
-      setIsLoggedIn(false); // ตั้งค่าให้แสดงหน้า Login
-      setShowGiftModal(true); // แสดง Modal แต่จะแสดงเฉพาะหน้า Login
+    // ✅ ถ้ายังไม่ล็อกอิน และเพิ่งครบ 3 ครั้ง → ล็อก + แสดง GiftModal
+    if (!isUserAuthenticated && justLocked) {
+      setShowGiftModal(true);
       return;
     }
 
@@ -101,7 +88,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     else navigate(`/watch/${video.id}`);
   };
 
-    // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
+  // ✅ ฟังก์ชันดึงยอดวิว real-time จาก server
   // const fetchRealTimeViews = async () => {
   //   if (!video?.id) return;
 
@@ -143,7 +130,7 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
   //   };
   // }, [video?.id]);
 
-  // ✅ ฟังก์ชันดึง rating และยอดวิว - ใช้ API ใหม่ตามเวอร์ชันเก่า
+  // ✅ ฟังก์ชันดึง rating และยอดวิว
   const fetchRatingAndViews = async () => {
     try {
       setLoadingRating(true);
@@ -347,9 +334,23 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
     }
   }, [video.id]);
 
-  // ✅ อ่านค่า locked จาก localStorage โดยตรงเพื่อแสดงสถานะล่าสุด
-  const savedLocked = localStorage.getItem("totle_locked_global");
-  const isCurrentlyLocked = savedLocked === "true";
+  // ✅ ตรวจสอบสถานะล็อกแบบ real-time สำหรับแสดง UI
+  const isCurrentlyLocked = () => {
+    const savedAuth = localStorage.getItem("totle_authenticated_global");
+    const savedLocked = localStorage.getItem("totle_locked_global");
+    const hasSession = sessionStorage.getItem("totle_session_active");
+    
+    // ถ้ามี session และ authenticated → ไม่ล็อก
+    if (savedAuth === "true" && hasSession === "true") return false;
+    
+    // ถ้าไม่มี session → เริ่มต้นใหม่ → ไม่ล็อก (ยังไม่ครบ 3 ครั้ง)
+    if (!hasSession) return false;
+    
+    // ถ้ายังไม่ล็อกอิน → ตรวจสอบสถานะล็อก
+    return savedLocked === "true";
+  };
+
+  const showLockIcon = isCurrentlyLocked() && !hasPricing;
 
   return (
     <>
@@ -375,8 +376,8 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
             </div>
           )}
 
-          {/* ✅ แสดงสถานะล็อก - ใช้ค่าจาก localStorage โดยตรง */}
-          {isCurrentlyLocked && !hasPricing && (
+          {/* ✅ แสดงสถานะล็อก - ใช้ฟังก์ชันตรวจสอบ real-time */}
+          {showLockIcon && (
             <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
               <div className="p-3 flex flex-col items-center">
                 <div className="text-white text-2xl mb-1">🔒</div>
@@ -489,16 +490,12 @@ const VideoCard = ({ video, onClick, isDarkMode }) => {
           isOpen={showGiftModal}
           onClose={() => setShowGiftModal(false)}
           isDarkMode={isDarkMode}
-          isLoggedIn={isLoggedIn} // ส่ง state นี้ไป
-          setIsLoggedIn={setIsLoggedIn} // ส่ง setter ไป
           onLoginSuccess={() => {
-            reset();
+            handleLoginSuccess(); // ✅ ใช้ handleLoginSuccess
             setShowGiftModal(false);
-            setIsLoggedIn(true); // ตั้งค่าเป็น logged in เมื่อล็อกอินสำเร็จ
-            // ✅ รีเฟรชสถานะล็อกทันทีหลังจากล็อกอินสำเร็จ
-            setTimeout(() => {
-              refreshLockStatus();
-            }, 100);
+            
+            // ✅ ไปดูวิดีโอทันที
+            navigate(`/watch/${video.id}`);
           }}
         />
       )}

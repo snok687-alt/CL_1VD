@@ -42,9 +42,9 @@ function Addlinks() {
     }
 
     try {
-      await axios.post(`${API_BASE}/links`, { 
-        title_links: title.trim(), 
-        name_links: url.trim() 
+      await axios.post(`${API_BASE}/links`, {
+        title_links: title.trim(),
+        name_links: url.trim()
       });
       setTitle('');
       setUrl('');
@@ -122,7 +122,7 @@ function Addlinks() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* 添加链接表单 - 左侧 */}
           <div className="lg:col-span-1">
-                        <button 
+            <button
               onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin')}
               className={`flex items-center px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm bg-white border border-gray-200 hover:bg-gray-50`}
             >
@@ -136,7 +136,7 @@ function Addlinks() {
                 <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
                 添加新链接
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -151,7 +151,7 @@ function Addlinks() {
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     链接地址 *
@@ -165,7 +165,7 @@ function Addlinks() {
                     required
                   />
                 </div>
-                
+
                 <button
                   type="submit"
                   className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl"

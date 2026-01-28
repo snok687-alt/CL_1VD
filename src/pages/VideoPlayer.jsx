@@ -1,3 +1,7 @@
+// ============================================================================
+// VideoPlayer.jsx - เพิ่มการบันทึกประวัติการดูวิดีโอ
+// ============================================================================
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import VideoCard from '../components/VideoCard';
@@ -25,120 +29,130 @@ const VideoPlayer = () => {
   const [userRating, setUserRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
 
-  // ใน VideoPlayer.jsx
-// ใน VideoPlayer.jsx - แก้ไข useEffect การบันทึกวิว
-// useEffect(() => {
-//   if (!video?.id) return;
+  // ✅ ตัวแปรสำหรับบันทึกประวัติการดู
+  const [watchStartTime, setWatchStartTime] = useState(null);
+  const [historyRecordTimer, setHistoryRecordTimer] = useState(null);
 
-//   const recordAndFetchViews = async () => {
-//     try {
-//       console.log('🔄 บันทึกและดึงยอดวิวล่าสุดสำหรับ video_id:', video.id);
-      
-//       // ✅ บันทึกวิว
-//       const incrementResponse = await fetch('/backend-api/views/increment', {
-//         method: 'POST',
-//         headers: {
-//           'Content-Type': 'application/json',
-//         },
-//         body: JSON.stringify({ video_id: video.id }),
-//       });
-      
-//       if (incrementResponse.ok) {
-//         console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${video.id}`);
-        
-//         // ✅ ดึงยอดวิวล่าสุดจาก server
-//         const viewsResponse = await fetch('/backend-api/views/get', {
-//           method: 'POST',
-//           headers: {
-//             'Content-Type': 'application/json',
-//           },
-//           body: JSON.stringify({ video_ids: [video.id] }),
-//         });
-        
-//         if (viewsResponse.ok) {
-//           const viewsData = await viewsResponse.json();
-//           const latestViews = viewsData[video.id] || (video.views || 0) + 1;
-          
-//           console.log(`📊 ยอดวิวล่าสุด: ${latestViews}`);
-          
-//           // ✅ อัปเดต state ด้วยยอดวิวล่าสุดจาก server
-//           setVideo(prev => prev ? { ...prev, views: latestViews } : null);
-//         }
-//       } else {
-//         console.error('❌ ไม่สามารถบันทึกวิวได้:', await incrementResponse.text());
-//       }
-//     } catch (error) {
-//       console.error('❌ เกิดข้อผิดพลาดในการบันทึกวิว:', error);
-//     }
-//   };
+  // ============================================================================
+  // ✅ ฟังก์ชันบันทึกประวัติการดูวิดีโอ
+  // ============================================================================
+  const recordVideoHistory = useCallback(async () => {
+    if (!video || !videoRef.current) return;
 
-//   // บันทึกและดึงยอดวิวทันทีเมื่อโหลดวิดีโอเสร็จ
-//   recordAndFetchViews();
-
-// }, [video?.id]);
-
-// ใน VideoPlayer.jsx - แก้ไขการบันทึกวิว
-useEffect(() => {
-  if (!video?.id) return;
-
-  const recordView = async () => {
     try {
-      // console.log('🔄 บันทึกวิวสำหรับ video_id:', video.id);
-      
-      // ✅ ยังคงบันทึกวิวลง MySQL ตามปกติ (สำหรับเก็บสถิติ)
-      const incrementResponse = await fetch('/backend-api/views/increment', {
+      const token = localStorage.getItem('gift_token');
+      if (!token) {
+        console.log('⚠️ ไม่พบ token - ข้ามการบันทึกประวัติ');
+        return;
+      }
+
+      const videoElement = videoRef.current;
+      const watchDuration = Math.floor(videoElement.currentTime) || 0; // วินาที
+      const progressPercentage = videoElement.duration 
+        ? Math.floor((videoElement.currentTime / videoElement.duration) * 100) 
+        : 0;
+
+      const payload = {
+        videoId: parseInt(video.id),
+        videoData: {
+          video_title: video.title,
+          thumbnail_url: video.thumbnail || '',
+          watch_duration: watchDuration,
+          progress_percentage: progressPercentage
+        }
+      };
+
+      console.log('📝 บันทึกประวัติการดู:', payload);
+
+      const response = await fetch('/backend-api/user/history/record', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ video_id: video.id }),
+        body: JSON.stringify(payload)
       });
-      
-      if (incrementResponse.ok) {
-        // console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${video.id}`);
-        
-        // 🗃️ เก็บไว้ก่อน: การดึงยอดวิวล่าสุดจาก server (ถ้าต้องการใช้งานในอนาคต)
-        /*
-        const viewsResponse = await fetch('/backend-api/views/get', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ video_ids: [video.id] }),
-        });
-        
-        if (viewsResponse.ok) {
-          const viewsData = await viewsResponse.json();
-          const latestViews = viewsData[video.id] || (video.views || 0) + 1;
-          setVideo(prev => prev ? { ...prev, views: latestViews } : null);
-        }
-        */
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('✅ บันทึกประวัติสำเร็จ', data);
       } else {
-        console.error('❌ ไม่สามารถบันทึกวิวได้:', await incrementResponse.text());
+        console.warn('⚠️ บันทึกประวัติไม่สำเร็จ:', data.message);
       }
     } catch (error) {
-      console.error('❌ เกิดข้อผิดพลาดในการบันทึกวิว:', error);
+      console.error('❌ ข้อผิดพลาดในการบันทึกประวัติ:', error);
     }
-  };
+  }, [video]);
 
-  recordView();
-}, [video?.id]);
+  // ============================================================================
+  // ✅ Effect: บันทึกประวัติทุก 10 วินาที เมื่อเล่นวิดีโอ
+  // ============================================================================
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (!videoElement || !video) return;
 
+    // ตั้ง timer บันทึกทุก 10 วินาที
+    const timer = setInterval(() => {
+      recordVideoHistory();
+    }, 10000); // 10 วินาที
 
+    setHistoryRecordTimer(timer);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [video, recordVideoHistory]);
+
+  // ============================================================================
+  // ✅ Effect: บันทึกประวัติเมื่อปิดหรือสลับวิดีโอ
+  // ============================================================================
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      // บันทึกประวัติเมื่อออกจากหน้า
+      if (video && videoRef.current) {
+        await recordVideoHistory();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // บันทึกประวัติเมื่อ component unmount
+      if (video && videoRef.current) {
+        recordVideoHistory();
+      }
+    };
+  }, [video, recordVideoHistory]);
+
+  // ============================================================================
+  // ✅ Effect: บันทึกประวัติเมื่อเปลี่ยน videoId (สลับวิดีโอ)
+  // ============================================================================
+  useEffect(() => {
+    return () => {
+      // ทำการบันทึกประวัติปัจจุบันก่อนสลับวิดีโอ
+      if (video && videoRef.current) {
+        recordVideoHistory();
+      }
+    };
+  }, [videoId, recordVideoHistory, video]);
+
+  // ============================================================================
+  // ✅ ฟังก์ชันให้คะแนนวิดีโอ
+  // ============================================================================
   const handleRating = async (rating) => {
     if (!video?.id || userRating > 0) return;
 
     try {
       console.log('📤 กำลังส่งคะแนน:', { video_id: video.id, rating });
 
-      // ✅ ใช้ endpoint ที่เฉพาะเจาะจง
       const response = await fetch(`/backend-api/rate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          video_id: parseInt(video.id), // ✅ แปลงเป็น number
+          video_id: parseInt(video.id),
           rating: rating
         })
       });
@@ -148,7 +162,6 @@ useEffect(() => {
       const result = await response.json();
       console.log('📥 ได้รับผลลัพธ์:', result);
 
-      // ✅ ตรวจสอบ response ตามรูปแบบใหม่
       if (result.success) {
         setUserRating(rating);
         Swal.fire({
@@ -166,15 +179,48 @@ useEffect(() => {
           confirmButtonText: '确定',
         });
       }
-
     } catch (err) {
       console.error('❌ ให้คะแนนล้มเหลว:', err);
       alert('เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์');
     }
   };
 
+  // ============================================================================
+  // ✅ ฟังก์ชันบันทึกวิว
+  // ============================================================================
+  const recordViewFunction = useCallback(async () => {
+    if (!video?.id) return;
 
+    try {
+      const incrementResponse = await fetch('/backend-api/views/increment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_id: video.id }),
+      });
+      
+      if (incrementResponse.ok) {
+        console.log(`✅ บันทึกวิวสำเร็จ: video_id = ${video.id}`);
+      } else {
+        console.error('❌ ไม่สามารถบันทึกวิวได้:', await incrementResponse.text());
+      }
+    } catch (error) {
+      console.error('❌ เกิดข้อผิดพลาดในการบันทึกวิว:', error);
+    }
+  }, [video?.id]);
+
+  // ============================================================================
+  // Effect: บันทึกวิว
+  // ============================================================================
+  useEffect(() => {
+    if (!video?.id) return;
+    recordViewFunction();
+  }, [video?.id, recordViewFunction]);
+
+  // ============================================================================
   // Auto-hide header on scroll
+  // ============================================================================
   useEffect(() => {
     let lastScrollY = window.scrollY;
     const handleScroll = () => {
@@ -190,7 +236,9 @@ useEffect(() => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // ============================================================================
   // Process video URL
+  // ============================================================================
   const processVideoUrl = useCallback((playUrl) => {
     if (!playUrl) return null;
     const patterns = [
@@ -206,7 +254,9 @@ useEffect(() => {
     return null;
   }, []);
 
+  // ============================================================================
   // Load video player
+  // ============================================================================
   const loadVideo = useCallback(async (videoUrl) => {
     const videoElement = videoRef.current;
     if (!videoElement || !videoUrl) return;
@@ -246,7 +296,9 @@ useEffect(() => {
     }
   }, []);
 
+  // ============================================================================
   // Load more related videos
+  // ============================================================================
   const loadMoreRelated = useCallback(async () => {
     if (relatedLoading || !hasMoreRelated || !video?.type_id) return;
     setRelatedLoading(true);
@@ -274,7 +326,9 @@ useEffect(() => {
     }
   }, [relatedLoading, hasMoreRelated, video, relatedVideos, relatedPage]);
 
+  // ============================================================================
   // Intersection Observer for infinite scroll
+  // ============================================================================
   useEffect(() => {
     if (!hasMoreRelated || relatedLoading) return;
     const observer = new IntersectionObserver(
@@ -294,7 +348,9 @@ useEffect(() => {
     };
   }, [loadMoreRelated, hasMoreRelated, relatedLoading]);
 
+  // ============================================================================
   // Fetch video data
+  // ============================================================================
   useEffect(() => {
     const fetchVideoData = async () => {
       if (!videoId) return;
@@ -316,7 +372,9 @@ useEffect(() => {
     return () => hlsRef.current?.destroy();
   }, [videoId, processVideoUrl, loadVideo]);
 
+  // ============================================================================
   // Fetch related videos
+  // ============================================================================
   useEffect(() => {
     const fetchRelated = async () => {
       if (!video?.id || !video?.type_id) return;
@@ -338,7 +396,9 @@ useEffect(() => {
     if (video && !videoLoading) fetchRelated();
   }, [video, videoLoading]);
 
+  // ============================================================================
   // Helper functions
+  // ============================================================================
   const removeHtmlTags = (html) => html?.replace(/<[^>]*>/g, '') || '';
   const truncateDescription = (text, maxLength = 150) => {
     const cleanText = removeHtmlTags(text);
@@ -346,7 +406,9 @@ useEffect(() => {
   };
   const handleVideoClick = useCallback((clickedVideo) => navigate(`/watch/${clickedVideo.id}`), [navigate]);
 
+  // ============================================================================
   // Loading state
+  // ============================================================================
   if (loading) return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
       <div className="max-w-full mx-auto md:mt-4">
@@ -380,7 +442,9 @@ useEffect(() => {
     </div>
   );
 
+  // ============================================================================
   // Error state
+  // ============================================================================
   if (error || !video) return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
       <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,6 +461,9 @@ useEffect(() => {
   const shouldTruncate = cleanDescription.length > 150;
   const displayDescription = showFullDescription ? cleanDescription : truncateDescription(cleanDescription);
 
+  // ============================================================================
+  // Main Render
+  // ============================================================================
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
       <div className="max-w-full mx-auto md:mt-4 md:ml-4 lg:p-1">

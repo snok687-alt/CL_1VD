@@ -1,37 +1,17 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-  AreaChart, Area
-} from 'recharts';
-import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  TrendingUp,
-  TrendingDown,
-  Users,
-  Eye,
-  Video,
-  DollarSign,
-  Home,
-  LogOut,
-  Menu,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Globe,
-  AlertCircle,
-  LinkIcon,
-  Gamepad2,
-  MonitorPlay,
-  User,
-  Bell,
-  CheckCheck,
-  Clock,
-  Shield,
-  Activity,
-  Gift
-} from 'lucide-react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import {
+  Home, LogOut, Menu, ChevronLeft, ChevronRight, RefreshCw,
+  Globe, AlertCircle, LinkIcon, Gamepad2, MonitorPlay, User, Bell,
+  CheckCheck, Clock, Shield, Activity, Gift, Eye, Users, Video, DollarSign,
+  TrendingUp, TrendingDown
+} from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, AreaChart, Area
+} from 'recharts';
 
 const Admin = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
@@ -51,6 +31,16 @@ const Admin = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ✅ ตรวจสอบ active menu item จาก pathname
+  useEffect(() => {
+    if (location.pathname.includes('/ip')) setActiveMenuItem('ip');
+    else if (location.pathname.includes('video-management')) setActiveMenuItem('videos');
+    else if (location.pathname.includes('/links')) setActiveMenuItem('videos_links');
+    else if (location.pathname.includes('/games')) setActiveMenuItem('games');
+    else if (location.pathname.includes('/accounts')) setActiveMenuItem('gift_accounts');
+    else setActiveMenuItem('dashboard');
+  }, [location.pathname]);
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -66,7 +56,6 @@ const Admin = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  // ✅ ดึงข้อมูลผู้ใช้และการแจ้งเตือน
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -91,7 +80,6 @@ const Admin = () => {
     }
   };
 
-  // ✅ ดึงการแจ้งเตือนทั้งหมด
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -115,7 +103,6 @@ const Admin = () => {
     }
   };
 
-  // ✅ ทำเครื่องหมายว่าอ่านแล้ว
   const markAsRead = async (notificationId) => {
     try {
       const token = localStorage.getItem('token');
@@ -133,7 +120,6 @@ const Admin = () => {
     }
   };
 
-  // ✅ ทำเครื่องหมายทั้งหมดว่าอ่านแล้ว
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -151,20 +137,13 @@ const Admin = () => {
     }
   };
 
-  const shouldShowUniqueIPs = ![
-    '/video-management',
-    '/video/',
-    '/Addlinks',
-    '/GameDashboard'
-  ].some(path => location.pathname.includes(path));
-
   const menuItems = [
     { id: 'dashboard', label: '仪表盘', icon: Home, path: '/CL_____________________________________________________________________________________******_/Admin' },
-    { id: 'ip', label: 'IP管理', icon: Globe, path: '/ip' },
-    { id: 'videos', label: '视频管理', icon: MonitorPlay, path: '/video-management' },
-    { id: 'videos_links', label: '新视频链接', icon: LinkIcon, path: '/Addlinks' },
-    { id: 'games', label: '游戏管理', icon: Gamepad2, path: '/error' },
-    { id: 'gift_accounts', label: '礼品账户', icon: Gift, path: '/Account' },
+    { id: 'ip', label: 'IP管理', icon: Globe, path: '/CL_____________________________________________________________________________________******_/Admin/ip' },
+    { id: 'videos', label: '视频管理', icon: MonitorPlay, path: '/CL_____________________________________________________________________________________******_/Admin/video-management' },
+    { id: 'videos_links', label: '新视频链接', icon: LinkIcon, path: '/CL_____________________________________________________________________________________******_/Admin/links' },
+    { id: 'games', label: '游戏管理', icon: Gamepad2, path: '/CL_____________________________________________________________________________________******_/Admin/games' },
+    { id: 'gift_accounts', label: '礼品账户', icon: Gift, path: '/CL_____________________________________________________________________________________******_/Admin/accounts' },
   ];
 
   const fetchDashboardData = async () => {
@@ -228,7 +207,6 @@ const Admin = () => {
     );
   };
 
-  // ✅ NotificationIcon Component
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'login': return <Shield className="h-5 w-5" />;
@@ -309,37 +287,6 @@ const Admin = () => {
     return null;
   };
 
-  if (loading && !dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">正在加载数据...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md">
-          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">发生错误</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardData}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            重试
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const data = dashboardData;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
       {isMobileMenuOpen && (
@@ -349,6 +296,7 @@ const Admin = () => {
         />
       )}
 
+      {/* ✅ Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 bg-white/95 backdrop-blur-lg shadow-2xl transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'w-80' : 'w-20'} 
@@ -392,14 +340,8 @@ const Admin = () => {
                       onClick={() => {
                         setActiveMenuItem(item.id);
                         setIsMobileMenuOpen(false);
-
-                        if (item.path.startsWith("http")) {
-                          window.open(item.path, "_blank");
-                        } else {
-                          navigate(item.path);
-                        }
+                        navigate(item.path);
                       }}
-
                       className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
                         ${isActive
                           ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 border-r-4 border-blue-500 shadow-sm'
@@ -449,7 +391,7 @@ const Admin = () => {
                 }).then((result) => {
                   if (result.isConfirmed) {
                     localStorage.removeItem('token');
-                    navigate('/login');
+                    navigate('/Login');
                   }
                 });
               }}
@@ -462,6 +404,7 @@ const Admin = () => {
         </div>
       </div>
 
+      {/* ✅ Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-white/80 backdrop-blur-lg border-b border-gray-200/60 sticky top-0 z-30">
           <div className="px-4 sm:px-6 lg:px-8 py-4">
@@ -490,28 +433,10 @@ const Admin = () => {
                     </span>
                   )}
                 </div>
-
-                <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-xl p-1">
-                  {['24h', '7d', '30d', '90d'].map((period) => (
-                    <button
-                      key={period}
-                      onClick={() => setSelectedPeriod(period)}
-                      disabled={loading}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
-                        ${selectedPeriod === period
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
-                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      {period}
-                    </button>
-                  ))}
-                </div>
               </div>
 
-              {/* ✅ Notification & User Section */}
+              {/* Notification Bell */}
               <div className="flex items-center space-x-4">
-                {/* Notification Bell */}
                 <div className="relative">
                   <button
                     onClick={() => {
@@ -528,7 +453,6 @@ const Admin = () => {
                     )}
                   </button>
 
-                  {/* Notification Dropdown */}
                   {showNotifications && (
                     <div className="absolute right-0 mt-2 w-[90vw] sm:w-96 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden">
                       <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50">
@@ -594,210 +518,236 @@ const Admin = () => {
                       </div>
                     </div>
                   )}
-
                 </div>
               </div>
             </div>
-
-            <div className="sm:hidden mt-3 overflow-x-auto">
-              <div className="flex space-x-2 pb-2 px-2">
-                {['24h', '7d', '30d', '90d'].map((period) => (
-                  <button
-                    key={period}
-                    onClick={() => setSelectedPeriod(period)}
-                    disabled={loading}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0
-                  ${selectedPeriod === period
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    {period}
-                  </button>
-                ))}
-              </div>
-            </div>
-
           </div>
         </header>
 
+        {/* ✅ Content Area with Outlet */}
         <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {data && (
+          <div className="max-w-7xl mx-auto">
+            {/* ✅ Check if we're on dashboard (no route matched or root admin) */}
+            {location.pathname === '/CL_____________________________________________________________________________________******_/Admin' ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <StatCard
-                    title="总观看次数"
-                    value={data.stats.totalViews}
-                    subtitle="视频观看总数"
-                    change={`${data.stats.viewChange > 0 ? '+' : ''}${data.stats.viewChange}%`}
-                    icon={Eye}
-                    trend={data.stats.viewChange >= 0 ? "up" : "down"}
-                    color="blue"
-                  />
-
-                  {shouldShowUniqueIPs && (
-                    <StatCard
-                      title="视频观众总数"
-                      value={data.stats.uniqueIPs}
-                      subtitle="不重复IP数量"
-                      change={`${data.stats.userChange > 0 ? '+' : ''}${data.stats.userChange}%`}
-                      icon={Users}
-                      trend={data.stats.userChange >= 0 ? "up" : "down"}
-                      color="green"
-                      onClick={() => navigate('/ip')}
-                    />
-                  )}
-
-                  {/* ✅ เพิ่ม Card แสดงจำนวนบัญชีผู้รับของขวัญ */}
-                  <StatCard
-                    title="礼品账户总数"
-                    value={data.stats.giftAccounts || 0}
-                    subtitle={`礼品总额: ${data.giftAccountStats?.totalGiftAmount || 0} 份`}
-                    change={`${data.stats.giftAccountChange > 0 ? '+' : ''}${data.stats.giftAccountChange || 0}%`}
-                    icon={Gift}
-                    trend={data.stats.giftAccountChange >= 0 ? "up" : "down"}
-                    color="pink"
-                    isGift={true}
-                    onClick={() => navigate('/Account')}
-                  />
-
-                  <StatCard
-                    title="视频总数"
-                    value={data.stats.totalVideos}
-                    subtitle="系统中的视频"
-                    change={`${data.stats.videoChange > 0 ? '+' : ''}${data.stats.videoChange}%`}
-                    icon={Video}
-                    trend={data.stats.videoChange >= 0 ? "up" : "down"}
-                    color="purple"
-                  />
-
-                  <StatCard
-                    title="总收入"
-                    value={data.stats.totalRevenue}
-                    subtitle="本月收入"
-                    change={`${data.stats.revenueChange > 0 ? '+' : ''}${data.stats.revenueChange}%`}
-                    icon={DollarSign}
-                    trend={data.stats.revenueChange >= 0 ? "up" : "down"}
-                    color="green"
-                    isRevenue={true}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">观看概览</h3>
-                    {data.revenueStats && data.revenueStats.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={data.revenueStats}>
-                          <defs>
-                            <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#viewsGradient)" name="观看次数" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-gray-500">
-                        此时间段内没有数据
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">用户增长</h3>
-                    {data.userGrowth && data.userGrowth.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={data.userGrowth}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Line type="monotone" dataKey="users" stroke="#8b5cf6" name="总用户" />
-                          <Line type="monotone" dataKey="newUsers" stroke="#10b981" name="新用户" />
-                          <Line type="monotone" dataKey="active" stroke="#f59e0b" name="活跃用户" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-gray-500">
-                        此时间段内没有数据
-                      </div>
-                    )}
+                {/* Dashboard Period Selector */}
+                <div className="mb-6 flex justify-center sm:justify-start">
+                  <div className="hidden sm:flex items-center space-x-1 bg-gray-100 rounded-xl p-1">
+                    {['24h', '7d', '30d', '90d'].map((period) => (
+                      <button
+                        key={period}
+                        onClick={() => setSelectedPeriod(period)}
+                        disabled={loading}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
+                          ${selectedPeriod === period
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+                          } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {period}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">设备使用情况</h3>
-                    {data.deviceData && data.deviceData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={data.deviceData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={80}
-                            paddingAngle={2}
-                            dataKey="value"
-                            label={({ name, value }) => `${name} ${value}%`}
-                          >
-                            {data.deviceData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-gray-500">
-                        没有设备数据
-                      </div>
-                    )}
+                {/* Dashboard Loading State */}
+                {loading && !dashboardData ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">正在加载数据...</p>
+                    </div>
                   </div>
+                ) : error && !dashboardData ? (
+                  <div className="text-center bg-white p-8 rounded-2xl shadow-lg max-w-md mx-auto">
+                    <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">发生错误</h2>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <button
+                      onClick={fetchDashboardData}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      重试
+                    </button>
+                  </div>
+                ) : dashboardData ? (
+                  <div className="space-y-6">
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                      <StatCard
+                        title="总观看次数"
+                        value={dashboardData.stats.totalViews}
+                        subtitle="视频观看总数"
+                        change={`${dashboardData.stats.viewChange > 0 ? '+' : ''}${dashboardData.stats.viewChange}%`}
+                        icon={Eye}
+                        trend={dashboardData.stats.viewChange >= 0 ? "up" : "down"}
+                        color="blue"
+                      />
 
-                  <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-6">热门视频</h3>
-                    {data.topVideos && data.topVideos.length > 0 ? (
-                      <div className="space-y-4">
-                        {data.topVideos.slice(0, 5).map((video, index) => (
-                          <div key={video.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                            <div className="flex items-center space-x-3">
-                              <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${index === 0 ? 'bg-yellow-100' :
-                                index === 1 ? 'bg-gray-100' :
-                                  index === 2 ? 'bg-orange-100' : 'bg-blue-100'
-                                }`}>
-                                <span className={`font-bold text-sm ${index === 0 ? 'text-yellow-600' :
-                                  index === 1 ? 'text-gray-600' :
-                                    index === 2 ? 'text-orange-600' : 'text-blue-600'
-                                  }`}>
-                                  {index + 1}
-                                </span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{video.title}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-semibold text-gray-900">{video.views.toLocaleString()} 次</p>
-                            </div>
+                      <StatCard
+                        title="视频观众总数"
+                        value={dashboardData.stats.uniqueIPs}
+                        subtitle="不重复IP数量"
+                        change={`${dashboardData.stats.userChange > 0 ? '+' : ''}${dashboardData.stats.userChange}%`}
+                        icon={Users}
+                        trend={dashboardData.stats.userChange >= 0 ? "up" : "down"}
+                        color="green"
+                        onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin/ip')}
+                      />
+
+                      <StatCard
+                        title="礼品账户总数"
+                        value={dashboardData.stats.giftAccounts || 0}
+                        subtitle={`礼品总额: ${dashboardData.giftAccountStats?.totalGiftAmount || 0} 份`}
+                        change={`${dashboardData.stats.giftAccountChange > 0 ? '+' : ''}${dashboardData.stats.giftAccountChange || 0}%`}
+                        icon={Gift}
+                        trend={dashboardData.stats.giftAccountChange >= 0 ? "up" : "down"}
+                        color="pink"
+                        isGift={true}
+                        onClick={() => navigate('/CL_____________________________________________________________________________________******_/Admin/accounts')}
+                      />
+
+                      <StatCard
+                        title="视频总数"
+                        value={dashboardData.stats.totalVideos}
+                        subtitle="系统中的视频"
+                        change={`${dashboardData.stats.videoChange > 0 ? '+' : ''}${dashboardData.stats.videoChange}%`}
+                        icon={Video}
+                        trend={dashboardData.stats.videoChange >= 0 ? "up" : "down"}
+                        color="purple"
+                      />
+
+                      <StatCard
+                        title="总收入"
+                        value={dashboardData.stats.totalRevenue}
+                        subtitle="本月收入"
+                        change={`${dashboardData.stats.revenueChange > 0 ? '+' : ''}${dashboardData.stats.revenueChange}%`}
+                        icon={DollarSign}
+                        trend={dashboardData.stats.revenueChange >= 0 ? "up" : "down"}
+                        color="green"
+                        isRevenue={true}
+                      />
+                    </div>
+
+                    {/* Charts */}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6">观看概览</h3>
+                        {dashboardData.revenueStats && dashboardData.revenueStats.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <AreaChart data={dashboardData.revenueStats}>
+                              <defs>
+                                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#viewsGradient)" name="观看次数" />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-[300px] flex items-center justify-center text-gray-500">
+                            此时间段内没有数据
                           </div>
-                        ))}
+                        )}
                       </div>
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-gray-500">
-                        没有视频数据
+
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6">用户增长</h3>
+                        {dashboardData.userGrowth && dashboardData.userGrowth.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={dashboardData.userGrowth}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis dataKey="name" />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Line type="monotone" dataKey="users" stroke="#8b5cf6" name="总用户" />
+                              <Line type="monotone" dataKey="newUsers" stroke="#10b981" name="新用户" />
+                              <Line type="monotone" dataKey="active" stroke="#f59e0b" name="活跃用户" />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-[300px] flex items-center justify-center text-gray-500">
+                            此时间段内没有数据
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6">设备使用情况</h3>
+                        {dashboardData.deviceData && dashboardData.deviceData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={dashboardData.deviceData}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={2}
+                                dataKey="value"
+                                label={({ name, value }) => `${name} ${value}%`}
+                              >
+                                {dashboardData.deviceData.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-[300px] flex items-center justify-center text-gray-500">
+                            没有设备数据
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-100/50">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-6">热门视频</h3>
+                        {dashboardData.topVideos && dashboardData.topVideos.length > 0 ? (
+                          <div className="space-y-4">
+                            {dashboardData.topVideos.slice(0, 5).map((video, index) => (
+                              <div key={video.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                <div className="flex items-center space-x-3">
+                                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${index === 0 ? 'bg-yellow-100' :
+                                    index === 1 ? 'bg-gray-100' :
+                                      index === 2 ? 'bg-orange-100' : 'bg-blue-100'
+                                    }`}>
+                                    <span className={`font-bold text-sm ${index === 0 ? 'text-yellow-600' :
+                                      index === 1 ? 'text-gray-600' :
+                                        index === 2 ? 'text-orange-600' : 'text-blue-600'
+                                      }`}>
+                                      {index + 1}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{video.title}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-semibold text-gray-900">{video.views.toLocaleString()} 次</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="h-[300px] flex items-center justify-center text-gray-500">
+                            没有视频数据
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </>
+            ) : (
+              <Outlet context={{ dashboardData, loading, error, selectedPeriod, setSelectedPeriod }} />
             )}
           </div>
         </div>

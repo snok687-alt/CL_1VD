@@ -3,32 +3,42 @@ import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [
+    tailwindcss(),
+    react()
+  ],
+  build: {
+    minify: 'esbuild', // ใช้ esbuild แทน swc เพื่อลด RAM consumption
+    chunkSizeWarningLimit: 4000, // ป้องกัน warning ขนาด chunk
+    sourcemap: false, // ลดการใช้ RAM, ถ้าไม่จำเป็น
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            return 'vendor'; // แยก dependencies เป็น vendor bundle
+          }
+        }
+      }
+    }
+  },
   server: {
-    // host: true,
-    // port: 3000,
+    host: true,
+    port: 3001,
     proxy: {
       '/api': {
-        target: 'https://fqzy.me',
+        target: 'https://api.bwzyz.com',
         changeOrigin: true,
-        rewrite: (path) => {
-          // ลบ /api ออกถ้ามี
-          const newPath = path.replace(/^\/api/, '');
-          console.log('🔄 Proxying:', path, '->', newPath);
-          return newPath;
-        },
-        configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('❌ Proxy error:', err.message);
-          });
-          proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('➡️ Sending request:', req.method, req.url);
-          });
-          proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('⬅️ Received response:', proxyRes.statusCode, req.url);
+        rewrite: (path) =>
+          path.replace(/^\/api/, '/api.php/provide/vod/at/json'),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            proxyReq.setTimeout(30000); // 30 วินาที
           });
         }
       }
     }
+  },
+  optimizeDeps: {
+    include: [], // เว้นว่างเพื่อลด RAM ใช้ pre-bundle
   }
 });

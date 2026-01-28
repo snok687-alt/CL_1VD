@@ -19,7 +19,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const searchTimeout = useRef(null);
   const [giftOpen, setGiftOpen] = useState(false);
-  const { reset } = useTotle(); // ✅ ใช้ Hook
+  const { authenticated } = useTotle();
 
   const isVideoPage = location.pathname.startsWith('/watch');
   const isSearchPage = location.pathname === '/search';
@@ -29,6 +29,9 @@ const Dashboard = () => {
     location.pathname.includes('pricing') ||
     location.pathname.includes('enhanced-price-setting/all')
     ;
+    const openGiftModal = () => {
+  setGiftOpen(true);
+};
 
   // อัพเดทหมวดหมู่ปัจจุบันเมื่อเปลี่ยนหน้า
   useEffect(() => {
@@ -160,7 +163,8 @@ const Dashboard = () => {
           toggleTheme={toggleTheme}
           isVisible={isHeaderVisible}
           currentCategory={currentCategory}
-          openGiftModal={() => setGiftOpen(true)} // ✅ เปิด GiftModal จาก Header
+          authenticated={authenticated}
+          openGiftModal={openGiftModal}
         />
       )}
 
@@ -169,7 +173,8 @@ const Dashboard = () => {
           searchTerm,
           isDarkMode,
           setSearchTerm,
-          currentCategory
+          currentCategory,
+          authenticated
         }} />
 
         {/* ✅ Gift Modal */}
@@ -177,7 +182,9 @@ const Dashboard = () => {
           isOpen={giftOpen}
           onClose={() => setGiftOpen(false)}
           isDarkMode={isDarkMode}
-          onLoginSuccess={reset} // ✅ รีเซ็ต counter เมื่อ login สำเร็จ
+          onLoginSuccess={() => {
+            window.location.reload();
+          }}
         />
       </main>
       <Footer

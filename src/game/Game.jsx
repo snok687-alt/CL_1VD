@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 function Game() {
   const [visible, setVisible] = useState(true);
@@ -24,14 +25,15 @@ function Game() {
       )}
 
       {/* รูปภาพ + ลิงก์ */}
-      <a href="http://47.238.3.148/game/"
+      {/* <a href="http://47.238.3.148/game/" */}
+      <Link to="/AG"
       >
         <img
           src="/AG.jpg"
           alt="AG真人"
           className="w-full object-cover"
         />
-      </a>
+      </Link>
 
       {/* 🔹 ข้อความด้านบนตรงกลางภาพ */}
       <div className="absolute top-15 left-18 transform -translate-x-1/2 text-left">

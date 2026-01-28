@@ -1,5 +1,3 @@
-// [file name]: Router.jsx
-// [file content begin]
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from '../components/Dashboard';
@@ -20,39 +18,29 @@ import EnhancedPriceSetting from '../pages/EnhancedPriceSetting';
 import P from '../mod/Payment_modal';
 import Notfound from '../Notfound';
 import Gift_List from '../ci/Gift_List'
-import VideoHistory from '../pages/VideoHistory';
+import UserVideoHistory from '../pages/UserVideoHistory';
+import AG from '../game/App'
+import AdminDashboard from '../game/AdminDashboard';
 
-// ✅ หมวดหมู่ใหม่จาก API ใหม่
 const categories = [
-  { id: '1', name: '视频一区' },
-  { id: '2', name: '视频二区' },
-  { id: '3', name: '欧美精品' },
-  { id: '6', name: '偷拍自拍' },
-  { id: '7', name: '国产大制作' },
-  { id: '8', name: '乱伦毁三观' },
-  { id: '9', name: '主播女网红' },
-  { id: '10', name: '黑料网曝' },
-  { id: '13', name: '高清无码' },
-  { id: '14', name: '中文字幕' },
-  { id: '20', name: '欧美精品' },
-  { id: '21', name: '淫乱学生妹' },
-  { id: '22', name: '动漫精选' },
-  { id: '23', name: '动漫精选' },
-  { id: '24', name: '高清有码' },
-  { id: '25', name: '日本素人' },
-  { id: '26', name: '视频三区' },
-  { id: '27', name: '无码流出' },
-  { id: '28', name: 'FC2' },
-  { id: '29', name: '会所技师' },
-  { id: '30', name: '国产推荐' },
-  { id: '31', name: '探花约炮' },
-  { id: '32', name: '韩国直播' },
-  { id: '33', name: '国产直播' },
-  { id: '34', name: '淫妻绿帽' },
-  { id: '35', name: '制服诱惑' },
-  { id: '36', name: '重口猎奇' },
-  { id: '37', name: '东京热' },
-  { id: '38', name: '一本道' }
+  { id: '32', name: '国产视频' },
+  { id: '33', name: '国产主播' },
+  { id: '34', name: '91大神' },
+  { id: '35', name: '热门事件' },
+  { id: '36', name: '传媒自拍' },
+  { id: '38', name: '日本有码' },
+  { id: '39', name: '日本无码' },
+  { id: '40', name: '日韩主播' },
+  { id: '41', name: '动漫肉番' },
+  { id: '42', name: '女同性恋' },
+  { id: '43', name: '中文字幕' },
+  { id: '44', name: '强奸乱伦' },
+  { id: '45', name: '熟女人妻' },
+  { id: '46', name: '制服诱惑' },
+  { id: '47', name: 'AV解说' },
+  { id: '48', name: '女星换脸' },
+  { id: '49', name: '百万三区' },
+  { id: '50', name: '欧美精品' }
 ];
 
 export const getCategoryName = (categoryId) => {
@@ -60,7 +48,6 @@ export const getCategoryName = (categoryId) => {
   return category ? category.name : `หมวดหมู่ ${categoryId}`;
 };
 
-// ✅ ใช้ component แยกสำหรับ ProfilePage เพื่อหลีกเลี่ยงปัญหา hook
 const ProfilePageWrapper = () => {
   return <ProfilePage />;
 };
@@ -69,29 +56,20 @@ const Router = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* ✅ Public Routes */}
         <Route path="/" element={<Dashboard />}>
-          <Route index element={<Navigate to="/category/1" replace />} />
+          <Route index element={<Navigate to="/category/32" replace />} />
           <Route path="category/:categoryId" element={<VideoGrid />} />
           <Route path="watch/:videoId" element={<VideoPlayer />} />
           <Route path="search" element={<SearchResults />} />
           <Route path="profile" element={<ProfilePageWrapper />} />
           <Route path="profile/:profileName" element={<ProfilePageWrapper />} />
-          
-          {/* ✅ เพิ่ม Route สำหรับระบบจัดการวิดีโอ */}
           <Route path="video-management" element={<VideoManagement />} />
-          {/* ✅ กำหนด route สำหรับการตั้งค่าราคา */}
           <Route path="video/:videoId/pricing" element={<EnhancedPriceSetting />} />
           <Route path="/enhanced-price-setting/:videoId?" element={<EnhancedPriceSetting />} />
         </Route>
 
-        <Route path="/upload" element={<ImagesUploadForm />} />
-        <Route path="/Ip" element={<Ip />} />
-        <Route path="/Gift_List" element={<Gift_List />} />
-        <Route path="/VideoHistory" element={<VideoHistory />} />
-        <Route path="/Form_user/ussdfrefsdfebwrfsdFEWI*RfhdsairueASDHFIOS" element={<Form_user />} />
-        <Route path="/Login" element={<Login />} />
-
-        {/* ✅ ป้องกัน Admin Route */}
+        {/* ✅ Admin Routes - Nested Layout */}
         <Route
           path="/CL_____________________________________________________________________________________******_/Admin"
           element={
@@ -99,13 +77,36 @@ const Router = () => {
               <Admin />
             </ProtectedRoute>
           }
-        />
+        >
+          {/* Admin Dashboard (default) */}
+          <Route index element={<div>Dashboard Content Here</div>} />
+          
+          {/* IP Management */}
+          <Route path="ip" element={<Ip />} />
+          
+          {/* Video Management */}
+          <Route path="video-management" element={<VideoManagement />} />
+          
+          {/* Add Links */}
+          <Route path="links" element={<Addlinks />} />
+          
+          {/* Gift Accounts */}
+          <Route path="accounts" element={<Account />} />
+          
+          {/* Game Admin */}
+          <Route path="games" element={<AdminDashboard />} />
+        </Route>
 
-        <Route path="/Addlinks" element={<Addlinks/>} />
-        <Route path="/Account" element={<Account/>} />
+        {/* ✅ Other Routes */}
+        <Route path="/upload" element={<ImagesUploadForm />} />
+        <Route path="/Gift_List" element={<Gift_List />} />
+        <Route path="/UserVideoHistory" element={<UserVideoHistory />} />
+        <Route path="/Form_user/ussdfrefsdfebwrfsdFEWI*RfhdsairueASDHFIOS" element={<Form_user />} />
+        <Route path="/Login" element={<Login />} />
+        <Route path="/AG" element={<AG/>} />
         <Route path="/P" element={<P/>} />
 
-        {/* ✅ ถ้า URL ไม่ตรงเลย → 404 */}
+        {/* ✅ 404 */}
         <Route path="*" element={<Notfound />} />
       </Routes>
     </BrowserRouter>
@@ -113,4 +114,3 @@ const Router = () => {
 };
 
 export default Router;
-// [file content end]

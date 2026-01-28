@@ -1,5 +1,4 @@
-// [file name]: Header.jsx
-// [file content begin]
+// Header.jsx
 import React from 'react';
 import { IoChevronBack } from 'react-icons/io5';
 import { MdSupportAgent } from "react-icons/md";
@@ -11,46 +10,33 @@ import SearchBox from './SearchBox';
 import ProfileCarousel from '../helpers/ProfileCarousel';
 import Game from '../game/Game';
 
-// ✅ ย้ายประกาศ categories มาที่นี่ (นอกฟังก์ชัน Header หรือข้างในแต่ก่อนใช้งาน)
-const categories = [
-  // กลุ่ม: 品质分类
-  { id: '13', name: '高清无码', path: '/category/13' },
-  { id: '14', name: '中文字幕', path: '/category/14' },
-  { id: '24', name: '高清有码', path: '/category/24' },
-  { id: '27', name: '无码流出', path: '/category/27' },
-  
-  // กลุ่ม: 来源分类
-  { id: '7', name: '国产大制作', path: '/category/7' },
-  { id: '25', name: '日本素人', path: '/category/25' },
-  { id: '28', name: 'FC2', path: '/category/28' },
-  { id: '30', name: '国产推荐', path: '/category/30' },
-  { id: '33', name: '国产直播', path: '/category/33' },
-  { id: '32', name: '韩国直播', path: '/category/32' },
-  { id: '3', name: '欧美精品', path: '/category/3' },
-  { id: '37', name: '东京热', path: '/category/37' },
-  { id: '38', name: '一本道', path: '/category/38' },
-  
-  // กลุ่ม: 内容分类
-  { id: '6', name: '偷拍自拍', path: '/category/6' },
-  { id: '8', name: '乱伦毁三观', path: '/category/8' },
-  { id: '21', name: '淫乱学生妹', path: '/category/21' },
-  { id: '9', name: '主播女网红', path: '/category/9' },
-  { id: '10', name: '黑料网曝', path: '/category/10' },
-  { id: '29', name: '会所技师', path: '/category/29' },
-  { id: '35', name: '制服诱惑', path: '/category/35' },
-  { id: '31', name: '探花约炮', path: '/category/31' },
-  { id: '34', name: '淫妻绿帽', path: '/category/34' },
-  { id: '36', name: '重口猎奇', path: '/category/36' },
-  { id: '22', name: '动漫精选', path: '/category/22' },
-];
-
 const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible, currentCategory, openGiftModal }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showRightIcons, setShowRightIcons] = React.useState(true);
   const [typingTimeout, setTypingTimeout] = React.useState(null);
 
-  // ✅ ฟังก์ชัน handleCategoryClick อยู่ที่นี่ (ไม่มีการเรียกใช้ categories ก่อนประกาศ)
+  const categories = [
+    { id: '32', name: '国产视频', path: '/category/32' },
+    { id: '33', name: '国产主播', path: '/category/33' },
+    // { id: '34', name: '91大神', path: '/category/34' },
+    { id: '35', name: '热门事件', path: '/category/35' },
+    { id: '36', name: '传媒自拍', path: '/category/36' },
+    { id: '38', name: '日本有码', path: '/category/38' },
+    { id: '39', name: '日本无码', path: '/category/39' },
+    // { id: '40', name: '日韩主播', path: '/category/40' },
+    { id: '41', name: '动漫肉番', path: '/category/41' },
+    // { id: '42', name: '女同性恋', path: '/category/42' },
+    // { id: '43', name: '中文字幕', path: '/category/43' },
+    // { id: '44', name: '强奸乱伦', path: '/category/44' },
+    // { id: '45', name: '熟女人妻', path: '/category/45' },
+    // { id: '46', name: '制服诱惑', path: '/category/46' },
+    // { id: '47', name: 'AV解说', path: '/category/47' },
+    // { id: '48', name: '女星换脸', path: '/category/48' },
+    // { id: '49', name: '百万三区', path: '/category/49' },
+    { id: '50', name: '欧美精品', path: '/category/50' }
+  ];
+
   const handleCategoryClick = (path) => {
     navigate(path);
   };
@@ -162,7 +148,7 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
         {/* เมนู Navigation */}
         <Navbar
           handleCategoryClick={handleCategoryClick}
-          categories={categories}  // ✅ ตอนนี้ categories ถูกประกาศก่อนแล้ว
+          categories={categories}
           isDarkMode={isDarkMode}
         />
       </div>
@@ -175,4 +161,3 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
 };
 
 export default Header;
-// [file content end]

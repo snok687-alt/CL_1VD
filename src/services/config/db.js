@@ -273,6 +273,43 @@ async function initializeDatabase() {
         INDEX idx_group_key (group_key),
         INDEX idx_ip_pattern (ip_pattern)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+      CREATE TABLE IF NOT EXISTS user_video_history (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        video_id INT NOT NULL,
+        video_title VARCHAR(255) NOT NULL,
+        thumbnail_url VARCHAR(500),
+        watch_duration INT DEFAULT 0, -- เวลาดูเป็นวินาที
+        progress_percentage INT DEFAULT 0, -- ความคืบหน้า %
+        last_watched_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+        watch_count INT DEFAULT 1,
+        
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
+        
+        UNIQUE KEY unique_user_video (user_id, video_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_last_watched (last_watched_time),
+        INDEX idx_video_id (video_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+      -- รัน SQL นี้ในฐานข้อมูลของคุณ
+      CREATE TABLE IF NOT EXISTS game_covers (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        game_code VARCHAR(50) UNIQUE NOT NULL,
+        plat_type VARCHAR(20) NOT NULL DEFAULT 'ag',
+        image_url VARCHAR(500) NOT NULL,
+        game_name VARCHAR(255),
+        status INT DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        game_type VARCHAR(10) AFTER image_url,
+        
+        INDEX idx_game_code (game_code),
+        INDEX idx_plat_type (plat_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+       
     `;
 
     await connection.query(createTablesSQL);
