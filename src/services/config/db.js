@@ -310,6 +310,17 @@ async function initializeDatabase() {
         INDEX idx_plat_type (plat_type)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
        
+      CREATE TABLE games (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        game_code VARCHAR(50) UNIQUE NOT NULL,
+        game_name VARCHAR(255),
+        game_type VARCHAR(10),
+        plat_type VARCHAR(10),
+        thumbnail VARCHAR(500),
+        status TINYINT DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  );
+
     `;
 
     await connection.query(createTablesSQL);

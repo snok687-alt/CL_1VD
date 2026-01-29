@@ -1,4 +1,4 @@
-// scripts/syncGameCovers.js - FIXED VERSION
+// scripts/syncGameCovers.js - FIXED VERSION (No Duplicate Covers)
 require('dotenv').config({ path: '../.env' });
 const mysql = require('mysql2/promise');
 const axios = require('axios');
@@ -22,17 +22,10 @@ const API_CONFIG = {
 const COVERS_DIR = path.join(__dirname, '../uploads/games/covers');
 const COVERS_URL_PATH = '/uploads/games/covers';
 
-// ✅ FIXED: ไฟล์ที่ต้องหลีกเลี่ยง (default/placeholder)
 const EXCLUDE_FILES = [
-  'alice in the wild',
-  'default',
-  'placeholder',
-  'no image',
-  'cover',
-  'image'
+  'alice in the wild', 'default', 'placeholder', 'no image', 'cover', 'image'
 ];
 
-// ✅ Game Code -> Keywords Mapping (ปรับปรุง)
 const GAME_KEYWORDS = {
   'BAC': ['baccarat', 'bacon', '百家乐'],
   'DT': ['dragon', 'tiger', 'trio', 'sinbad'],
@@ -76,15 +69,7 @@ async function fetchGameList(platType = 'ag', limit = 500) {
     const response = await axios.post(
       `${API_CONFIG.baseUrl}/gameCode`,
       { platType, limit },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'sn': API_CONFIG.sn,
-          'random': random,
-          'sign': sign
-        },
-        timeout: 30000
-      }
+      { headers: { 'Content-Type': 'application/json', 'sn': API_CONFIG.sn, 'random': random, 'sign': sign }, timeout: 30000 }
     );
     
     if (response.data.code === 10000 && Array.isArray(response.data.data)) {
@@ -103,174 +88,88 @@ async function fetchGameList(platType = 'ag', limit = 500) {
 function buildFileIndex() {
   const files = [];
   
-  try {
-    if (!fs.existsSync(COVERS_DIR)) {
-      console.log(`⚠️  โฟลเดอร์ยังไม่มี: ${COVERS_DIR}`);
-      return files;
-    }
-    
-    const allFiles = fs.readdirSync(COVERS_DIR);
-    
-    for (const file of allFiles) {
-      if (/\.(png|jpg|jpeg)$/i.test(file)) {
-        // ✅ FIXED: ตรวจหา exclude files ก่อน
-        const lowerFile = file.toLowerCase();
-        const isExcluded = EXCLUDE_FILES.some(exclude => lowerFile.includes(exclude));
-        
-        if (!isExcluded) {
-          files.push({
-            fullName: file,
-            baseName: file.replace(/\.[^.]+$/, ''),
-            normalized: file.toLowerCase().replace(/[^a-z0-9]/g, ''),
-            words: file.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2)
-          });
-        }
-      }
-    }
-    
-    console.log(`📁 พบไฟล์ทั้งหมด: ${files.length} ไฟล์ (หลีกเลี่ยง default images)\n`);
-    return files;
-  } catch (err) {
-    console.error('❌ Error reading covers directory:', err.message);
+  if (!fs.existsSync(COVERS_DIR)) {
+    console.log(`⚠️  โฟลเดอร์ยังไม่มี: ${COVERS_DIR}`);
     return files;
   }
+  
+  const allFiles = fs.readdirSync(COVERS_DIR);
+  
+  for (const file of allFiles) {
+    if (/\.(png|jpg|jpeg)$/i.test(file)) {
+      const lowerFile = file.toLowerCase();
+      const isExcluded = EXCLUDE_FILES.some(exclude => lowerFile.includes(exclude));
+      if (!isExcluded) {
+        files.push({
+          fullName: file,
+          baseName: file.replace(/\.[^.]+$/, ''),
+          normalized: file.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, ''),
+          words: file.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2)
+        });
+      }
+    }
+  }
+  
+  console.log(`📁 พบไฟล์ทั้งหมด: ${files.length} ไฟล์ (หลีกเลี่ยง default images)\n`);
+  return files;
 }
 
-// ✅ FIXED: ปรับปรุง matching algorithm
-function calculateMatchScore(gameCode, gameName, file, debug = false) {
+function calculateMatchScore(gameCode, gameName, file) {
   let score = 0;
-  const reasons = [];
-  
   const cleanCode = gameCode.toLowerCase().replace(/[^a-z0-9]/g, '');
   const cleanName = gameName.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
   
-  // ❌ ตรวจหาไฟล์ที่ต้องหลีกเลี่ยง
   for (const exclude of EXCLUDE_FILES) {
-    if (file.normalized.includes(exclude.replace(/[^a-z0-9]/g, ''))) {
-      return { score: -1, reasons: ['❌ ไฟล์ default/placeholder'] };
-    }
+    if (file.normalized.includes(exclude.replace(/[^a-z0-9]/g, ''))) return { score: -1 };
   }
   
-  // 1️⃣ รหัสเกมตรงกับชื่อไฟล์ (100% match)
-  if (file.normalized === cleanCode) {
-    score = 100;
-    reasons.push('✓ รหัสตรงกับชื่อไฟล์ (+100)');
-    return { score, reasons };
-  }
+  if (file.normalized === cleanCode) return { score: 100 };
+  if (file.words.some(w => w === cleanCode)) return { score: 95 };
+  if (file.normalized.includes(cleanCode)) score = Math.max(score, 85);
   
-  // 2️⃣ รหัสเกมอยู่ในชื่อไฟล์ (word boundary)
-  if (file.words.some(w => w === cleanCode)) {
-    score += 95;
-    reasons.push(`✓ รหัส "${gameCode}" เป็น word แยก (+95)`);
-    return { score, reasons };
-  }
+  const prefix2 = cleanCode.substring(0,2);
+  const prefix3 = cleanCode.substring(0,3);
+  if (prefix3.length >=3 && file.normalized.includes(prefix3)) score = Math.max(score, 75);
+  else if (file.normalized.includes(prefix2)) score = Math.max(score, 50);
   
-  // 3️⃣ รหัสเกมอยู่ในชื่อไฟล์ (substring)
-  if (file.normalized.includes(cleanCode)) {
-    score += 85;
-    reasons.push(`✓ รหัส "${gameCode}" อยู่ในไฟล์ (+85)`);
-  }
-  
-  // 4️⃣ ตัวแรก 3+ ตัวของรหัส
-  if (cleanCode.length >= 2) {
-    const prefix2 = cleanCode.substring(0, 2);
-    const prefix3 = cleanCode.substring(0, 3);
-    
-    if (prefix3.length >= 3 && file.normalized.includes(prefix3)) {
-      if (score < 85) {
-        score = Math.max(score, 75);
-        reasons.push(`✓ ตัวแรก 3 ตัว "${prefix3}" ตรง (+75)`);
-      }
-    } else if (file.normalized.includes(prefix2)) {
-      if (score < 75) {
-        score = Math.max(score, 50);
-        reasons.push(`✓ ตัวแรก 2 ตัว "${prefix2}" ตรง (+50)`);
-      }
-    }
-  }
-  
-  // 5️⃣ ค้นหาจาก keywords mapping
   const keywords = GAME_KEYWORDS[gameCode] || [];
-  if (keywords.length > 0) {
-    for (const keyword of keywords) {
-      const keywordNorm = keyword.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
-      if (file.normalized.includes(keywordNorm)) {
-        score = Math.max(score, 80);
-        reasons.push(`✓ Keyword "${keyword}" ตรงกับไฟล์ (+80)`);
-        break;
-      }
-    }
+  for (const keyword of keywords) {
+    const norm = keyword.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g, '');
+    if (file.normalized.includes(norm)) score = Math.max(score, 80);
   }
   
-  // 6️⃣ ชื่อเกม Chinese ตรงกับชื่อไฟล์
   if (cleanName.length > 2) {
-    const fileNormalized = file.normalized;
-    let commonChars = 0;
-    
-    for (const char of cleanName) {
-      if (fileNormalized.includes(char)) commonChars++;
-    }
-    
-    const matchRatio = commonChars / Math.max(cleanName.length, 1);
-    if (matchRatio > 0.6) {
-      const points = Math.floor(matchRatio * 70);
-      score = Math.max(score, points);
-      reasons.push(`✓ ชื่อเกม Chinese ตรง ${Math.round(matchRatio * 100)}% (+${points})`);
-    }
+    let common = 0;
+    for (const c of cleanName) if (file.normalized.includes(c)) common++;
+    const ratio = common / Math.max(cleanName.length,1);
+    if (ratio > 0.6) score = Math.max(score, Math.floor(ratio*70));
   }
   
-  // 7️⃣ ชื่อไฟล์ยาวและมี game code = ระบบใช้ข้างต้นแล้ว
-  if (file.baseName.length > 16 && score === 0) {
-    score = Math.max(score, 45);
-    reasons.push(`✓ ชื่อไฟล์ยาว (${file.baseName.length} ตัว) = เกมจริง (+45)`);
-  }
+  if (file.baseName.length > 16 && score===0) score = Math.max(score, 45);
   
-  if (debug && score > 0) {
-    console.log(`  [${gameCode}] → [${file.fullName}]: ${score}pts`);
-    reasons.forEach(r => console.log(`    ${r}`));
-  }
-  
-  return { score, reasons };
+  return { score };
 }
 
 async function syncGameCovers() {
   let connection;
   try {
     console.log('🚀 เริ่มซิงค์ข้อมูลเกม (Advanced Matching v2)\n');
-    console.log('📋 Config:');
-    console.log(`   Database: ${DB_CONFIG.database}`);
-    console.log(`   Covers Dir: ${COVERS_DIR}`);
-    console.log(`   Exclude Files: ${EXCLUDE_FILES.join(', ')}\n`);
     
-    // สร้าง file index
     const fileIndex = buildFileIndex();
+    if (fileIndex.length === 0) return console.log('❌ ไม่พบไฟล์รูป');
     
-    if (fileIndex.length === 0) {
-      console.log('❌ ไม่พบไฟล์รูปในโฟลเดอร์ (หรือถูกตัดออกทั้งหมด)');
-      return;
-    }
-    
-    // เชื่อมต่อ database
-    console.log('🔗 เชื่อมต่อ database...');
     connection = await mysql.createConnection(DB_CONFIG);
     console.log('✅ เชื่อมต่อ database สำเร็จ\n');
     
-    // ดึงเกม
     const games = await fetchGameList('ag', 500);
-    
-    if (games.length === 0) {
-      console.log('❌ ไม่พบข้อมูลเกมจาก API');
-      return;
-    }
+    if (games.length === 0) return console.log('❌ ไม่พบข้อมูลเกมจาก API');
     
     // สร้างตาราง
     const [tables] = await connection.query(
       "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'game_covers'"
     );
-    
     if (tables.length === 0) {
-      console.log('สร้างตาราง game_covers...\n');
-      
+      console.log('สร้างตาราง game_covers...');
       await connection.query(`
         CREATE TABLE game_covers (
           id INT PRIMARY KEY AUTO_INCREMENT,
@@ -290,97 +189,53 @@ async function syncGameCovers() {
       console.log('✅ สร้างตาราง game_covers\n');
     }
     
-    // ✅ FIXED: ลบข้อมูลเก่า (ตัวเลือก)
-    console.log('🗑️  ลบข้อมูลเก่าที่มี "Alice in the Wild"...');
-    const [deleteResult] = await connection.query(
-      `DELETE FROM game_covers WHERE image_url LIKE '%Alice%' OR image_url LIKE '%#%'`
-    );
-    if (deleteResult.affectedRows > 0) {
-      console.log(`   ลบ ${deleteResult.affectedRows} รายการเก่า\n`);
-    }
+    console.log(`📊 ประมวลผล ${games.length} เกม...\n`);
     
-    console.log(`📊 กำลังประมวลผล ${games.length} เกม...\n`);
-    
-    let created = 0;
-    let updated = 0;
-    let matched = 0;
-    let notMatched = 0;
-    let skipped = 0;
-    const matchedGamesList = [];
+    let created=0, updated=0, matched=0, notMatched=0;
     const usedFiles = new Set();
+    const matchedGamesList = [];
     
-    for (let i = 0; i < games.length; i++) {
+    for (let i=0;i<games.length;i++) {
       const game = games[i];
       const gameCode = game.gameCode;
       const gameType = game.gameType;
       const gameName = game.gameName?.['zh-hans'] || game.gameName?.['en'] || gameCode;
       
-      let bestFile = null;
-      let bestScore = 0;
+      let bestFile=null, bestScore=0;
       
-      // ค้นหาไฟล์ที่ดีที่สุด
       for (const file of fileIndex) {
-        const { score } = calculateMatchScore(gameCode, gameName, file, false);
+        if (usedFiles.has(file.fullName)) continue; // ❌ ป้องกันใช้ไฟล์ซ้ำ
+        const { score } = calculateMatchScore(gameCode, gameName, file);
         if (score > bestScore) {
           bestScore = score;
           bestFile = file;
         }
       }
       
-      // ✅ FIXED: ยอมรับเฉพาะ score >= 50 (หลีกเลี่ยงแมทผิด)
       if (bestScore >= 50 && bestFile) {
-        try {
-          const imageUrl = `${COVERS_URL_PATH}/${bestFile.fullName}`;
-          usedFiles.add(bestFile.fullName);
-          
-          const [existing] = await connection.query(
-            'SELECT id FROM game_covers WHERE game_code = ?',
-            [gameCode]
-          );
-          
-          if (existing.length > 0) {
-            await connection.query(
-              `UPDATE game_covers 
-               SET image_url = ?, game_name = ?, game_type = ?, status = 1, updated_at = NOW()
-               WHERE game_code = ?`,
-              [imageUrl, gameName, gameType, gameCode]
-            );
-            updated++;
-          } else {
-            await connection.query(
-              `INSERT INTO game_covers 
-               (game_code, plat_type, image_url, game_name, game_type, status)
-               VALUES (?, ?, ?, ?, ?, ?)`,
-              [gameCode, 'ag', imageUrl, gameName, gameType, 1]
-            );
-            created++;
-          }
-          
-          matched++;
-          matchedGamesList.push({
-            code: gameCode,
-            name: gameName,
-            file: bestFile.fullName,
-            score: bestScore
-          });
-        } catch (err) {
-          console.error(`❌ DB Error [${gameCode}]: ${err.message.substring(0, 40)}`);
+        const imageUrl = `${COVERS_URL_PATH}/${bestFile.fullName}`;
+        usedFiles.add(bestFile.fullName);
+        
+        const [existing] = await connection.query('SELECT id FROM game_covers WHERE game_code=?',[gameCode]);
+        if (existing.length>0) {
+          await connection.query(`UPDATE game_covers SET image_url=?, game_name=?, game_type=?, status=1, updated_at=NOW() WHERE game_code=?`, [imageUrl, gameName, gameType, gameCode]);
+          updated++;
+        } else {
+          await connection.query(`INSERT INTO game_covers (game_code, plat_type, image_url, game_name, game_type, status) VALUES (?,?,?,?,?,?)`, [gameCode,'ag',imageUrl,gameName,gameType,1]);
+          created++;
         }
+        
+        matched++;
+        matchedGamesList.push({ code: gameCode, name: gameName, file: bestFile.fullName, score: bestScore });
       } else {
         notMatched++;
-        // ✅ FIXED: บันทึกเกมที่แมทไม่ได้
-        if (i < 5 || (i + 1) % 100 === 0) {
-          const scoreStr = bestScore > 0 ? ` (score: ${bestScore})` : '';
-          console.log(`   ⚠️  [${gameCode}] ไม่พบความตรงกัน${scoreStr}`);
-        }
+        if (i<5 || (i+1)%100===0) console.log(`⚠️  [${gameCode}] ไม่พบความตรงกัน (score: ${bestScore})`);
       }
       
-      if ((i + 1) % 50 === 0) {
-        console.log(`⏳ ประมวลผล: ${i + 1}/${games.length} (แมทได้: ${matched}, ไม่ได้: ${notMatched})`);
-      }
+      if ((i+1)%50===0) console.log(`⏳ ประมวลผล: ${i+1}/${games.length} (แมทได้: ${matched}, ไม่ได้: ${notMatched})`);
     }
     
-    const unusedFiles = fileIndex.filter(f => !usedFiles.has(f.fullName));
+    const unusedFiles = fileIndex.filter(f=>!usedFiles.has(f.fullName));
     
     console.log(`\n${'='.repeat(70)}`);
     console.log(`✅ เสร็จสิ้น!`);
@@ -389,26 +244,21 @@ async function syncGameCovers() {
     console.log(`   🔄 อัปเดต: ${updated}`);
     console.log(`   ✅ แมทได้ทั้งหมด: ${matched}`);
     console.log(`   ❌ แมทไม่ได้: ${notMatched}`);
-    console.log(`   📊 สัดส่วน: ${matched}/${matched + notMatched} (${Math.round(matched / (matched + notMatched) * 100)}%)`);
+    console.log(`   📊 สัดส่วน: ${matched}/${matched+notMatched} (${Math.round(matched/(matched+notMatched)*100)}%)`);
     console.log(`   📁 ไฟล์ที่ใช้แล้ว: ${usedFiles.size}/${fileIndex.length}`);
     console.log(`   📁 ไฟล์ที่ไม่ใช้: ${unusedFiles.length}\n`);
     
-    // แสดงตัวอย่าง
     console.log('📋 ตัวอย่างเกมที่แมทได้ (15 ตัวแรก):');
-    matchedGamesList.slice(0, 15).forEach((game, idx) => {
-      console.log(`   ✅ [${idx + 1}] ${game.name} (${game.code}) [Score: ${game.score}]`);
-      console.log(`      → ${game.file}`);
+    matchedGamesList.slice(0,15).forEach((g,i)=>{
+      console.log(`   ✅ [${i+1}] ${g.name} (${g.code}) [Score: ${g.score}] → ${g.file}`);
     });
     
-  } catch (error) {
-    console.error('❌ Error:', error.message);
+  } catch(err) {
+    console.error('❌ Error:', err.message);
   } finally {
     if (connection) await connection.end();
   }
 }
 
-if (require.main === module) {
-  syncGameCovers();
-}
-
+if (require.main === module) syncGameCovers();
 module.exports = { syncGameCovers };

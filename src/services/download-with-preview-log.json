@@ -1,0 +1,2393 @@
+{
+  "downloaded": 108,
+  "total": 108,
+  "log": [
+    {
+      "gameCode": "BAC",
+      "gameName": "Baccarat",
+      "image": "7-Seat-Baccarat-Live.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "Baccarat-Live.jpg",
+          "size": 8288,
+          "path": "Electronic_games/PT/Baccarat-Live.jpg",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "Baccarat.png",
+          "size": 43140,
+          "path": "Electronic_games/PT/Baccarat.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "DT",
+      "gameName": "Dragon Tiger",
+      "image": "AliceandtheMadRespinParty.png",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "HoldTheSafe.png",
+          "size": 34691,
+          "path": "Electronic_games/PT/HoldTheSafe.png",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "MegaFireBlazePiggiesandtheBank.jpg",
+          "size": 53582,
+          "path": "Electronic_games/PT/MegaFireBlazePiggiesandtheBank.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SHB",
+      "gameName": "Sicbo",
+      "image": "CashbackBlackjack.png",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "Mr_Cashback.png",
+          "size": 9800,
+          "path": "Electronic_games/PT/Mr_Cashback.png",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "Sic-Bo.jpg",
+          "size": 8619,
+          "path": "Electronic_games/PT/Sic-Bo.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "ROU",
+      "gameName": "Roulette",
+      "image": "1000DiamondbetRoulette.png",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "3d_roulette.jpg",
+          "size": 11048,
+          "path": "Electronic_games/PT/3d_roulette.jpg",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "3d_roulette_premium.jpg",
+          "size": 11603,
+          "path": "Electronic_games/PT/3d_roulette_premium.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "LBAC",
+      "gameName": "Bid Baccarat",
+      "image": "Baccarat.png",
+      "provider": "PT",
+      "score": 82,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "baccarat.jpg",
+          "size": 24933,
+          "path": "Electronic_games/PT/baccarat.jpg",
+          "score": 82
+        },
+        {
+          "provider": "mg",
+          "name": "Baccarat.png",
+          "size": 38599,
+          "path": "Electronic_games/mg/Baccarat.png",
+          "score": 82
+        }
+      ]
+    },
+    {
+      "gameCode": "NN",
+      "gameName": "Bull Bull",
+      "image": "Bunny.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "Cat-In-Vegas-694x240-horizontal-banner-transparent.jpg",
+          "size": 33352,
+          "path": "Electronic_games/PT/Cat-In-Vegas-694x240-horizontal-banner-transparent.jpg",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "DjinnofStormsPowerPlayJackpot.png",
+          "size": 114753,
+          "path": "Electronic_games/PT/DjinnofStormsPowerPlayJackpot.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "BJ",
+      "gameName": "Blackjack",
+      "image": "BJ.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "SpainBJ.jpg",
+          "size": 6705,
+          "path": "Electronic_games/PT/SpainBJ.jpg",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "VegasBJ.jpg",
+          "size": 6016,
+          "path": "Electronic_games/PT/VegasBJ.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SG",
+      "gameName": "Three Face",
+      "image": "AgeoftheGodsGodofStorms.png",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "AgeoftheGodsGodofStorms2.png",
+          "size": 52924,
+          "path": "Electronic_games/PT/AgeoftheGodsGodofStorms2.png",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "FrogsGift.png",
+          "size": 16115,
+          "path": "Electronic_games/PT/FrogsGift.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "MA15",
+      "gameName": "Fortune Roar",
+      "image": "Fortune.jpg",
+      "provider": "PT",
+      "score": 75,
+      "alternatives": [
+        {
+          "provider": "mg",
+          "name": "FortuneRush.png",
+          "size": 90020,
+          "path": "Electronic_games/mg/FortuneRush.png",
+          "score": 75
+        }
+      ]
+    },
+    {
+      "gameCode": "MA08",
+      "gameName": "Pirate Loot",
+      "image": "PiratesBooty.png",
+      "provider": "PT",
+      "score": 75,
+      "alternatives": []
+    },
+    {
+      "gameCode": "SB73",
+      "gameName": "Treasure Party",
+      "image": "TreasurePalace_HiDef.png",
+      "provider": "mg",
+      "score": 75,
+      "alternatives": []
+    },
+    {
+      "gameCode": "TG04",
+      "gameName": "Let it ride",
+      "image": "TG04_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "TG04_TR.png",
+          "size": 342951,
+          "path": "Electronic_games/xin/TG04_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "TG04_ZH.png",
+          "size": 342858,
+          "path": "Electronic_games/xin/TG04_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB64",
+      "gameName": "Lucky Riches",
+      "image": "SB64_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB64_TR.png",
+          "size": 435809,
+          "path": "Electronic_games/xin/SB64_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB64_ZH.png",
+          "size": 433623,
+          "path": "Electronic_games/xin/SB64_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH56",
+      "gameName": "Mermaid Treasure",
+      "image": "WH56_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH56_TR.png",
+          "size": 138431,
+          "path": "Electronic_games/xin/WH56_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH56_ZH.png",
+          "size": 138563,
+          "path": "Electronic_games/xin/WH56_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SC06",
+      "gameName": "Beast Party",
+      "image": "SC06_TR.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SC06_ZH.jpg",
+          "size": 239629,
+          "path": "Electronic_games/xin/SC06_ZH.jpg",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SC06_ZH.png",
+          "size": 528591,
+          "path": "Electronic_games/xin/SC06_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB63",
+      "gameName": "Bingo Slot",
+      "image": "SB63_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB63_TR.png",
+          "size": 336929,
+          "path": "Electronic_games/xin/SB63_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB63_ZH.png",
+          "size": 325549,
+          "path": "Electronic_games/xin/SB63_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB59",
+      "gameName": "Kung Fu All Stars",
+      "image": "SB59_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB59_TR.png",
+          "size": 404350,
+          "path": "Electronic_games/xin/SB59_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB59_ZH.png",
+          "size": 403465,
+          "path": "Electronic_games/xin/SB59_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH52",
+      "gameName": "Bao Zu Po",
+      "image": "WH52_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH52_TR.png",
+          "size": 407207,
+          "path": "Electronic_games/xin/WH52_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH52_ZH.png",
+          "size": 407207,
+          "path": "Electronic_games/xin/WH52_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH62",
+      "gameName": "Sex and Zen",
+      "image": "sex_and_zen.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH62_EN.png",
+          "size": 353299,
+          "path": "Electronic_games/xin/WH62_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH62_TR.png",
+          "size": 356005,
+          "path": "Electronic_games/xin/WH62_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB60",
+      "gameName": "Ace Heist",
+      "image": "SB60_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB60_TR.png",
+          "size": 420647,
+          "path": "Electronic_games/xin/SB60_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB60_ZH.png",
+          "size": 419931,
+          "path": "Electronic_games/xin/SB60_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH31",
+      "gameName": "Golden Dragon",
+      "image": "GoldenDragons.png",
+      "provider": "mg",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH31_EN.png",
+          "size": 398901,
+          "path": "Electronic_games/xin/WH31_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH31_TR.png",
+          "size": 374909,
+          "path": "Electronic_games/xin/WH31_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH49",
+      "gameName": "Lucha Heroes",
+      "image": "WH49_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH49_TR.png",
+          "size": 88496,
+          "path": "Electronic_games/xin/WH49_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH49_ZH.png",
+          "size": 88496,
+          "path": "Electronic_games/xin/WH49_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH25",
+      "gameName": "The Nutcracker",
+      "image": "WH25_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH25_TR.png",
+          "size": 408723,
+          "path": "Electronic_games/xin/WH25_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH25_ZH.png",
+          "size": 406031,
+          "path": "Electronic_games/xin/WH25_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH65",
+      "gameName": "Temple Raider",
+      "image": "WH65_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH65_TR.png",
+          "size": 426167,
+          "path": "Electronic_games/xin/WH65_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH65_ZH.png",
+          "size": 421289,
+          "path": "Electronic_games/xin/WH65_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB56",
+      "gameName": "Vegas Vegas",
+      "image": "SB56_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB56_TR.png",
+          "size": 349067,
+          "path": "Electronic_games/xin/SB56_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB56_ZH.png",
+          "size": 344852,
+          "path": "Electronic_games/xin/SB56_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH54",
+      "gameName": "Ultra Shift",
+      "image": "WH54_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH54_TR.png",
+          "size": 430458,
+          "path": "Electronic_games/xin/WH54_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH54_ZH.png",
+          "size": 437989,
+          "path": "Electronic_games/xin/WH54_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH26",
+      "gameName": "Sushi Nights",
+      "image": "WH26_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH26_TR.png",
+          "size": 274923,
+          "path": "Electronic_games/xin/WH26_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH26_ZH.png",
+          "size": 274478,
+          "path": "Electronic_games/xin/WH26_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH40",
+      "gameName": "Peking Opera",
+      "image": "WH40_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH40_TR.png",
+          "size": 488441,
+          "path": "Electronic_games/xin/WH40_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH40_ZH.png",
+          "size": 484893,
+          "path": "Electronic_games/xin/WH40_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH44",
+      "gameName": "Steampunk War",
+      "image": "WH44_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH44_TR.png",
+          "size": 138150,
+          "path": "Electronic_games/xin/WH44_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH44_ZH.png",
+          "size": 138305,
+          "path": "Electronic_games/xin/WH44_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB58",
+      "gameName": "Sexy Succubus",
+      "image": "SB58_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB58_TR.png",
+          "size": 404782,
+          "path": "Electronic_games/xin/SB58_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB58_ZH.png",
+          "size": 404782,
+          "path": "Electronic_games/xin/SB58_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH36",
+      "gameName": "One Percenter",
+      "image": "WH36_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH36_TR.png",
+          "size": 405669,
+          "path": "Electronic_games/xin/WH36_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH36_ZH.png",
+          "size": 405303,
+          "path": "Electronic_games/xin/WH36_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH42",
+      "gameName": "Young and Dangerous",
+      "image": "WH42_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH42_TR.png",
+          "size": 478218,
+          "path": "Electronic_games/xin/WH42_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH42_ZH.png",
+          "size": 478218,
+          "path": "Electronic_games/xin/WH42_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH55",
+      "gameName": "Money Monster",
+      "image": "WH55_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH55_TR.png",
+          "size": 351725,
+          "path": "Electronic_games/xin/WH55_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH55_ZH.png",
+          "size": 351306,
+          "path": "Electronic_games/xin/WH55_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB57",
+      "gameName": "Evil Dragons",
+      "image": "SB57_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB57_TR.png",
+          "size": 428737,
+          "path": "Electronic_games/xin/SB57_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB57_ZH.png",
+          "size": 432388,
+          "path": "Electronic_games/xin/SB57_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH19",
+      "gameName": "Treasure Tarot",
+      "image": "WH19_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH19_TR.png",
+          "size": 491501,
+          "path": "Electronic_games/xin/WH19_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH19_ZH.png",
+          "size": 487878,
+          "path": "Electronic_games/xin/WH19_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH28",
+      "gameName": "Egyptian Treasure",
+      "image": "WH28_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH28_TR.png",
+          "size": 424549,
+          "path": "Electronic_games/xin/WH28_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH28_ZH.png",
+          "size": 422962,
+          "path": "Electronic_games/xin/WH28_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH27",
+      "gameName": "Kabuki Gold",
+      "image": "WH27_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH27_TR.png",
+          "size": 320002,
+          "path": "Electronic_games/xin/WH27_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH27_ZH.png",
+          "size": 320095,
+          "path": "Electronic_games/xin/WH27_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH30",
+      "gameName": "Fortune Alchemy",
+      "image": "WH30_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH30_TR.png",
+          "size": 352166,
+          "path": "Electronic_games/xin/WH30_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH30_ZH.png",
+          "size": 368976,
+          "path": "Electronic_games/xin/WH30_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH23",
+      "gameName": "Fengshen Yanyi",
+      "image": "WH23_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH23_TR.png",
+          "size": 436410,
+          "path": "Electronic_games/xin/WH23_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH23_ZH.png",
+          "size": 435098,
+          "path": "Electronic_games/xin/WH23_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH07",
+      "gameName": "Festival Lions",
+      "image": "WH07_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH07_TR.png",
+          "size": 336015,
+          "path": "Electronic_games/xin/WH07_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH07_ZH.png",
+          "size": 333597,
+          "path": "Electronic_games/xin/WH07_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH02",
+      "gameName": "Joan of Arc",
+      "image": "WH02_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH02_TR.png",
+          "size": 368879,
+          "path": "Electronic_games/xin/WH02_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH02_ZH.png",
+          "size": 369492,
+          "path": "Electronic_games/xin/WH02_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH12",
+      "gameName": "Panda’s Gold",
+      "image": "WH12_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH12_TR.png",
+          "size": 372781,
+          "path": "Electronic_games/xin/WH12_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH12_ZH.png",
+          "size": 373975,
+          "path": "Electronic_games/xin/WH12_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH35",
+      "gameName": "Koi Treasure",
+      "image": "WH35_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH35_TR.png",
+          "size": 416367,
+          "path": "Electronic_games/xin/WH35_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH35_ZH.png",
+          "size": 418084,
+          "path": "Electronic_games/xin/WH35_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH38",
+      "gameName": "Chinese Zodiac",
+      "image": "WH38_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH38_TR.png",
+          "size": 448775,
+          "path": "Electronic_games/xin/WH38_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH38_ZH.png",
+          "size": 448737,
+          "path": "Electronic_games/xin/WH38_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH20",
+      "gameName": "Huluwa",
+      "image": "WH20_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH20_TR.png",
+          "size": 346444,
+          "path": "Electronic_games/xin/WH20_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH20_ZH.png",
+          "size": 338171,
+          "path": "Electronic_games/xin/WH20_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH32",
+      "gameName": "TanWanLanYue",
+      "image": "WH32_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH32_TR.png",
+          "size": 449390,
+          "path": "Electronic_games/xin/WH32_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH32_ZH.png",
+          "size": 449667,
+          "path": "Electronic_games/xin/WH32_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH34",
+      "gameName": "Touchdown Hottie",
+      "image": "WH34_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH34_TR.png",
+          "size": 513332,
+          "path": "Electronic_games/xin/WH34_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH34_ZH.png",
+          "size": 512898,
+          "path": "Electronic_games/xin/WH34_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH18",
+      "gameName": "Snow White",
+      "image": "WH18_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH18_TR.png",
+          "size": 377175,
+          "path": "Electronic_games/xin/WH18_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH18_ZH.png",
+          "size": 377296,
+          "path": "Electronic_games/xin/WH18_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB55",
+      "gameName": "Lucky Combo",
+      "image": "SB55_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB55_TR.png",
+          "size": 429560,
+          "path": "Electronic_games/xin/SB55_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB55_ZH.png",
+          "size": 425523,
+          "path": "Electronic_games/xin/SB55_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WC01",
+      "gameName": "Happy Jump",
+      "image": "WC01_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WC01_TR.png",
+          "size": 241347,
+          "path": "Electronic_games/xin/WC01_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WC01_ZH.png",
+          "size": 241376,
+          "path": "Electronic_games/xin/WC01_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH24",
+      "gameName": "The Living Dead",
+      "image": "WH24_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH24_TR.png",
+          "size": 469142,
+          "path": "Electronic_games/xin/WH24_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH24_ZH.png",
+          "size": 485440,
+          "path": "Electronic_games/xin/WH24_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH21",
+      "gameName": "Bloody Kisses",
+      "image": "WH21_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH21_TR.png",
+          "size": 366463,
+          "path": "Electronic_games/xin/WH21_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH21_ZH.png",
+          "size": 363553,
+          "path": "Electronic_games/xin/WH21_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH29",
+      "gameName": "Witch’s Quest",
+      "image": "WH29_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH29_TR.png",
+          "size": 305527,
+          "path": "Electronic_games/xin/WH29_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH29_ZH.png",
+          "size": 305527,
+          "path": "Electronic_games/xin/WH29_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH22",
+      "gameName": "Dark Joker",
+      "image": "WH22_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH22_TR.png",
+          "size": 350281,
+          "path": "Electronic_games/xin/WH22_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH22_ZH.png",
+          "size": 419833,
+          "path": "Electronic_games/xin/WH22_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SC05",
+      "gameName": "Wild 777",
+      "image": "SC05_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SC05_TR.png",
+          "size": 353095,
+          "path": "Electronic_games/xin/SC05_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SC05_ZH.png",
+          "size": 353095,
+          "path": "Electronic_games/xin/SC05_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WA01",
+      "gameName": "Diamond Queen",
+      "image": "WA01_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WA01_TR.png",
+          "size": 274495,
+          "path": "Electronic_games/xin/WA01_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WA01_ZH.png",
+          "size": 277609,
+          "path": "Electronic_games/xin/WA01_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH17",
+      "gameName": "The Moon Lady",
+      "image": "WH17_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH17_TR.png",
+          "size": 426549,
+          "path": "Electronic_games/xin/WH17_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH17_ZH.png",
+          "size": 426780,
+          "path": "Electronic_games/xin/WH17_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH10",
+      "gameName": "Alice’s Adventures",
+      "image": "WH10_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH10_TR.png",
+          "size": 325116,
+          "path": "Electronic_games/xin/WH10_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH10_ZH.png",
+          "size": 320576,
+          "path": "Electronic_games/xin/WH10_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH11",
+      "gameName": "The Storm",
+      "image": "WH11_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH11_TR.png",
+          "size": 295486,
+          "path": "Electronic_games/xin/WH11_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH11_ZH.png",
+          "size": 303934,
+          "path": "Electronic_games/xin/WH11_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH06",
+      "gameName": "King Arthur",
+      "image": "WH06_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH06_TR.png",
+          "size": 400798,
+          "path": "Electronic_games/xin/WH06_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH06_ZH.png",
+          "size": 401885,
+          "path": "Electronic_games/xin/WH06_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH04",
+      "gameName": "Mucha Goddesses",
+      "image": "WH04_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH04_TR.png",
+          "size": 354945,
+          "path": "Electronic_games/xin/WH04_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH04_ZH.png",
+          "size": 371913,
+          "path": "Electronic_games/xin/WH04_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "EP02",
+      "gameName": "DragonTiger",
+      "image": "EP02_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "EP02_TR.png",
+          "size": 252060,
+          "path": "Electronic_games/xin/EP02_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "EP02_ZH.png",
+          "size": 266602,
+          "path": "Electronic_games/xin/EP02_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH03",
+      "gameName": "Real Champions",
+      "image": "WH03_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH03_TR.png",
+          "size": 341716,
+          "path": "Electronic_games/xin/WH03_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH03_ZH.png",
+          "size": 352983,
+          "path": "Electronic_games/xin/WH03_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB51",
+      "gameName": "King of Glory",
+      "image": "SB51_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB51_TR.png",
+          "size": 425407,
+          "path": "Electronic_games/xin/SB51_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB51_ZH.png",
+          "size": 424353,
+          "path": "Electronic_games/xin/SB51_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "EP03",
+      "gameName": "Sicbo",
+      "image": "Sic-Bo.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "sic_bo.jpg",
+          "size": 29469,
+          "path": "Electronic_games/PT/sic_bo.jpg",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "sicbo.jpg",
+          "size": 7773,
+          "path": "Electronic_games/PT/sicbo.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "WH01",
+      "gameName": "Alibaba",
+      "image": "WH01_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "WH01_TR.png",
+          "size": 318698,
+          "path": "Electronic_games/xin/WH01_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "WH01_ZH.png",
+          "size": 318698,
+          "path": "Electronic_games/xin/WH01_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB47",
+      "gameName": "Mystic Gems",
+      "image": "SB47_EN.jpg",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB47_EN.png",
+          "size": 488516,
+          "path": "Electronic_games/xin/SB47_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB47_TR.jpg",
+          "size": 60833,
+          "path": "Electronic_games/xin/SB47_TR.jpg",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB50",
+      "gameName": "Mr XIN",
+      "image": "SB50_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB50_TR.png",
+          "size": 391773,
+          "path": "Electronic_games/xin/SB50_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB50_ZH.png",
+          "size": 389650,
+          "path": "Electronic_games/xin/SB50_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB49",
+      "gameName": "The Dragon Pearl Gold",
+      "image": "SB49_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB49_TR.png",
+          "size": 384629,
+          "path": "Electronic_games/xin/SB49_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB49_ZH.png",
+          "size": 392211,
+          "path": "Electronic_games/xin/SB49_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB45",
+      "gameName": "Legend of the Dragon",
+      "image": "SB45_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB45_TR.png",
+          "size": 413256,
+          "path": "Electronic_games/xin/SB45_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB45_ZH.png",
+          "size": 418157,
+          "path": "Electronic_games/xin/SB45_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SC03",
+      "gameName": "Gold Class",
+      "image": "SC03_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SC03_TR.png",
+          "size": 332947,
+          "path": "Electronic_games/xin/SC03_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SC03_ZH.png",
+          "size": 331457,
+          "path": "Electronic_games/xin/SC03_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SX02",
+      "gameName": "Street Battle",
+      "image": "SX02_EN.png",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SX02_TR.png",
+          "size": 101013,
+          "path": "Electronic_games/xin/SX02_TR.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SX02_ZH.png",
+          "size": 93212,
+          "path": "Electronic_games/xin/SX02_ZH.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG13",
+      "gameName": "Fantasies",
+      "image": "XG13_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG13_EN.png",
+          "size": 465011,
+          "path": "Electronic_games/xin/XG13_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG13_EN_ZN.gif",
+          "size": 91232,
+          "path": "Electronic_games/xin/XG13_EN_ZN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG11",
+      "gameName": "Moon Festival",
+      "image": "XG11_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG11_EN.png",
+          "size": 432419,
+          "path": "Electronic_games/xin/XG11_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG11_EN_ZN.gif",
+          "size": 56280,
+          "path": "Electronic_games/xin/XG11_EN_ZN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG12",
+      "gameName": "K-Pop",
+      "image": "XG12_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG12_EN.png",
+          "size": 326640,
+          "path": "Electronic_games/xin/XG12_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG12_EN_ZN.gif",
+          "size": 69521,
+          "path": "Electronic_games/xin/XG12_EN_ZN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG16",
+      "gameName": "Kick Off",
+      "image": "XG16_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG16_EN.png",
+          "size": 430136,
+          "path": "Electronic_games/xin/XG16_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG16_EN_ZN.gif",
+          "size": 66472,
+          "path": "Electronic_games/xin/XG16_EN_ZN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG10",
+      "gameName": "Dragon Boat Festival",
+      "image": "XG10_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG10_EN.png",
+          "size": 455235,
+          "path": "Electronic_games/xin/XG10_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG10_EN_ZH.gif",
+          "size": 40028,
+          "path": "Electronic_games/xin/XG10_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB34",
+      "gameName": "Ice Crush",
+      "image": "SB34_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB34_EN.png",
+          "size": 407375,
+          "path": "Electronic_games/xin/SB34_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB34_TR.png",
+          "size": 385549,
+          "path": "Electronic_games/xin/SB34_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB33",
+      "gameName": "Candy Quest",
+      "image": "SB33_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB33_EN.png",
+          "size": 318764,
+          "path": "Electronic_games/xin/SB33_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB33_TR.png",
+          "size": 289693,
+          "path": "Electronic_games/xin/SB33_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "FRU2",
+      "gameName": "Fruit Slot 2",
+      "image": "FRU2_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "FRU2_EN.png",
+          "size": 486486,
+          "path": "Electronic_games/xin/FRU2_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "FRU2_TR.png",
+          "size": 480687,
+          "path": "Electronic_games/xin/FRU2_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB37",
+      "gameName": "Shanghai Bund",
+      "image": "SB37_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB37_EN.png",
+          "size": 433865,
+          "path": "Electronic_games/xin/SB37_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB37_TR.png",
+          "size": 389846,
+          "path": "Electronic_games/xin/SB37_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "PKBD",
+      "gameName": "Deuces Wild",
+      "image": "DeucesWild.png",
+      "provider": "mg",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "PKBD.gif",
+          "size": 23632,
+          "path": "Electronic_games/xin/PKBD.gif",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "PKBD_EN.gif",
+          "size": 23632,
+          "path": "Electronic_games/xin/PKBD_EN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "PKBB",
+      "gameName": "Bonus Deuces Wild",
+      "image": "PKBB.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "PKBB_EN.gif",
+          "size": 29486,
+          "path": "Electronic_games/xin/PKBB_EN.gif",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "PKBB_EN.png",
+          "size": 301560,
+          "path": "Electronic_games/xin/PKBB_EN.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG01",
+      "gameName": "Dragons Pearl",
+      "image": "XG01_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG01_EN.png",
+          "size": 433348,
+          "path": "Electronic_games/xin/XG01_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG01_EN_ZH.gif",
+          "size": 149246,
+          "path": "Electronic_games/xin/XG01_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG02",
+      "gameName": "Lucky 8",
+      "image": "XG02_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG02_EN.png",
+          "size": 428112,
+          "path": "Electronic_games/xin/XG02_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG02_TR.png",
+          "size": 314964,
+          "path": "Electronic_games/xin/XG02_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG03",
+      "gameName": "Bling Bling",
+      "image": "XG03_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG03_EN.png",
+          "size": 456738,
+          "path": "Electronic_games/xin/XG03_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG03_EN_ZH.gif",
+          "size": 33982,
+          "path": "Electronic_games/xin/XG03_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG04",
+      "gameName": "Goldfish",
+      "image": "XG04_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG04_EN.png",
+          "size": 410856,
+          "path": "Electronic_games/xin/XG04_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG04_EN_ZH.gif",
+          "size": 112616,
+          "path": "Electronic_games/xin/XG04_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG05",
+      "gameName": "Chinese New Year",
+      "image": "XG05_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG05_EN.png",
+          "size": 512228,
+          "path": "Electronic_games/xin/XG05_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG05_EN_ZN.gif",
+          "size": 42575,
+          "path": "Electronic_games/xin/XG05_EN_ZN.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG06",
+      "gameName": "Pirates",
+      "image": "XG06_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG06_EN.png",
+          "size": 235430,
+          "path": "Electronic_games/xin/XG06_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG06_EN_ZH.gif",
+          "size": 66984,
+          "path": "Electronic_games/xin/XG06_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG07",
+      "gameName": "Fruitmania",
+      "image": "fruit_mania.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG07_EN.gif",
+          "size": 27131,
+          "path": "Electronic_games/xin/XG07_EN.gif",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG07_EN.png",
+          "size": 356060,
+          "path": "Electronic_games/xin/XG07_EN.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG08",
+      "gameName": "Red Panda",
+      "image": "XG08_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG08_EN.png",
+          "size": 364532,
+          "path": "Electronic_games/xin/XG08_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG08_EN_ZH.gif",
+          "size": 63488,
+          "path": "Electronic_games/xin/XG08_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "XG09",
+      "gameName": "High Roller",
+      "image": "XG09_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "XG09_EN.png",
+          "size": 384751,
+          "path": "Electronic_games/xin/XG09_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "XG09_EN_ZH.gif",
+          "size": 77266,
+          "path": "Electronic_games/xin/XG09_EN_ZH.gif",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB30",
+      "gameName": "Year of the Monkey",
+      "image": "SB30_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB30_EN.png",
+          "size": 291477,
+          "path": "Electronic_games/xin/SB30_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB30_TR.png",
+          "size": 330147,
+          "path": "Electronic_games/xin/SB30_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB28",
+      "gameName": "God of Wu Fortune",
+      "image": "SB28_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB28_EN.png",
+          "size": 364716,
+          "path": "Electronic_games/xin/SB28_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB28_TR.png",
+          "size": 362626,
+          "path": "Electronic_games/xin/SB28_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB07",
+      "gameName": "Chinese Chess Slot",
+      "image": "SB07_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB07_EN.png",
+          "size": 323485,
+          "path": "Electronic_games/xin/SB07_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB07_TR.png",
+          "size": 381262,
+          "path": "Electronic_games/xin/SB07_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB09",
+      "gameName": "Chess Slot",
+      "image": "SB09_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB09_EN.png",
+          "size": 304004,
+          "path": "Electronic_games/xin/SB09_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB09_TR.png",
+          "size": 291183,
+          "path": "Electronic_games/xin/SB09_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB10",
+      "gameName": "Happy Farm",
+      "image": "SB10_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB10_EN.png",
+          "size": 538446,
+          "path": "Electronic_games/xin/SB10_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB10_TR.png",
+          "size": 514206,
+          "path": "Electronic_games/xin/SB10_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB08",
+      "gameName": "Mahjong Slot",
+      "image": "SB08_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB08_EN.png",
+          "size": 429866,
+          "path": "Electronic_games/xin/SB08_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB08_TR.png",
+          "size": 376794,
+          "path": "Electronic_games/xin/SB08_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB11",
+      "gameName": "Summer Campsite",
+      "image": "SB11_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB11_EN.png",
+          "size": 382959,
+          "path": "Electronic_games/xin/SB11_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB11_TR.png",
+          "size": 331341,
+          "path": "Electronic_games/xin/SB11_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB01",
+      "gameName": "Space Odyssey",
+      "image": "SB01_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB01_EN.png",
+          "size": 189332,
+          "path": "Electronic_games/xin/SB01_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB01_TR.png",
+          "size": 195016,
+          "path": "Electronic_games/xin/SB01_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB06",
+      "gameName": "Samurai",
+      "image": "samurai.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB06_EN.gif",
+          "size": 27310,
+          "path": "Electronic_games/xin/SB06_EN.gif",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB06_EN.png",
+          "size": 447033,
+          "path": "Electronic_games/xin/SB06_EN.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "SB02",
+      "gameName": "Garden Vintage",
+      "image": "SB02_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "SB02_EN.png",
+          "size": 328132,
+          "path": "Electronic_games/xin/SB02_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "SB02_TR.png",
+          "size": 324462,
+          "path": "Electronic_games/xin/SB02_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "PKBJ",
+      "gameName": "Video poker2 (jacks or better)",
+      "image": "PKBJ_EN.gif",
+      "provider": "xin",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "xin",
+          "name": "PKBJ_EN.png",
+          "size": 330663,
+          "path": "Electronic_games/xin/PKBJ_EN.png",
+          "score": 100
+        },
+        {
+          "provider": "xin",
+          "name": "PKBJ_TR.png",
+          "size": 312366,
+          "path": "Electronic_games/xin/PKBJ_TR.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "FRU",
+      "gameName": "Fruit Slot",
+      "image": "Crazy_Fruit_Shop.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": [
+        {
+          "provider": "PT",
+          "name": "ExtremeFruitsUltimate.png",
+          "size": 24461,
+          "path": "Electronic_games/PT/ExtremeFruitsUltimate.png",
+          "score": 100
+        },
+        {
+          "provider": "PT",
+          "name": "FruityShowers.png",
+          "size": 100602,
+          "path": "Electronic_games/PT/FruityShowers.png",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "gameCode": "AP15",
+      "gameName": "Fortune Dragon Deluxe",
+      "image": "FortuneDragon.png",
+      "provider": "mg",
+      "score": 85,
+      "alternatives": []
+    },
+    {
+      "gameCode": "YP805",
+      "gameName": "Fruit Slot",
+      "image": "fruit_slot.jpg",
+      "provider": "PT",
+      "score": 100,
+      "alternatives": []
+    },
+    {
+      "gameCode": "HMFP",
+      "gameName": "Fish Park",
+      "image": "FishParty.jpg",
+      "provider": "mg",
+      "score": 80,
+      "alternatives": []
+    },
+    {
+      "gameCode": "HMSH",
+      "gameName": "Sky Hunter",
+      "image": "shmst.png",
+      "provider": "PT",
+      "score": 86,
+      "alternatives": []
+    }
+  ]
+}
