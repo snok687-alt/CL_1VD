@@ -20,7 +20,7 @@ import Notfound from '../Notfound';
 import Gift_List from '../ci/Gift_List'
 import UserVideoHistory from '../pages/UserVideoHistory';
 import AG from '../game/App'
-import AdminDashboard from '../game/AdminDashboard';
+import AdminDashboard from '../game/Admin_Paid';
 
 const categories = [
   { id: '32', name: '国产视频' },

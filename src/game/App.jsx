@@ -3,7 +3,8 @@ import {
   Gamepad2, LogOut, User, Loader2, ChevronRight, ExternalLink,
   AlertCircle, X, PlusCircle, CreditCard, CheckCircle,
   Settings, Server, Search, Wallet, RefreshCw, Download, Upload,
-  History, BarChart3, Eye, PlayCircle, GamepadIcon
+  History, BarChart3, Eye, PlayCircle, GamepadIcon,
+  QrCode, Copy, Clock, Trash2, Filter
 } from 'lucide-react';
 import {
   API_CONFIG, apiCall, checkAccount, queryBalance, queryAllBalances,
@@ -16,24 +17,38 @@ import {
   BalanceDetailModal,
   TransferModal,
   TransferHistoryModal,
+  USDTDepositModal,
+  USDTDepositHistoryModal,
   transferHandlers
 } from './TransferModule';
 
 const App = () => {
-  // ฟังก์ชันบันทึก state ลง localStorage
+  // ✅ ฟังก์ชันบันทึก state ลง localStorage (แยกตาม playerId)
   const saveStateToLocalStorage = (state) => {
     try {
+      if (!state.user?.playerId) return; // ถ้าไม่มี playerId ไม่บันทึก
+
+      const storageKey = `appState_${state.user.playerId}`;
       const serializedState = JSON.stringify(state);
-      localStorage.setItem('appState', serializedState);
+      localStorage.setItem(storageKey, serializedState);
+
+      // บันทึก playerId ล่าสุดที่ login
+      localStorage.setItem('lastPlayerId', state.user.playerId);
     } catch (err) {
       console.error('Error saving state to localStorage:', err);
     }
   };
 
-  // ฟังก์ชันโหลด state จาก localStorage
+  // ✅ ฟังก์ชันโหลด state จาก localStorage (แยกตาม playerId)
   const loadStateFromLocalStorage = () => {
     try {
-      const serializedState = localStorage.getItem('appState');
+      // โหลดจาก playerId ล่าสุด
+      const lastPlayerId = localStorage.getItem('lastPlayerId');
+      if (!lastPlayerId) return undefined;
+
+      const storageKey = `appState_${lastPlayerId}`;
+      const serializedState = localStorage.getItem(storageKey);
+
       if (serializedState === null) {
         return undefined;
       }
@@ -44,9 +59,13 @@ const App = () => {
     }
   };
 
-  // ฟังก์ชันล้าง state จาก localStorage
-  const clearStateFromLocalStorage = () => {
-    localStorage.removeItem('appState');
+  // ✅ ฟังก์ชันล้าง state จาก localStorage (แยกตาม playerId)
+  const clearStateFromLocalStorage = (playerId) => {
+    if (playerId) {
+      const storageKey = `appState_${playerId}`;
+      localStorage.removeItem(storageKey);
+    }
+    localStorage.removeItem('lastPlayerId');
   };
 
   // โหลด state ที่บันทึกไว้ครั้งแรก
@@ -98,29 +117,34 @@ const App = () => {
   // เพิ่ม state สำหรับติดตามว่ากำลัง restore เกมอยู่หรือไม่
   const [isRestoringGame, setIsRestoringGame] = useState(false);
 
-  // บันทึก state ลง localStorage ทุกครั้งที่มีการเปลี่ยนแปลง
+  // ✅ บันทึก state ลง localStorage ทุกครั้งที่มีการเปลี่ยนแปลง
   useEffect(() => {
-    const stateToSave = {
-      user,
-      playerId,
-      gameList,
-      selectedGameType,
-      showGames,
-      balances,
-      allPlatformBalances,
-      transferHistory: transferState.transferHistory,
-      apiConfig,
-      showApiConfig,
-      showCreateAccount,
-      createForm,
-      transferMode: transferState.transferMode
-    };
-    saveStateToLocalStorage(stateToSave);
+    if (user) { // บันทึกเฉพาะเมื่อมี user
+      const stateToSave = {
+        user,
+        playerId,
+        gameList,
+        selectedGameType,
+        showGames,
+        balances,
+        allPlatformBalances,
+        transferHistory: transferState.transferHistory,
+        apiConfig,
+        showApiConfig,
+        showCreateAccount,
+        createForm,
+        transferMode: transferState.transferMode,
+        usdtDeposit: transferState.usdtDeposit,
+        usdtOrders: transferState.usdtOrders
+      };
+      saveStateToLocalStorage(stateToSave);
+    }
   }, [
     user, playerId, gameList, selectedGameType, showGames,
     balances, allPlatformBalances,
     apiConfig, showApiConfig, showCreateAccount, createForm,
-    transferState.transferHistory, transferState.transferMode
+    transferState.transferHistory, transferState.transferMode,
+    transferState.usdtDeposit, transferState.usdtOrders
   ]);
 
   // ฟังก์ชันบันทึกเกมลง localStorage
@@ -135,26 +159,30 @@ const App = () => {
         playerId: playerId,
         timestamp: Date.now()
       };
-      localStorage.setItem('activeGameSession', JSON.stringify(gameSession));
-      sessionStorage.setItem('hasActiveGame', 'true');
+      localStorage.setItem(`activeGameSession_${playerId}`, JSON.stringify(gameSession));
+      sessionStorage.setItem(`hasActiveGame_${playerId}`, 'true');
     } catch (err) {
       console.error('Error saving game session:', err);
     }
   };
 
   // ฟังก์ชันล้างเกมจาก localStorage
-  const clearGameSession = () => {
-    localStorage.removeItem('activeGameSession');
-    sessionStorage.removeItem('hasActiveGame');
+  const clearGameSession = (playerId) => {
+    if (playerId) {
+      localStorage.removeItem(`activeGameSession_${playerId}`);
+      sessionStorage.removeItem(`hasActiveGame_${playerId}`);
+    }
   };
 
   // ฟังก์ชันโหลดเกมจาก localStorage
   const restoreGameSession = () => {
     try {
-      const savedGame = localStorage.getItem('activeGameSession');
-      const hasActiveGame = sessionStorage.getItem('hasActiveGame');
+      if (!user?.playerId) return;
 
-      if (savedGame && hasActiveGame === 'true' && user) {
+      const savedGame = localStorage.getItem(`activeGameSession_${user.playerId}`);
+      const hasActiveGame = sessionStorage.getItem(`hasActiveGame_${user.playerId}`);
+
+      if (savedGame && hasActiveGame === 'true') {
         setIsRestoringGame(true);
         const gameSession = JSON.parse(savedGame);
 
@@ -174,13 +202,13 @@ const App = () => {
           console.log('✅ โหลดเกมที่บันทึกไว้สำเร็จ');
         } else {
           // ล้าง session ที่หมดอายุ
-          clearGameSession();
+          clearGameSession(user.playerId);
           console.log('⚠️ Session เกมหมดอายุแล้ว');
         }
       }
     } catch (err) {
       console.error('Error restoring game session:', err);
-      clearGameSession();
+      clearGameSession(user?.playerId);
     } finally {
       setIsRestoringGame(false);
     }
@@ -196,7 +224,7 @@ const App = () => {
   // ฟังก์ชันปิดเกม
   const handleCloseGame = () => {
     setShowGameModal(false);
-    clearGameSession();
+    clearGameSession(user?.playerId);
   };
 
   // ฟังก์ชันปิด demo เกม
@@ -214,6 +242,17 @@ const App = () => {
       setLoading
     );
   };
+
+  // โหลดข้อมูลเมื่อมี user และยังไม่มี gameList
+  useEffect(() => {
+    const initializeData = async () => {
+      if (user && gameList.length === 0) {
+        await handleLoadGameList();
+        await loadBalances();
+      }
+    };
+    initializeData();
+  }, [user]);
 
   const handleLoadGameList = async () => {
     try {
@@ -245,14 +284,6 @@ const App = () => {
       setGameList(getFallbackGames());
     }
   };
-
-  useEffect(() => {
-    // โหลดข้อมูลเมื่อมี user และยังไม่มี gameList
-    if (user && gameList.length === 0) {
-      handleLoadGameList();
-      loadBalances();
-    }
-  }, [user]);
 
   // โหลดข้อมูลจาก localStorage เมื่อ component โหลดครั้งแรก
   useEffect(() => {
@@ -350,6 +381,8 @@ const App = () => {
   };
 
   const handleLogout = () => {
+    const currentPlayerId = user?.playerId;
+
     setUser(null);
     setPlayerId('');
     setGameList([]);
@@ -362,10 +395,20 @@ const App = () => {
     transferState.setShowBalanceModal(false);
     transferState.setShowTransferModal(false);
     setShowDemoGameModal(false);
+    transferState.setShowUSDTDepositModal(false);
 
-    // ล้าง localStorage และ game session เมื่อออกจากระบบ
-    clearStateFromLocalStorage();
-    clearGameSession();
+    // ✅ ล้าง localStorage และ game session เฉพาะของ player คนนี้
+    clearStateFromLocalStorage(currentPlayerId);
+    clearGameSession(currentPlayerId);
+
+    // ✅ ยกเลิกคำสั่ง pending ทั้งหมด
+    if (currentPlayerId) {
+      fetch('/backend-api/crypto/cancel-all-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: currentPlayerId })
+      });
+    }
   };
 
   const handlePlayGame = async (game) => {
@@ -505,6 +548,36 @@ const App = () => {
     );
   };
 
+  // ใน App component
+useEffect(() => {
+  // เมื่อ user เป็น null (logout) ให้ clear ทุกอย่าง
+  if (!user) {
+    // Clear USDT modal state
+    transferState.setUsdtDeposit({
+      amount: '',
+      orderId: '',
+      status: '',
+      usdtAmount: 0,
+      address: '',
+      expiresAt: null,
+      qrCodeUrl: ''
+    });
+    transferState.setUsdtOrders([]);
+    transferState.setShowUSDTDepositModal(false);
+    transferState.setShowUsdtHistory(false);
+    
+    // ส่ง request เพื่อ clear pending orders บน server
+    const lastPlayerId = localStorage.getItem('lastPlayerId');
+    if (lastPlayerId) {
+      fetch('/backend-api/crypto/cancel-all-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: lastPlayerId })
+      });
+    }
+  }
+}, [user]);
+
   const handleTransfer = async () => {
     await transferHandlers.handleTransfer(
       user,
@@ -521,6 +594,116 @@ const App = () => {
     );
   };
 
+  // USDT Deposit Functions
+  const handleCreateUSDTOrder = async (playerId, amount) => {
+    try {
+      const response = await fetch('/backend-api/crypto/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId, cnyAmount: amount })
+      });
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error creating USDT order:', err);
+      return { success: false, message: '网络错误' };
+    }
+  };
+
+  // ฟังก์ชันตรวจสอบว่าข้อมูลเป็นของผู้เล่นคนนี้
+  const validateOrderOwnership = (orderData, currentPlayerId) => {
+    if (!orderData || !currentPlayerId) return false;
+
+    // ตรวจสอบว่ามี playerId ใน response และตรงกับผู้เล่นปัจจุบัน
+    if (orderData.playerId && orderData.playerId !== currentPlayerId) {
+      console.error('🚨 Security Alert: ผู้เล่นพยายามเข้าถึงคำสั่งซื้อของคนอื่น');
+      console.log('Current player:', currentPlayerId);
+      console.log('Order player:', orderData.playerId);
+      return false;
+    }
+
+    return true;
+  };
+
+  // แล้วใช้ใน handleCheckUSDTOrder:
+// แก้ไขฟังก์ชันใน App.js
+const handleCheckUSDTOrder = async (orderId) => {
+  try {
+    // ✅ ตรวจสอบว่า orderId มีค่าหรือไม่
+    if (!orderId || orderId.trim() === '') {
+      console.error('❌ orderId ว่างเปล่า');
+      return { 
+        success: false, 
+        message: 'orderId ไม่สามารถเป็นค่าว่างได้' 
+      };
+    }
+
+    // ✅ สร้าง URL ให้ถูกต้อง
+    const url = `/backend-api/crypto/check-order/${orderId}?playerId=${user.playerId}`;
+    console.log('🔍 Checking USDT order URL:', url);
+
+    const response = await fetch(url);
+    
+    // ✅ ตรวจสอบ status code
+    if (!response.ok) {
+      console.error('❌ Server response not OK:', response.status);
+      return { 
+        success: false, 
+        message: `เซิร์ฟเวอร์ตอบกลับด้วยสถานะ ${response.status}` 
+      };
+    }
+
+    // ✅ ตรวจสอบ content type ก่อน parse JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('❌ Response is not JSON:', text.substring(0, 200));
+      return { 
+        success: false, 
+        message: 'เซิร์ฟเวอร์ตอบกลับด้วยข้อมูลที่ไม่ใช่ JSON' 
+      };
+    }
+
+    const data = await response.json();
+    
+    // ✅ ตรวจสอบความเป็นเจ้าของ
+    if (!validateOrderOwnership(data, user.playerId)) {
+      return {
+        success: false,
+        message: '无权访问此订单'
+      };
+    }
+
+    return data;
+  } catch (err) {
+    console.error('❌ Error checking USDT order:', err);
+    
+    // ✅ จัดการ error ที่เฉพาะเจาะจง
+    if (err.name === 'SyntaxError' && err.message.includes('JSON')) {
+      return { 
+        success: false, 
+        message: 'ข้อมูลที่ได้รับจากเซิร์ฟเวอร์ไม่ถูกต้อง' 
+      };
+    }
+    
+    return { 
+      success: false, 
+      message: '检查订单失败' 
+    };
+  }
+};
+
+  const handleLoadUSDTHistory = async (playerId) => {
+    try {
+      const response = await fetch(`/backend-api/crypto/deposit-history/${playerId}?limit=20`);
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.error('Error loading USDT history:', err);
+      return { success: false, message: '加载历史失败' };
+    }
+  };
+
   const ApiConfigPage = () => (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 p-8">
@@ -534,11 +717,10 @@ const App = () => {
             {apiTestResults.map((r, i) => (
               <div
                 key={i}
-                className={`p-4 border rounded-lg ${
-                  r.success && r.data.code === 10000
-                    ? 'bg-green-500/10 border-green-500/30'
-                    : 'bg-red-500/10 border-red-500/30'
-                }`}
+                className={`p-4 border rounded-lg ${r.success && r.data.code === 10000
+                  ? 'bg-green-500/10 border-green-500/30'
+                  : 'bg-red-500/10 border-red-500/30'
+                  }`}
               >
                 <div className="flex justify-between items-center">
                   <code className="text-white">{r.endpoint}</code>
@@ -676,11 +858,10 @@ const App = () => {
               disabled={loading}
             />
             <span
-              className={`text-xs mt-1 ${
-                validatePlayerId(createForm.playerId)
-                  ? 'text-green-400'
-                  : 'text-gray-400'
-              }`}
+              className={`text-xs mt-1 ${validatePlayerId(createForm.playerId)
+                ? 'text-green-400'
+                : 'text-gray-400'
+                }`}
             >
               {createForm.playerId.length === 0
                 ? '请输入5-11位小写字母和数字'
@@ -1109,10 +1290,9 @@ const App = () => {
                             className={`
                               w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-2
                               transition-all shadow-sm
-                              ${
-                                isActive
-                                  ? 'bg-gradient-to-b from-yellow-300 to-amber-500 text-white shadow-lg scale-105'
-                                  : 'bg-white text-gray-500 hover:bg-gray-100'
+                              ${isActive
+                                ? 'bg-gradient-to-b from-yellow-300 to-amber-500 text-white shadow-lg scale-105'
+                                : 'bg-white text-gray-500 hover:bg-gray-100'
                               }
                             `}
                           >
@@ -1146,26 +1326,13 @@ const App = () => {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="absolute top-2 right-2">
-                              <span className="px-2 py-1 text-xs bg-black/50 text-white rounded">
-                                {g.platType?.toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
-                              <div className="flex items-center gap-2 bg-blue-600/80 px-4 py-2 rounded-lg">
-                                <PlayCircle className="w-5 h-5 text-white" />
-                                <span className="text-white font-semibold text-sm">
-                                  开始游戏
-                                </span>
-                              </div>
-                            </div>
                           </div>
 
                           <div className="p-1 flex-1 flex flex-col">
                             <h3 className="text-white font-bold text-sm mb-1 truncate">
                               {getGameName(g)}
                             </h3>
-                            <p className="text-gray-400 text-xs mb-3">
+                            <p className="text-gray-400 text-xs mb-1">
                               {g.gameCode}
                             </p>
                           </div>
@@ -1200,31 +1367,11 @@ const App = () => {
 
             <iframe
               src={gameUrl}
-              className="w-full h-full"
               title={getGameName(currentGame)}
-              allow="
-                fullscreen;
-                autoplay;
-                encrypted-media;
-                microphone;
-                camera;
-                speaker;
-                display-capture
-              "
+              className="fixed inset-0 w-screen h-[100dvh]"
+              style={{ border: 'none' }}
+              allow="fullscreen autoplay encrypted-media"
               allowFullScreen
-              sandbox="
-                allow-same-origin
-                allow-scripts
-                allow-forms
-                allow-popups
-                allow-popups-to-escape-sandbox
-                allow-top-navigation
-                allow-modals
-                allow-downloads
-                allow-storage-access-by-user-activation
-                allow-autoplay
-              "
-              allowAutoplay
             />
           </div>
         )}
@@ -1241,6 +1388,7 @@ const App = () => {
             setShowTransferModal={transferState.setShowTransferModal}
             handleRefreshBalance={handleRefreshBalance}
             handleTransferAll={handleTransferAll}
+            setShowUSDTDepositModal={transferState.setShowUSDTDepositModal}
           />
         )}
         {transferState.showTransferModal && (
@@ -1265,6 +1413,33 @@ const App = () => {
             transferHistory={transferState.transferHistory}
             showTransferHistory={transferState.showTransferHistory}
             setShowTransferHistory={transferState.setShowTransferHistory}
+          />
+        )}
+        {transferState.showUSDTDepositModal && (
+          <USDTDepositModal
+            user={user}
+            showUSDTDepositModal={transferState.showUSDTDepositModal}
+            setShowUSDTDepositModal={transferState.setShowUSDTDepositModal}
+            usdtDeposit={transferState.usdtDeposit}
+            setUsdtDeposit={transferState.setUsdtDeposit}
+            loading={loading}
+            setLoading={setLoading}
+            success={transferState.success}
+            setSuccess={transferState.setSuccess}
+            error={transferState.error}
+            setError={transferState.setError}
+            createUSDTOrder={handleCreateUSDTOrder}
+            checkUSDTOrder={handleCheckUSDTOrder}
+            loadUSDTHistory={handleLoadUSDTHistory}
+            setUsdtOrders={transferState.setUsdtOrders}
+            setShowUsdtHistory={transferState.setShowUsdtHistory}
+          />
+        )}
+        {transferState.showUsdtHistory && (
+          <USDTDepositHistoryModal
+            usdtOrders={transferState.usdtOrders}
+            showUsdtHistory={transferState.showUsdtHistory}
+            setShowUsdtHistory={transferState.setShowUsdtHistory}
           />
         )}
         {showDemoGameModal && <DemoGameModal />}

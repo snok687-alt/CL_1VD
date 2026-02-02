@@ -310,16 +310,52 @@ async function initializeDatabase() {
         INDEX idx_plat_type (plat_type)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
        
-      CREATE TABLE games (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        game_code VARCHAR(50) UNIQUE NOT NULL,
-        game_name VARCHAR(255),
-        game_type VARCHAR(10),
-        plat_type VARCHAR(10),
-        thumbnail VARCHAR(500),
-        status TINYINT DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
+      CREATE TABLE IF NOT EXISTS crypto_deposits (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        player_id VARCHAR(50) NOT NULL,
+        order_id VARCHAR(50) UNIQUE NOT NULL,
+        cny_amount DECIMAL(10,2) NOT NULL,
+        usdt_amount DECIMAL(18,6) NOT NULL,
+        wallet_address VARCHAR(100) NOT NULL,
+        tx_hash VARCHAR(100),
+        status ENUM('pending','paid','expired') DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+       paid_at DATETIME NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS withdraw_requests (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  player_id VARCHAR(50) NOT NULL,
+  amount DECIMAL(18,6) NOT NULL COMMENT 'จำนวน USDT',
+  cny_amount DECIMAL(18,2) NOT NULL COMMENT 'จำนวน CNY',
+  wallet_address VARCHAR(100) NOT NULL,
+  account_name VARCHAR(100) DEFAULT NULL,
+  note TEXT DEFAULT NULL,
+  status ENUM('pending', 'paid', 'rejected') DEFAULT 'pending',
+  tx_hash VARCHAR(100) DEFAULT NULL,
+  reject_reason TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  paid_at TIMESTAMP NULL DEFAULT NULL,
+  rejected_at TIMESTAMP NULL DEFAULT NULL,
+  
+  INDEX idx_player_id (player_id),
+  INDEX idx_status (status),
+  INDEX idx_created_at (created_at),
+  INDEX idx_tx_hash (tx_hash)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS withdraw_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL COMMENT 'username หรือ player_id',
+    amount DECIMAL(18,6) NOT NULL COMMENT 'จำนวน USDT ที่ถอน',
+    status ENUM('pending','approved','paid','rejected') NOT NULL DEFAULT 'pending' COMMENT 'สถานะถอน',
+    wallet_address VARCHAR(100) NOT NULL COMMENT 'Wallet ผู้เล่น',
+    tx_hash VARCHAR(100) DEFAULT NULL COMMENT 'TX Hash หลัง admin โอนจริง',
+    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME DEFAULT NULL COMMENT 'เวลาที่ admin mark paid หรือ reject',
+    remark TEXT DEFAULT NULL COMMENT 'หมายเหตุ admin'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Withdraw request table';
+
 
     `;
 

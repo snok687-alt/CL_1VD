@@ -1,3 +1,4 @@
+// api.js
 import CryptoJS from 'crypto-js';
 
 export const API_CONFIG = {
