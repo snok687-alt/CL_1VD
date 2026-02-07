@@ -356,6 +356,165 @@ CREATE TABLE IF NOT EXISTS withdraw_requests (
     remark TEXT DEFAULT NULL COMMENT 'หมายเหตุ admin'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Withdraw request table';
 
+-- 玩家余额表
+CREATE TABLE IF NOT EXISTS player_balances (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL UNIQUE COMMENT '玩家ID',
+    balance DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT '可用余额 (CNY)',
+    locked_balance DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT '冻结余额 (提现处理中)',
+    total_deposit DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT '累计存款',
+    total_withdraw DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT '累计提现',
+    last_deposit_at DATETIME DEFAULT NULL COMMENT '最后存款时间',
+    last_withdraw_at DATETIME DEFAULT NULL COMMENT '最后提现时间',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_player_id (player_id),
+    INDEX idx_balance (balance),
+    INDEX idx_locked_balance (locked_balance),
+    INDEX idx_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='玩家余额表';
+
+-- 提现通知表
+CREATE TABLE IF NOT EXISTS withdraw_notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    withdraw_id BIGINT NOT NULL COMMENT '提现请求ID',
+    player_id VARCHAR(50) NOT NULL COMMENT '玩家ID',
+    notification_type ENUM('request_created', 'paid', 'rejected', 'refunded', 'cancelled') NOT NULL,
+    message TEXT NOT NULL COMMENT '通知消息',
+    is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at DATETIME DEFAULT NULL,
+    
+    INDEX idx_player_id (player_id),
+    INDEX idx_withdraw_id (withdraw_id),
+    INDEX idx_is_read (is_read),
+    INDEX idx_sent_at (sent_at),
+    FOREIGN KEY (withdraw_id) REFERENCES withdraw_requests(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='提现通知表';
+
+-- 更新 withdraw_requests 表结构
+ALTER TABLE withdraw_requests 
+ADD COLUMN IF NOT EXISTS fee DECIMAL(18,6) DEFAULT 0 COMMENT '手续费',
+ADD COLUMN IF NOT EXISTS net_usdt DECIMAL(18,6) DEFAULT 0 COMMENT '实际到账USDT',
+ADD COLUMN IF NOT EXISTS balance_deducted BOOLEAN DEFAULT FALSE COMMENT '是否已扣款',
+ADD COLUMN IF NOT EXISTS deducted_at DATETIME DEFAULT NULL COMMENT '扣款时间',
+ADD COLUMN IF NOT EXISTS refunded BOOLEAN DEFAULT FALSE COMMENT '是否已退款',
+ADD COLUMN IF NOT EXISTS refunded_at DATETIME DEFAULT NULL COMMENT '退款时间',
+ADD COLUMN IF NOT EXISTS rejected_at DATETIME DEFAULT NULL COMMENT '拒绝时间';
+
+-- 创建余额变化记录表（可选，用于审计）
+CREATE TABLE IF NOT EXISTS balance_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL COMMENT '玩家ID',
+    transaction_type ENUM('deposit', 'withdraw', 'bonus', 'deduction', 'refund') NOT NULL,
+    amount DECIMAL(18,6) NOT NULL COMMENT '变动金额',
+    before_balance DECIMAL(18,6) NOT NULL COMMENT '变动前余额',
+    after_balance DECIMAL(18,6) NOT NULL COMMENT '变动后余额',
+    related_id VARCHAR(100) COMMENT '关联ID（订单号/提现ID等）',
+    remark TEXT COMMENT '备注',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_player_id (player_id),
+    INDEX idx_transaction_type (transaction_type),
+    INDEX idx_created_at (created_at),
+    INDEX idx_related_id (related_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='余额变动记录表';
+
+CREATE TABLE IF NOT EXISTS game_records (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  player_id VARCHAR(50) NOT NULL COMMENT 'รหัสผู้เล่น',
+  plat_type VARCHAR(20) NOT NULL COMMENT 'แพลตฟอร์มเกม (ag, pg, cq9...)',
+  currency VARCHAR(10) NOT NULL DEFAULT 'CNY' COMMENT 'สกุลเงิน',
+  game_type VARCHAR(10) NOT NULL COMMENT '1:วิดีโอ 2:สล็อต 3:หวย 4:กีฬา 5:อีสปอร์ต 6:ยิงปลา 7:ไพ่',
+  game_name VARCHAR(255) COMMENT 'ชื่อเกม',
+  game_code VARCHAR(100) COMMENT 'รหัสเกม',
+  round VARCHAR(100) COMMENT 'รอบเกม/หมายเลขตั๋ว',
+  table_no VARCHAR(100) COMMENT 'หมายเลขโต๊ะ',
+  seat_no VARCHAR(100) COMMENT 'หมายเลขที่นั่ง',
+  
+  bet_amount DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT 'ยอดเดิมพัน',
+  valid_amount DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT 'ยอดเดิมพันที่ถูกต้อง',
+  settled_amount DECIMAL(18,6) NOT NULL DEFAULT 0 COMMENT 'ยอดชนะ/แพ้',
+  bet_content TEXT COMMENT 'เนื้อหาการเดิมพัน',
+  
+  status TINYINT NOT NULL DEFAULT 0 COMMENT '0:ไม่เสร็จสิ้น 1:เสร็จสิ้น 2:ยกเลิก 3:คืนเงิน',
+  game_order_id VARCHAR(100) NOT NULL UNIQUE COMMENT 'หมายเลขคำสั่งซื้อเกม',
+  
+  bet_time DATETIME NOT NULL COMMENT 'เวลาเดิมพัน',
+  last_update_time DATETIME NOT NULL COMMENT 'เวลาอัปเดตล่าสุด',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  INDEX idx_player_id (player_id),
+  INDEX idx_plat_type (plat_type),
+  INDEX idx_game_type (game_type),
+  INDEX idx_status (status),
+  INDEX idx_bet_time (bet_time),
+  INDEX idx_last_update_time (last_update_time),
+  INDEX idx_game_order_id (game_order_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='บันทึกเกมจาก API';
+
+-- ✅ ตารางสรุปรายงานรายวัน
+CREATE TABLE IF NOT EXISTS daily_reports (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  report_date DATE NOT NULL UNIQUE COMMENT 'วันที่รายงาน',
+  
+  total_players INT DEFAULT 0 COMMENT 'จำนวนผู้เล่นทั้งหมด',
+  active_players INT DEFAULT 0 COMMENT 'ผู้เล่นที่ใช้งาน',
+  new_players INT DEFAULT 0 COMMENT 'ผู้เล่นใหม่',
+  
+  total_bets BIGINT DEFAULT 0 COMMENT 'จำนวนเดิมพันทั้งหมด',
+  total_bet_amount DECIMAL(18,2) DEFAULT 0 COMMENT 'ยอดเดิมพันรวม',
+  total_valid_amount DECIMAL(18,2) DEFAULT 0 COMMENT 'ยอดเดิมพันที่ถูกต้องรวม',
+  total_win_loss DECIMAL(18,2) DEFAULT 0 COMMENT 'ยอดชนะ/แพ้รวม',
+  
+  total_deposits DECIMAL(18,2) DEFAULT 0 COMMENT 'ยอดฝากรวม',
+  total_withdraws DECIMAL(18,2) DEFAULT 0 COMMENT 'ยอดถอนรวม',
+  
+  gross_gaming_revenue DECIMAL(18,2) DEFAULT 0 COMMENT 'รายได้จากการพนัน (GGR)',
+  platform_cost DECIMAL(18,2) DEFAULT 0 COMMENT 'ค่าคอมมิชชั่นแพลตฟอร์ม',
+  net_revenue DECIMAL(18,2) DEFAULT 0 COMMENT 'รายได้สุทธิ',
+  
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  INDEX idx_report_date (report_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='สรุปรายงานรายวัน';
+
+-- ✅ ตารางสรุปรายงานตามแพลตฟอร์ม
+CREATE TABLE IF NOT EXISTS platform_daily_stats (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  report_date DATE NOT NULL COMMENT 'วันที่รายงาน',
+  plat_type VARCHAR(20) NOT NULL COMMENT 'แพลตฟอร์ม',
+  
+  total_bets BIGINT DEFAULT 0,
+  total_bet_amount DECIMAL(18,2) DEFAULT 0,
+  total_valid_amount DECIMAL(18,2) DEFAULT 0,
+  total_win_loss DECIMAL(18,2) DEFAULT 0,
+  active_players INT DEFAULT 0,
+  
+  platform_cost DECIMAL(18,2) DEFAULT 0 COMMENT 'ค่าคอมมิชชั่น',
+  cost_ratio DECIMAL(5,4) DEFAULT 0 COMMENT 'อัตราค่าคอมมิชชั่น',
+  
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  UNIQUE KEY unique_date_platform (report_date, plat_type),
+  INDEX idx_report_date (report_date),
+  INDEX idx_plat_type (plat_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='สรุปรายงานตามแพลตฟอร์มรายวัน';
+
+-- ✅ ตารางเก็บค่าคอมมิชชั่นแพลตฟอร์ม
+CREATE TABLE IF NOT EXISTS platform_commission_rates (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  plat_type VARCHAR(20) NOT NULL UNIQUE COMMENT 'แพลตฟอร์ม',
+  commission_rate DECIMAL(5,4) NOT NULL DEFAULT 0 COMMENT 'อัตราค่าคอมมิชชั่น (0.0900 = 9%)',
+  is_active BOOLEAN DEFAULT TRUE,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  
+  INDEX idx_plat_type (plat_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='อัตราค่าคอมมิชชั่นแพลตฟอร์ม';
 
     `;
 

@@ -1,12 +1,18 @@
 // api.js
 import CryptoJS from 'crypto-js';
 
+// ✅ ดึงค่าจาก environment variables
+// สำหรับ Vite: import.meta.env.VITE_*
+// สำหรับ Create React App: process.env.REACT_APP_*
+const API_SN = import.meta.env?.VITE_API_SN || process.env.API_SN;
+const API_SECRET = import.meta.env?.VITE_API_SECRET || process.env.API_SECRET;
+
 export const API_CONFIG = {
   baseUrl: '/api/game',
   serverUrl: '/api/server',
   backendUrl: '/backend-api',
-  sn: 'tnv',
-  secret: 'VJ3Z394e88U8Gz9wa64sMlW8871m481o'
+  sn: API_SN,
+  secret: API_SECRET
 };
 
 // ✅ ฟังก์ชันใหม่: ดึงรูปปกของเกมตามรหัส

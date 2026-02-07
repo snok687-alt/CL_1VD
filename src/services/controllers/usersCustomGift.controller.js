@@ -499,3 +499,20 @@ exports.checkClaimStatus = async (req, res) => {
     if (connection) connection.release();
   }
 };
+
+exports.checkUsername = async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ exists: false });
+    
+    const [rows] = await pool.query(
+      'SELECT id FROM users_custom_gift WHERE username = ? LIMIT 1',
+      [username]
+    );
+    
+    return res.json({ exists: rows.length > 0 });
+  } catch (err) {
+    console.error('Error checking username:', err);
+    res.status(500).json({ exists: false });
+  }
+};

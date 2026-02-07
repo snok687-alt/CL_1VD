@@ -17,6 +17,6 @@ router.get('/gift/check-status', controller.checkClaimStatus);
 // ดูข้อมูลผู้ใช้ (ถ้ามี)
 router.get('/gift/user-info', controller.getUserInfo);
 
-
+router.get('/gift/check-username', controller.checkUsername);
 
 module.exports = router;

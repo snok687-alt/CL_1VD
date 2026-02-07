@@ -809,115 +809,116 @@ const handleCheckUSDTOrder = async (orderId) => {
   );
 
   const CreateAccountPage = () => (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 p-8">
-        <div className="text-center mb-8">
-          <PlusCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
-          <h1 className="text-3xl font-bold text-white">创建玩家账号</h1>
-          <p className="text-purple-200">快速注册，立即开始游戏</p>
-        </div>
-        <div className="flex gap-2 mb-6 justify-center">
-          <button
-            onClick={() => setShowApiConfig(true)}
-            className="px-4 py-2 bg-white/10 rounded-lg text-white"
-          >
-            ⚙️ API诊断
-          </button>
-          <button
-            onClick={handleTestCreateAccount}
-            className="px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg"
-          >
-            🧪 测试模式
-          </button>
-        </div>
-        {transferState.success && (
-          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg text-green-200">
-            {transferState.success}
-          </div>
-        )}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200">
-            {error}
-          </div>
-        )}
-        <div className="space-y-4">
-          <div>
-            <label className="block text-white mb-2">玩家账号 *</label>
-            <input
-              type="text"
-              value={createForm.playerId}
-              onChange={(e) =>
-                setCreateForm({
-                  ...createForm,
-                  playerId: e.target.value.toLowerCase()
-                })
-              }
-              placeholder="例如: player123"
-              className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
-              autoFocus
-              disabled={loading}
-            />
-            <span
-              className={`text-xs mt-1 ${validatePlayerId(createForm.playerId)
-                ? 'text-green-400'
-                : 'text-gray-400'
-                }`}
-            >
-              {createForm.playerId.length === 0
-                ? '请输入5-11位小写字母和数字'
-                : validatePlayerId(createForm.playerId)
-                  ? '✓ 账号格式正确'
-                  : '❌ 格式不正确'}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-white mb-2">游戏平台</label>
-              <select
-                value={createForm.platType}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, platType: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
-                disabled={loading}
-              >
-                <option value="ag">AG 平台</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-white mb-2">游戏货币</label>
-              <select
-                value={createForm.currency}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, currency: e.target.value })
-                }
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
-                disabled={loading}
-              >
-                <option value="CNY">人民币 (CNY)</option>
-              </select>
-            </div>
-          </div>
-          <button
-            onClick={handleCreateAccount}
-            disabled={loading || !validatePlayerId(createForm.playerId)}
-            className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold disabled:opacity-50"
-          >
-            {loading === 'create' ? '测试中...' : '创建账号'}
-          </button>
-          <button
-            onClick={() => {
-              setShowCreateAccount(false);
-              setCreateForm({ playerId: '', platType: 'ag', currency: 'CNY' });
-              setError('');
-            }}
-            className="w-full py-3 bg-white/10 text-white rounded-lg"
-          >
-            返回登录
-          </button>
-        </div>
-      </div>
-    </div>
+    // <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+    //   <div className="w-full max-w-2xl bg-white/10 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 p-8">
+    //     <div className="text-center mb-8">
+    //       <PlusCircle className="w-16 h-16 mx-auto mb-4 text-green-400" />
+    //       <h1 className="text-3xl font-bold text-white">创建玩家账号</h1>
+    //       <p className="text-purple-200">快速注册，立即开始游戏</p>
+    //     </div>
+    //     <div className="flex gap-2 mb-6 justify-center">
+    //       <button
+    //         onClick={() => setShowApiConfig(true)}
+    //         className="px-4 py-2 bg-white/10 rounded-lg text-white"
+    //       >
+    //         ⚙️ API诊断
+    //       </button>
+    //       <button
+    //         onClick={handleTestCreateAccount}
+    //         className="px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-lg"
+    //       >
+    //         🧪 测试模式
+    //       </button>
+    //     </div>
+    //     {transferState.success && (
+    //       <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg text-green-200">
+    //         {transferState.success}
+    //       </div>
+    //     )}
+    //     {error && (
+    //       <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg text-red-200">
+    //         {error}
+    //       </div>
+    //     )}
+    //     <div className="space-y-4">
+    //       <div>
+    //         <label className="block text-white mb-2">玩家账号 *</label>
+    //         <input
+    //           type="text"
+    //           value={createForm.playerId}
+    //           onChange={(e) =>
+    //             setCreateForm({
+    //               ...createForm,
+    //               playerId: e.target.value.toLowerCase()
+    //             })
+    //           }
+    //           placeholder="例如: player123"
+    //           className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
+    //           autoFocus
+    //           disabled={loading}
+    //         />
+    //         <span
+    //           className={`text-xs mt-1 ${validatePlayerId(createForm.playerId)
+    //             ? 'text-green-400'
+    //             : 'text-gray-400'
+    //             }`}
+    //         >
+    //           {createForm.playerId.length === 0
+    //             ? '请输入5-11位小写字母和数字'
+    //             : validatePlayerId(createForm.playerId)
+    //               ? '✓ 账号格式正确'
+    //               : '❌ 格式不正确'}
+    //         </span>
+    //       </div>
+    //       <div className="grid grid-cols-2 gap-4">
+    //         <div>
+    //           <label className="block text-white mb-2">游戏平台</label>
+    //           <select
+    //             value={createForm.platType}
+    //             onChange={(e) =>
+    //               setCreateForm({ ...createForm, platType: e.target.value })
+    //             }
+    //             className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
+    //             disabled={loading}
+    //           >
+    //             <option value="ag">AG 平台</option>
+    //           </select>
+    //         </div>
+    //         <div>
+    //           <label className="block text-white mb-2">游戏货币</label>
+    //           <select
+    //             value={createForm.currency}
+    //             onChange={(e) =>
+    //               setCreateForm({ ...createForm, currency: e.target.value })
+    //             }
+    //             className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white"
+    //             disabled={loading}
+    //           >
+    //             <option value="CNY">人民币 (CNY)</option>
+    //           </select>
+    //         </div>
+    //       </div>
+    //       <button
+    //         onClick={handleCreateAccount}
+    //         disabled={loading || !validatePlayerId(createForm.playerId)}
+    //         className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold disabled:opacity-50"
+    //       >
+    //         {loading === 'create' ? '测试中...' : '创建账号'}
+    //       </button>
+    //       <button
+    //         onClick={() => {
+    //           setShowCreateAccount(false);
+    //           setCreateForm({ playerId: '', platType: 'ag', currency: 'CNY' });
+    //           setError('');
+    //         }}
+    //         className="w-full py-3 bg-white/10 text-white rounded-lg"
+    //       >
+    //         返回登录
+    //       </button>
+    //     </div>
+    //   </div>
+    // </div>
+    <div></div>
   );
 
   const LoginPage = () => (
@@ -1004,7 +1005,7 @@ const handleCheckUSDTOrder = async (orderId) => {
                     该账号未在系统中注册，请创建新账号
                   </p>
                 </div>
-                <button
+                {/* <button
                   onClick={() => {
                     setCreateForm({ ...createForm, playerId });
                     setShowCreateAccount(true);
@@ -1012,7 +1013,7 @@ const handleCheckUSDTOrder = async (orderId) => {
                   className="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold"
                 >
                   创建这个账号
-                </button>
+                </button> */}
               </>
             ) : (
               <>

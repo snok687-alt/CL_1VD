@@ -1,6 +1,6 @@
 // Header.jsx
 import React from 'react';
-import { IoChevronBack } from 'react-icons/io5';
+import { IoChevronBack, IoGameController } from 'react-icons/io5';
 import { MdSupportAgent } from "react-icons/md";
 import { FiGift } from "react-icons/fi";
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -88,6 +88,18 @@ const Header = ({ searchTerm, onSearchChange, isDarkMode, toggleTheme, isVisible
           {/* ปุ่มด้านขวา */}
           {showRightIcons ? (
             <div className="flex items-center gap-x-3 md:gap-x-6 mr-2">
+              <button
+                onClick={() => navigate('/AG')}
+                className={`p-2 rounded-full transition-all duration-200 hidden md:block ${isDarkMode
+                  ? 'bg-gray-700 text-green-300 hover:bg-gray-600 hover:scale-110'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-110'
+                  }`}
+                aria-label="เกม"
+              >
+                <IoGameController className="w-7 h-7" />
+              </button>
+
+
               <button
                 onClick={openGiftModal}
                 className={`p-2 rounded-full transition-all duration-200 ${isDarkMode

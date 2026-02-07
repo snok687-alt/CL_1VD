@@ -20,7 +20,8 @@ import Notfound from '../Notfound';
 import Gift_List from '../ci/Gift_List'
 import UserVideoHistory from '../pages/UserVideoHistory';
 import AG from '../game/App'
-import AdminDashboard from '../game/Admin_Paid';
+import AdminDashboard from '../game/AdminReportDashboard';
+// import A from '../game/A';
 
 const categories = [
   { id: '32', name: '国产视频' },
@@ -95,6 +96,7 @@ const Router = () => {
           
           {/* Game Admin */}
           <Route path="games" element={<AdminDashboard />} />
+          {/* <Route path="A" element={<A />} /> */}
         </Route>
 
         {/* ✅ Other Routes */}

@@ -32,6 +32,8 @@ const videoHistoryRoutes = require('./routes/videoHistoryRoutes');
 const gameCoverRoutes = require('./routes/gameCoverRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const withdrawRoutes = require('./routes/withdrawRoutes');
+const gameReportService = require('./gameReportService');
+const gameReportRoutes = require('./routes/gameReportRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -92,6 +94,7 @@ app.use('/backend-api/user', videoHistoryRoutes);
 app.use('/backend-api/game-covers', gameCoverRoutes);
 app.use('/backend-api/crypto', cryptoRoutes);
 app.use('/backend-api/withdraw', withdrawRoutes);
+app.use('/backend-api/reports', gameReportRoutes);
 
 
 // Test endpoint
@@ -245,6 +248,151 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
+
+// Cron: ดึงรายงานแบบ realtime ทุก 2 นาที
+cron.schedule('*/2 * * * *', async () => {
+  try {
+    console.log('🎮 Fetching realtime game records...');
+    const result = await gameReportService.fetchRealtimeRecords('CNY', 1, 2000);
+    
+    if (result.success && result.data.length > 0) {
+      await gameReportService.saveGameRecords(result.data);
+      console.log(`✅ Saved ${result.data.length} realtime records`);
+      
+      // แจ้งเตือนผ่าน Socket.io
+      io.emit('realtime_records_update', {
+        timestamp: new Date().toISOString(),
+        recordCount: result.data.length
+      });
+    } else {
+      console.log('ℹ️ No new realtime records');
+    }
+  } catch (err) {
+    console.error('❌ Error in realtime records cron:', err);
+  }
+});
+
+// Cron: สร้างรายงานรายวันอัตโนมัติ ทุกวันเวลา 00:05
+cron.schedule('5 0 * * *', async () => {
+  try {
+    console.log('📊 Generating daily report...');
+    
+    // สร้างรายงานสำหรับเมื่อวาน
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const result = await gameReportService.generateDailyReport(yesterday);
+    
+    if (result.success) {
+      console.log(`✅ Daily report generated for ${yesterday}`);
+      console.log(`  - Active Players: ${result.report.activePlayers}`);
+      console.log(`  - Total Bets: ${result.report.totalBets}`);
+      console.log(`  - GGR: ${result.report.grossGamingRevenue.toFixed(2)} CNY`);
+      console.log(`  - Net Revenue: ${result.report.netRevenue.toFixed(2)} CNY`);
+      
+      // แจ้งเตือน Admin
+      io.to('admin').emit('daily_report_generated', {
+        date: yesterday,
+        report: result.report
+      });
+    } else {
+      console.error(`❌ Failed to generate daily report: ${result.message}`);
+    }
+  } catch (err) {
+    console.error('❌ Error in daily report cron:', err);
+  }
+});
+
+// Cron: ดึงรายงานประวัติย้อนหลัง (ทุก 1 ชั่วโมง)
+// ใช้สำหรับดึงข้อมูลที่อาจหลุดลอดจาก realtime
+cron.schedule('0 * * * *', async () => {
+  try {
+    console.log('📜 Fetching historical game records...');
+    
+    // ดึงข้อมูล 2 ชั่วโมงย้อนหลัง
+    const endTime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const startTime = new Date(Date.now() - 2 * 3600000).toISOString().slice(0, 19).replace('T', ' ');
+    
+    const result = await gameReportService.fetchHistoryRecords('CNY', startTime, endTime, 1, 2000);
+    
+    if (result.success && result.data.length > 0) {
+      const saved = await gameReportService.saveGameRecords(result.data);
+      console.log(`✅ Historical sync: ${saved.saved} saved, ${saved.skipped} skipped`);
+    } else {
+      console.log('ℹ️ No historical records to sync');
+    }
+  } catch (err) {
+    console.error('❌ Error in historical records cron:', err);
+  }
+});
+
+// 4. เพิ่ม API endpoint สำหรับ manual trigger
+app.post('/backend-api/admin/trigger-daily-report', async (req, res) => {
+  try {
+    const { date } = req.body;
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    
+    const result = await gameReportService.generateDailyReport(targetDate);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        message: `สร้างรายงานวันที่ ${targetDate} สำเร็จ`,
+        report: result.report
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 5. เพิ่ม API endpoint สำหรับ manual sync records
+app.post('/backend-api/admin/sync-records', async (req, res) => {
+  try {
+    const { startTime, endTime, currency = 'CNY' } = req.body;
+    
+    if (!startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณาระบุ startTime และ endTime (YYYY-MM-DD HH:mm:ss)'
+      });
+    }
+    
+    // ดึงข้อมูล
+    const result = await gameReportService.fetchHistoryRecords(currency, startTime, endTime, 1, 2000);
+    
+    if (result.success && result.data.length > 0) {
+      // บันทึกลง database
+      const saved = await gameReportService.saveGameRecords(result.data);
+      
+      res.json({
+        success: true,
+        message: 'ซิงค์ข้อมูลสำเร็จ',
+        totalRecords: result.data.length,
+        saved: saved.saved,
+        skipped: saved.skipped
+      });
+    } else {
+      res.json({
+        success: true,
+        message: 'ไม่พบข้อมูลในช่วงเวลาที่ระบุ',
+        totalRecords: 0
+      });
+    }
+  } catch (err) {
+    console.error('❌ Error syncing records:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+console.log('✅ Game Report System initialized');
+console.log('📊 Cron jobs scheduled:');
+console.log('  - Realtime records: every 2 minutes');
+console.log('  - Daily report: 00:05 AM daily');
+console.log('  - Historical sync: every hour');
 
 // Export for testing
 module.exports = { app, server, io };

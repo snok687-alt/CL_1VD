@@ -163,7 +163,7 @@ export const USDTDepositModal = ({
   const USDT_ADDRESS = 'TTvu6ZR9BEyQZYQsHeYnF4HBsWhAyq8i3S';
   const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT TRC-20 Contract
   const FIX_RATE = 7.2;
-  const MIN_AMOUNT = 10; // 10 CNY = 1.388889 USDT
+  const MIN_AMOUNT = 100; // 10 CNY = 1.388889 USDT
 
   useEffect(() => {
     setIsClient(true);

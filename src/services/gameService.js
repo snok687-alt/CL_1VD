@@ -167,4 +167,4 @@ module.exports = {
   checkPlayerExists, 
   queryBalance,
   callGameAPI 
-};
+};  
