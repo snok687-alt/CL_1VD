@@ -11,6 +11,7 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 
+
 const { initializeDatabase } = require('./config/db');
 const { checkUSDTTransfers, setSocketIO, checkAPIHealth } = require('./tronWatcher');
 
@@ -33,7 +34,10 @@ const gameCoverRoutes = require('./routes/gameCoverRoutes');
 const cryptoRoutes = require('./routes/cryptoRoutes');
 const withdrawRoutes = require('./routes/withdrawRoutes');
 const gameReportService = require('./gameReportService');
-const gameReportRoutes = require('./routes/gameReportRoutes');
+const gameAccountRoutes = require('./routes/gameAccountRoutes');
+const gameLogRoutes = require('./routes/gameLogRoutes');
+const ipCapture = require('./middlewares/ipCapture');
+const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -94,8 +98,18 @@ app.use('/backend-api/user', videoHistoryRoutes);
 app.use('/backend-api/game-covers', gameCoverRoutes);
 app.use('/backend-api/crypto', cryptoRoutes);
 app.use('/backend-api/withdraw', withdrawRoutes);
-app.use('/backend-api/reports', gameReportRoutes);
+app.use('/backend-api/game', gameAccountRoutes);
+app.use('/backend-api', gameLogRoutes);
+app.use(ipCapture);
+app.use('/backend-api/reports', reportRoutes);
 
+app.use('/backend-api', (req, res, next) => {
+  // เติม IP address ลงใน body ถ้าไม่มี
+  if (req.body && !req.body.ipAddress) {
+    req.body.ipAddress = req.clientIp;
+  }
+  next();
+});
 
 // Test endpoint
 app.get('/backend-api/test', (req, res) => {

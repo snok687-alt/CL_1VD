@@ -1,67 +1,58 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Users, DollarSign, BarChart3, Calendar, RefreshCw
+  Users, DollarSign, BarChart3, RefreshCw,
+  TrendingUp, TrendingDown, Activity, Wallet,
+  Wifi, WifiOff, Clock, CheckCircle,
+  Gamepad2, CreditCard
 } from 'lucide-react';
 
-export default function AdminReportDashboard() {
+export default function SimplePlayersReport() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dashboardData, setDashboardData] = useState(null);
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0]
-  });
-  const [selectedTab, setSelectedTab] = useState('overview');
-  const [dailyReports, setDailyReports] = useState([]);
-  const [platformStats, setPlatformStats] = useState([]);
-  const [topPlayers, setTopPlayers] = useState([]);
+  const [playersData, setPlayersData] = useState(null);
+  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState('games');
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    // 根据当前路径设置初始选项卡
+    if (location.pathname.includes('Admin_Paid')) {
+      setActiveTab('paid');
+    } else if (location.pathname.includes('games')) {
+      setActiveTab('games');
+    } else {
+      setActiveTab('games'); // 默认
+    }
+    
+    loadPlayersData();
+  }, [location.pathname]);
 
-  useEffect(() => {
-    if (selectedTab === 'daily') loadDailyReports();
-    if (selectedTab === 'platform') loadPlatformStats();
-    if (selectedTab === 'players') loadTopPlayers();
-  }, [selectedTab, dateRange]);
-
-  const loadDashboardData = async () => {
+  const loadPlayersData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/backend-api/reports/dashboard-summary');
+      const res = await fetch('/backend-api/reports/simple-players-report');
       const data = await res.json();
-      if (data.success) setDashboardData(data);
+      if (data.success) setPlayersData(data);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadDailyReports = async () => {
-    const res = await fetch(`/backend-api/reports/daily-reports?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`);
-    const data = await res.json();
-    if (data.success) setDailyReports(data.reports);
-  };
-
-  const loadPlatformStats = async () => {
-    const res = await fetch(`/backend-api/reports/platform-stats?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`);
-    const data = await res.json();
-    if (data.success) setPlatformStats(data.platforms);
-  };
-
-  const loadTopPlayers = async () => {
-    const res = await fetch(`/backend-api/reports/top-players?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}&limit=20`);
-    const data = await res.json();
-    if (data.success) setTopPlayers(data.players);
-  };
-
   const refreshData = async () => {
     setRefreshing(true);
-    await loadDashboardData();
-    if (selectedTab === 'daily') loadDailyReports();
-    if (selectedTab === 'platform') loadPlatformStats();
-    if (selectedTab === 'players') loadTopPlayers();
+    await loadPlayersData();
     setRefreshing(false);
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'games') {
+      navigate('/CL_____________________________________________________________________________________******_/Admin/games');
+    } else if (tab === 'paid') {
+      navigate('/CL_____________________________________________________________________________________******_/Admin/Admin_Paid');
+    }
   };
 
   const formatCurrency = (n) =>
@@ -69,134 +60,305 @@ export default function AdminReportDashboard() {
 
   const formatNumber = (n) => new Intl.NumberFormat('zh-CN').format(n || 0);
 
-  if (loading) return <div className="p-10 text-center text-xl">Loading...</div>;
+  const formatDate = (dateString) => {
+    if (!dateString) return '从未登录';
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN');
+  };
 
-  const today = dashboardData?.today || {};
+  const getStatusColor = (status) => {
+    switch(status) {
+      case '🟢 ONLINE': return 'text-green-600 bg-green-50';
+      case '🟡 RECENT (1H)': return 'text-yellow-600 bg-yellow-50';
+      case '🟠 TODAY': return 'text-orange-600 bg-orange-50';
+      case '⚫ OFFLINE': return 'text-gray-600 bg-gray-50';
+      case 'NEVER LOGGED IN': return 'text-gray-400 bg-gray-100';
+      default: return 'text-gray-600 bg-gray-50';
+    }
+  };
+
+  const getAccountStatusColor = (status) => {
+    switch(status) {
+      case 'active': return 'text-green-800 bg-green-100';
+      case 'inactive': return 'text-gray-800 bg-gray-100';
+      case 'suspended': return 'text-red-800 bg-red-100';
+      default: return 'text-gray-800 bg-gray-100';
+    }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">正在加载玩家数据...</p>
+      </div>
+    </div>
+  );
+
+  const summary = playersData?.summary || {};
+  const players = playersData?.players || [];
+  
+  // 如果需要，只过滤在线玩家
+  const displayedPlayers = showOnlineOnly 
+    ? players.filter(p => p.online_status === '🟢 ONLINE')
+    : players;
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-
-      {/* Header */}
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">📊 Admin Report Dashboard</h1>
-        <button onClick={refreshData} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded">
-          <RefreshCw className={refreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
-      </div>
-
-      {/* Simple Stats Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 border rounded">
-          <Users /> Active Players
-          <div className="text-xl font-bold">{formatNumber(today.active_players)}</div>
-        </div>
-
-        <div className="bg-white p-4 border rounded">
-          <BarChart3 /> Total Bet
-          <div className="text-xl font-bold">{formatCurrency(today.total_bet_amount)}</div>
-        </div>
-
-        <div className="bg-white p-4 border rounded">
-          <DollarSign /> GGR
-          <div className="text-xl font-bold">{formatCurrency(today.gross_gaming_revenue)}</div>
-        </div>
-
-        <div className="bg-white p-4 border rounded">
-          💰 Net Profit
-          <div className="text-xl font-bold">{formatCurrency(today.net_revenue)}</div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        {['overview', 'daily', 'platform', 'players'].map(t => (
+    <div className="p-4 bg-gray-50 min-h-screen">
+      {/* 顶部标题和选项卡 */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">👥 玩家报表</h1>
+            <p className="text-gray-600">系统中所有玩家的信息</p>
+          </div>
           <button
-            key={t}
-            onClick={() => setSelectedTab(t)}
-            className={`px-4 py-2 border rounded ${selectedTab === t ? 'bg-blue-600 text-white' : 'bg-white'}`}
+            onClick={refreshData}
+            className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            {t.toUpperCase()}
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            刷新
           </button>
-        ))}
+        </div>
+
+        {/* 选项卡导航 */}
+        <div className="flex border-b">
+          <button
+            onClick={() => handleTabChange('games')}
+            className={`flex items-center gap-2 px-4 py-2 font-medium ${
+              activeTab === 'games'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4" />
+            游戏仪表板
+          </button>
+          
+          <button
+            onClick={() => handleTabChange('paid')}
+            className={`flex items-center gap-2 px-4 py-2 font-medium ${
+              activeTab === 'paid'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+          >
+            <CreditCard className="w-4 h-4" />
+            管理员支付
+          </button>
+        </div>
       </div>
 
-      {/* Date Filter */}
-      {selectedTab !== 'overview' && (
-        <div className="flex gap-2 mb-4">
-          <input type="date" value={dateRange.startDate} onChange={e => setDateRange({ ...dateRange, startDate: e.target.value })} className="border px-2" />
-          <input type="date" value={dateRange.endDate} onChange={e => setDateRange({ ...dateRange, endDate: e.target.value })} className="border px-2" />
+      {/* 根据活动选项卡显示内容 */}
+      {activeTab === 'games' ? (
+        <>
+          {/* 在线状态摘要 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-white p-3 border rounded">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-700">当前在线</span>
+              </div>
+              <div className="text-xl font-bold mt-1">{summary.online_players || 0}</div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span className="text-gray-700">最近1小时</span>
+              </div>
+              <div className="text-xl font-bold mt-1">{summary.recent_players || 0}</div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span className="text-gray-700">今天</span>
+              </div>
+              <div className="text-xl font-bold mt-1">{summary.today_players || 0}</div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <span className="text-gray-700">离线</span>
+              </div>
+              <div className="text-xl font-bold mt-1">
+                {(summary.offline_players || 0) + (summary.never_logged || 0)}
+              </div>
+            </div>
+          </div>
+
+          {/* 财务摘要 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-white p-3 border rounded">
+              <div className="text-gray-700">总余额</div>
+              <div className="text-lg font-bold">{formatCurrency(summary.total_balance)}</div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="text-gray-700">总利润</div>
+              <div className={`text-lg font-bold ${
+                summary.total_profit >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(summary.total_profit)}
+              </div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="text-gray-700">总存款</div>
+              <div className="text-lg font-bold">{formatCurrency(summary.total_deposit)}</div>
+              <div className="text-sm text-gray-600">
+                {formatNumber(summary.total_deposit_times)} 次
+              </div>
+            </div>
+            
+            <div className="bg-white p-3 border rounded">
+              <div className="text-gray-700">总取款</div>
+              <div className="text-lg font-bold">{formatCurrency(summary.total_withdraw)}</div>
+              <div className="text-sm text-gray-600">
+                {formatNumber(summary.total_withdraw_times)} 次
+              </div>
+            </div>
+          </div>
+
+          {/* 在线切换按钮 */}
+          <div className="mb-4">
+            <button
+              onClick={() => setShowOnlineOnly(!showOnlineOnly)}
+              className={`px-3 py-1 border rounded flex items-center gap-1 ${
+                showOnlineOnly 
+                  ? 'bg-green-100 text-green-800 border-green-300' 
+                  : 'bg-white text-gray-700'
+              }`}
+            >
+              {showOnlineOnly ? (
+                <>
+                  <Wifi className="w-4 h-4" />
+                  <span>仅显示在线 ({summary.online_players})</span>
+                </>
+              ) : (
+                <>
+                  <Users className="w-4 h-4" />
+                  <span>显示所有玩家 ({players.length})</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* 玩家表格 */}
+          <div className="bg-white border rounded overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left p-2">玩家ID</th>
+                    <th className="text-left p-2">账户状态</th>
+                    <th className="text-left p-2">在线状态</th>
+                    <th className="text-left p-2">最后登录</th>
+                    <th className="text-left p-2">余额</th>
+                    <th className="text-left p-2">总投注</th>
+                    <th className="text-left p-2">利润</th>
+                    <th className="text-left p-2">存款</th>
+                    <th className="text-left p-2">取款</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {displayedPlayers.map((player) => (
+                    <tr key={player.player_id} className="border-t hover:bg-gray-50">
+                      <td className="p-2 font-mono">{player.player_id}</td>
+                      
+                      <td className="p-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          getAccountStatusColor(player.account_status)
+                        }`}>
+                          {player.account_status === 'active' ? '活跃' : 
+                           player.account_status === 'inactive' ? '非活跃' : 
+                           player.account_status === 'suspended' ? '已暂停' : player.account_status}
+                        </span>
+                      </td>
+                      
+                      <td className="p-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          getStatusColor(player.online_status)
+                        }`}>
+                          {player.online_status === '🟢 ONLINE' ? '🟢 在线' :
+                           player.online_status === '🟡 RECENT (1H)' ? '🟡 最近1小时' :
+                           player.online_status === '🟠 TODAY' ? '🟠 今天' :
+                           player.online_status === '⚫ OFFLINE' ? '⚫ 离线' :
+                           player.online_status === 'NEVER LOGGED IN' ? '从未登录' : player.online_status}
+                        </span>
+                      </td>
+                      
+                      <td className="p-2 text-gray-600">
+                        {formatDate(player.last_login)}
+                      </td>
+                      
+                      <td className="p-2 font-medium">
+                        {formatCurrency(player.total_balance)}
+                      </td>
+                      
+                      <td className="p-2">
+                        {formatCurrency(player.total_cost)}
+                      </td>
+                      
+                      <td className={`p-2 font-medium ${
+                        player.player_profit >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {formatCurrency(player.player_profit)}
+                      </td>
+                      
+                      <td className="p-2">
+                        <div>
+                          <div className="font-medium">{formatCurrency(player.total_deposit)}</div>
+                          <div className="text-xs text-gray-600">
+                            {formatNumber(player.deposit_times)} 次
+                          </div>
+                        </div>
+                      </td>
+                      
+                      <td className="p-2">
+                        <div>
+                          <div className="font-medium">{formatCurrency(player.total_withdraw)}</div>
+                          <div className="text-xs text-gray-600">
+                            {formatNumber(player.withdraw_times)} 次
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 底部摘要 */}
+          <div className="mt-3 text-sm text-gray-600">
+            <div className="flex justify-between items-center">
+              <div>
+                显示 {displayedPlayers.length} / {players.length} 名玩家
+                {showOnlineOnly && ` (仅在线: ${summary.online_players})`}
+              </div>
+              <div>
+                最后更新: {playersData?.generated_at ? 
+                  new Date(playersData.generated_at).toLocaleTimeString('zh-CN') : 
+                  '无数据'}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="bg-white border rounded p-6 text-center">
+          <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h2 className="text-xl font-bold text-gray-700 mb-2">管理员支付页面</h2>
+          <p className="text-gray-600 mb-4">
+            点击"管理员支付"选项卡时激活此页面
+          </p>
+          <div className="text-sm text-gray-500">
+            路径: /admin/Admin_Paid
+          </div>
         </div>
       )}
-
-      {/* TABLES */}
-      {selectedTab === 'daily' && (
-        <table className="w-full bg-white border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Date</th><th>Players</th><th>Bets</th><th>Total Bet</th><th>GGR</th><th>Net</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dailyReports.map(r => (
-              <tr key={r.id} className="border-t">
-                <td>{r.report_date}</td>
-                <td>{formatNumber(r.active_players)}</td>
-                <td>{formatNumber(r.total_bets)}</td>
-                <td>{formatCurrency(r.total_bet_amount)}</td>
-                <td>{formatCurrency(r.gross_gaming_revenue)}</td>
-                <td>{formatCurrency(r.net_revenue)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {selectedTab === 'platform' && (
-        <table className="w-full bg-white border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>Platform</th>
-              <th>Valid Bet</th>
-              <th>Commission</th>
-            </tr>
-          </thead>
-          <tbody>
-            {platformStats.map(p => (
-              <tr key={p.plat_type} className="border-t">
-                <td>{p.plat_type}</td>
-                <td>{formatCurrency(p.total_valid_amount)}</td>
-                <td>{formatCurrency(p.total_cost)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {selectedTab === 'players' && (
-        <table className="w-full bg-white border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th>#</th><th>Player</th><th>Bets</th><th>Total Bet</th><th>Valid</th><th>Win/Loss</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topPlayers.map((p, i) => (
-              <tr key={p.player_id} className="border-t">
-                <td>{i + 1}</td>
-                <td>{p.player_id}</td>
-                <td>{formatNumber(p.total_bets)}</td>
-                <td>{formatCurrency(p.total_bet_amount)}</td>
-                <td>{formatCurrency(p.total_valid_amount)}</td>
-                <td className={p.total_win_loss > 0 ? "text-green-600" : "text-red-600"}>
-                  {formatCurrency(p.total_win_loss)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
     </div>
   );
 }

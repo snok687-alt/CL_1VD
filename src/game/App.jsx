@@ -309,20 +309,91 @@ const App = () => {
       setError('รูปแบบบัญชีไม่ถูกต้อง (5-11 ตัวอักษรและตัวเลข)');
       return;
     }
+
     setIsCheckingAccount(true);
     setError('');
-    const result = await checkAccount(playerId);
-    setAccountCheckResult(result);
 
-    if (result.exists === true) {
-      setLoading('login');
-      setTimeout(() => {
-        setUser({ playerId: playerId.trim(), currency: 'CNY', platType: 'ag' });
-        setLoading('');
-      }, 500);
+    try {
+      // ✅ ตรวจสอบใน MySQL ก่อน
+      const mysqlCheck = await fetch(
+        `/backend-api/game/check-game-account?playerId=${playerId}`
+      );
+      const mysqlData = await mysqlCheck.json();
+
+      if (!mysqlCheck.ok) {
+        throw new Error('MySQL 检查失败');
+      }
+
+      // ถ้ามีใน MySQL
+      if (mysqlData.exists === true) {
+        console.log('✅ พบบัญชีใน MySQL:', playerId);
+
+        // อัปเดตเวลาล็อกอิน
+        await fetch('/backend-api/game/update-game-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: playerId.trim() })
+        });
+
+        setAccountCheckResult({
+          exists: true,
+          message: '账号存在 (数据库验证)'
+        });
+
+        setLoading('login');
+        setTimeout(() => {
+          setUser({
+            playerId: playerId.trim(),
+            currency: 'CNY',
+            platType: 'ag',
+            fromMysql: true // เพิ่ม flag ว่ามาจาก MySQL
+          });
+          setLoading('');
+        }, 500);
+
+      } else {
+        // ตรวจสอบใน API เก่า
+        const apiResult = await checkAccount(playerId);
+        setAccountCheckResult(apiResult);
+
+        if (apiResult.exists === true) {
+          // ✅ บันทึกลง MySQL ด้วย
+          try {
+            await fetch('/backend-api/game/create-game-account', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                playerId: playerId.trim(),
+                platType: 'ag',
+                currency: 'CNY'
+              })
+            });
+            console.log('✅ บันทึกลง MySQL สำเร็จ');
+          } catch (dbError) {
+            console.warn('⚠️ ไม่สามารถบันทึกลง MySQL:', dbError);
+          }
+
+          setLoading('login');
+          setTimeout(() => {
+            setUser({
+              playerId: playerId.trim(),
+              currency: 'CNY',
+              platType: 'ag',
+              fromApi: true
+            });
+            setLoading('');
+          }, 500);
+        }
+      }
+    } catch (err) {
+      console.error('Error checking account:', err);
+      setAccountCheckResult({
+        exists: null,
+        error: '检查失败，请稍后重试'
+      });
+    } finally {
+      setIsCheckingAccount(false);
     }
-
-    setIsCheckingAccount(false);
   };
 
   const handleCreateAccount = async () => {
@@ -372,12 +443,43 @@ const App = () => {
       setError('请输入玩家账号');
       return;
     }
+
     setLoading('login');
-    setUser({ playerId: playerId.trim(), currency: 'CNY', platType: 'ag' });
-    await handleLoadGameList();
-    await loadBalances();
-    setAccountCheckResult(null);
-    setLoading('');
+
+    try {
+      // ✅ ตรวจสอบใน MySQL ก่อน
+      const mysqlCheck = await fetch(
+        `/backend-api/game/check-game-account?playerId=${playerId}`
+      );
+
+      if (mysqlCheck.ok) {
+        const mysqlData = await mysqlCheck.json();
+
+        if (mysqlData.exists === true) {
+          // อัปเดตเวลาล็อกอิน
+          await fetch('/backend-api/game/update-game-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId: playerId.trim() })
+          });
+        }
+      }
+
+      setUser({
+        playerId: playerId.trim(),
+        currency: 'CNY',
+        platType: 'ag'
+      });
+
+      await handleLoadGameList();
+      await loadBalances();
+      setAccountCheckResult(null);
+
+    } catch (err) {
+      setError('登录失败');
+    } finally {
+      setLoading('');
+    }
   };
 
   const handleLogout = () => {
@@ -411,6 +513,18 @@ const App = () => {
     }
   };
 
+  // เพิ่มฟังก์ชันดึง IP จาก client
+  const getClientIP = async () => {
+    try {
+      const response = await fetch('https://api.ipify.org?format=json');
+      const data = await response.json();
+      return data.ip;
+    } catch (error) {
+      return 'unknown';
+    }
+  };
+
+  // แก้ไข handlePlayGame
   const handlePlayGame = async (game) => {
     setLoading(game.gameCode);
 
@@ -432,9 +546,32 @@ const App = () => {
       return;
     }
 
-    // บันทึกเกมลง localStorage
-    saveGameSession(game, url, user.playerId);
+    // ✅ ดึง IP จริง
+    const clientIP = await getClientIP();
 
+    // บันทึกการเข้าถึงเกม
+    try {
+      await fetch('/backend-api/logs/game-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: user.playerId,
+          platType: game.platType,
+          gameType: game.gameType,
+          gameCode: game.gameCode,
+          ingress: 'device2',
+          url: url,
+          returnUrl: window.location.href,
+          ipAddress: clientIP, // ✅ ส่ง IP จริง
+          userAgent: navigator.userAgent
+        })
+      });
+      console.log('✅ Game access logged');
+    } catch (err) {
+      console.warn('⚠️ Failed to log game access:', err);
+    }
+
+    saveGameSession(game, url, user.playerId);
     setCurrentGame(game);
     setGameUrl(url);
     setShowGameModal(true);
@@ -443,6 +580,7 @@ const App = () => {
 
   const handlePlayDemoGame = async (game) => {
     setDemoGameLoading(true);
+
     try {
       const result = await getDemoGameUrl(
         game.platType || 'ag',
@@ -454,6 +592,26 @@ const App = () => {
       );
 
       if (result.success && result.url) {
+        // ✅ บันทึกการทดลองเล่น
+        try {
+          await fetch('/backend-api/logs/game-demo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              platType: game.platType || 'ag',
+              gameType: game.gameType || '2',
+              gameCode: game.gameCode,
+              ingress: 'device2',
+              url: result.url,
+              returnUrl: window.location.href,
+              ipAddress: '',
+              userAgent: navigator.userAgent
+            })
+          });
+        } catch (err) {
+          console.warn('⚠️ Failed to log demo access:', err);
+        }
+
         setDemoGameUrl(result.url);
         setCurrentGame(game);
         setShowDemoGameModal(true);
@@ -549,34 +707,34 @@ const App = () => {
   };
 
   // ใน App component
-useEffect(() => {
-  // เมื่อ user เป็น null (logout) ให้ clear ทุกอย่าง
-  if (!user) {
-    // Clear USDT modal state
-    transferState.setUsdtDeposit({
-      amount: '',
-      orderId: '',
-      status: '',
-      usdtAmount: 0,
-      address: '',
-      expiresAt: null,
-      qrCodeUrl: ''
-    });
-    transferState.setUsdtOrders([]);
-    transferState.setShowUSDTDepositModal(false);
-    transferState.setShowUsdtHistory(false);
-    
-    // ส่ง request เพื่อ clear pending orders บน server
-    const lastPlayerId = localStorage.getItem('lastPlayerId');
-    if (lastPlayerId) {
-      fetch('/backend-api/crypto/cancel-all-pending', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId: lastPlayerId })
+  useEffect(() => {
+    // เมื่อ user เป็น null (logout) ให้ clear ทุกอย่าง
+    if (!user) {
+      // Clear USDT modal state
+      transferState.setUsdtDeposit({
+        amount: '',
+        orderId: '',
+        status: '',
+        usdtAmount: 0,
+        address: '',
+        expiresAt: null,
+        qrCodeUrl: ''
       });
+      transferState.setUsdtOrders([]);
+      transferState.setShowUSDTDepositModal(false);
+      transferState.setShowUsdtHistory(false);
+
+      // ส่ง request เพื่อ clear pending orders บน server
+      const lastPlayerId = localStorage.getItem('lastPlayerId');
+      if (lastPlayerId) {
+        fetch('/backend-api/crypto/cancel-all-pending', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId: lastPlayerId })
+        });
+      }
     }
-  }
-}, [user]);
+  }, [user]);
 
   const handleTransfer = async () => {
     await transferHandlers.handleTransfer(
@@ -626,72 +784,72 @@ useEffect(() => {
   };
 
   // แล้วใช้ใน handleCheckUSDTOrder:
-// แก้ไขฟังก์ชันใน App.js
-const handleCheckUSDTOrder = async (orderId) => {
-  try {
-    // ✅ ตรวจสอบว่า orderId มีค่าหรือไม่
-    if (!orderId || orderId.trim() === '') {
-      console.error('❌ orderId ว่างเปล่า');
-      return { 
-        success: false, 
-        message: 'orderId ไม่สามารถเป็นค่าว่างได้' 
-      };
-    }
+  // แก้ไขฟังก์ชันใน App.js
+  const handleCheckUSDTOrder = async (orderId) => {
+    try {
+      // ✅ ตรวจสอบว่า orderId มีค่าหรือไม่
+      if (!orderId || orderId.trim() === '') {
+        console.error('❌ orderId ว่างเปล่า');
+        return {
+          success: false,
+          message: 'orderId ไม่สามารถเป็นค่าว่างได้'
+        };
+      }
 
-    // ✅ สร้าง URL ให้ถูกต้อง
-    const url = `/backend-api/crypto/check-order/${orderId}?playerId=${user.playerId}`;
-    console.log('🔍 Checking USDT order URL:', url);
+      // ✅ สร้าง URL ให้ถูกต้อง
+      const url = `/backend-api/crypto/check-order/${orderId}?playerId=${user.playerId}`;
+      console.log('🔍 Checking USDT order URL:', url);
 
-    const response = await fetch(url);
-    
-    // ✅ ตรวจสอบ status code
-    if (!response.ok) {
-      console.error('❌ Server response not OK:', response.status);
-      return { 
-        success: false, 
-        message: `เซิร์ฟเวอร์ตอบกลับด้วยสถานะ ${response.status}` 
-      };
-    }
+      const response = await fetch(url);
 
-    // ✅ ตรวจสอบ content type ก่อน parse JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error('❌ Response is not JSON:', text.substring(0, 200));
-      return { 
-        success: false, 
-        message: 'เซิร์ฟเวอร์ตอบกลับด้วยข้อมูลที่ไม่ใช่ JSON' 
-      };
-    }
+      // ✅ ตรวจสอบ status code
+      if (!response.ok) {
+        console.error('❌ Server response not OK:', response.status);
+        return {
+          success: false,
+          message: `เซิร์ฟเวอร์ตอบกลับด้วยสถานะ ${response.status}`
+        };
+      }
 
-    const data = await response.json();
-    
-    // ✅ ตรวจสอบความเป็นเจ้าของ
-    if (!validateOrderOwnership(data, user.playerId)) {
+      // ✅ ตรวจสอบ content type ก่อน parse JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Response is not JSON:', text.substring(0, 200));
+        return {
+          success: false,
+          message: 'เซิร์ฟเวอร์ตอบกลับด้วยข้อมูลที่ไม่ใช่ JSON'
+        };
+      }
+
+      const data = await response.json();
+
+      // ✅ ตรวจสอบความเป็นเจ้าของ
+      if (!validateOrderOwnership(data, user.playerId)) {
+        return {
+          success: false,
+          message: '无权访问此订单'
+        };
+      }
+
+      return data;
+    } catch (err) {
+      console.error('❌ Error checking USDT order:', err);
+
+      // ✅ จัดการ error ที่เฉพาะเจาะจง
+      if (err.name === 'SyntaxError' && err.message.includes('JSON')) {
+        return {
+          success: false,
+          message: 'ข้อมูลที่ได้รับจากเซิร์ฟเวอร์ไม่ถูกต้อง'
+        };
+      }
+
       return {
         success: false,
-        message: '无权访问此订单'
+        message: '检查订单失败'
       };
     }
-
-    return data;
-  } catch (err) {
-    console.error('❌ Error checking USDT order:', err);
-    
-    // ✅ จัดการ error ที่เฉพาะเจาะจง
-    if (err.name === 'SyntaxError' && err.message.includes('JSON')) {
-      return { 
-        success: false, 
-        message: 'ข้อมูลที่ได้รับจากเซิร์ฟเวอร์ไม่ถูกต้อง' 
-      };
-    }
-    
-    return { 
-      success: false, 
-      message: '检查订单失败' 
-    };
-  }
-};
+  };
 
   const handleLoadUSDTHistory = async (playerId) => {
     try {

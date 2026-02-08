@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Copy, CheckCircle, XCircle, Clock, ExternalLink,
-  RefreshCw, Search, Calculator
+  RefreshCw, Search, Calculator,
+  Gamepad2, CreditCard, Users, DollarSign
 } from "lucide-react";
 
 function Admin_Paid() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [withdraws, setWithdraws] = useState([]);
   const [txHashes, setTxHashes] = useState({});
   const [loadingIds, setLoadingIds] = useState({});
@@ -13,31 +17,33 @@ function Admin_Paid() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stats, setStats] = useState(null);
   const [exchangeRate, setExchangeRate] = useState(7.2);
+  const [activeTab, setActiveTab] = useState('withdraw');
 
   useEffect(() => {
+    // ตรวจสอบ path เพื่อตั้งค่าแท็บเริ่มต้น
+    if (location.pathname.includes('Admin_Paid')) {
+      setActiveTab('withdraw');
+    } else if (location.pathname.includes('games')) {
+      setActiveTab('games');
+    }
+    
     loadWithdraws();
-    loadStats();
     loadExchangeRate();
-  }, []);
+  }, [location.pathname]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'games') {
+      navigate('/CL_____________________________________________________________________________________******_/Admin/games');
+    } else if (tab === 'withdraw') {
+      navigate('/CL_____________________________________________________________________________________******_/Admin/Admin_Paid');
+    }
+  };
 
   // ✅ 使用默认值代替API调用
   const loadExchangeRate = async () => {
     // 暂时使用默认值
     setExchangeRate(7.2);
-    
-    // 如果将来需要调用API，可以添加回来
-    /*
-    try {
-      const res = await fetch("/backend-api/settings/exchange-rate");
-      const data = await res.json();
-      if (data.success && data.rate) {
-        setExchangeRate(parseFloat(data.rate) || 7.2);
-      }
-    } catch (err) {
-      console.error("Load exchange rate error:", err);
-      setExchangeRate(7.2); // fallback
-    }
-    */
   };
 
   const loadWithdraws = async () => {
@@ -69,19 +75,6 @@ function Admin_Paid() {
     };
     
     setStats(statsData);
-    
-    // 如果将来需要调用API，可以添加回来
-    /*
-    try {
-      const res = await fetch("/backend-api/withdraw/admin/stats");
-      const data = await res.json();
-      if (data.success) setStats(data.stats);
-    } catch (err) {
-      console.error("加载统计错误:", err);
-      // 如果API错误，从现有数据计算
-      calculateLocalStats();
-    }
-    */
   };
 
   // 当withdraws改变时重新加载数据
@@ -515,139 +508,189 @@ function Admin_Paid() {
 
   return (
     <div className="p-4 md:p-6 bg-gray-900 min-h-screen text-white">
+      {/* Header with Tabs */}
       <div className="mb-6">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">💰 取款管理</h1>
-            <p className="text-gray-400">管理USDT TRC-20取款请求</p>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+              {activeTab === 'withdraw' ? '💰 取款管理' : '🎮 Games Dashboard'}
+            </h1>
+            <p className="text-gray-400">
+              {activeTab === 'withdraw' ? '管理USDT TRC-20取款请求' : '游戏玩家数据统计'}
+            </p>
           </div>
-          <div className="flex items-center gap-2 bg-blue-900/30 px-3 py-2 rounded-lg">
-            <Calculator className="w-4 h-4 text-blue-400" />
-            <div className="text-sm">
-              <p className="text-blue-300">汇率</p>
-              <p className="font-bold">1 CNY = {exchangeRate} USDT</p>
+          {activeTab === 'withdraw' && (
+            <div className="flex items-center gap-2 bg-blue-900/30 px-3 py-2 rounded-lg">
+              <Calculator className="w-4 h-4 text-blue-400" />
+              <div className="text-sm">
+                <p className="text-blue-300">汇率</p>
+                <p className="font-bold">1 CNY = {exchangeRate} USDT</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      </div>
-      
-      {/* 统计部分 - 从现有数据计算 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-400">待处理</p>
-              <p className="text-xl md:text-2xl font-bold text-yellow-300">
-                {withdraws.filter(w => w.status === 'pending').length}
-              </p>
-            </div>
-            <Clock className="w-6 h-6 md:w-8 md:h-8 text-yellow-400" />
-          </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-400">已支付</p>
-              <p className="text-xl md:text-2xl font-bold text-green-300">
-                {withdraws.filter(w => w.status === 'paid').length}
-              </p>
-            </div>
-            <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
-          </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-400">已拒绝</p>
-              <p className="text-xl md:text-2xl font-bold text-red-300">
-                {withdraws.filter(w => w.status === 'rejected').length}
-              </p>
-            </div>
-            <XCircle className="w-6 h-6 md:w-8 md:h-8 text-red-400" />
-          </div>
-        </div>
-        
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-400">支付总USDT</p>
-              <p className="text-xl md:text-2xl font-bold text-purple-300">
-                {formatUSDT(
-                  withdraws
-                    .filter(w => w.status === 'paid')
-                    .reduce((sum, w) => {
-                      const usdtAmount = w.usdt_amount || calculateNetUSDT(w.amount);
-                      return sum + parseFloat(usdtAmount || 0);
-                    }, 0)
-                )}
-              </p>
-              <p className="text-xs text-gray-400">USDT</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="搜索玩家ID或钱包地址..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-2 overflow-x-auto">
-            {['all', 'pending', 'paid', 'rejected'].map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap ${filter === f ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-              >
-                {f === 'all' ? '全部' :
-                 f === 'pending' ? '待处理' :
-                 f === 'paid' ? '已支付' : '已拒绝'}
-              </button>
-            ))}
-          </div>
+
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-700">
+          <button
+            onClick={() => handleTabChange('games')}
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+              activeTab === 'games'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <Gamepad2 className="w-5 h-5" />
+            Games Dashboard
+          </button>
           
           <button
-            onClick={() => {
-              loadWithdraws(); // 重新加载数据
-            }}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center gap-2"
+            onClick={() => handleTabChange('withdraw')}
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
+              activeTab === 'withdraw'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-gray-300'
+            }`}
           >
-            <RefreshCw className="w-4 h-4" />
-            <span className="hidden md:inline">刷新</span>
+            <CreditCard className="w-5 h-5" />
+            Withdraw Management
           </button>
         </div>
       </div>
-      
-      {filteredWithdraws.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 rounded-lg">
-          <p className="text-gray-400">没有取款请求</p>
-        </div>
-      ) : (
+
+      {/* Content based on active tab */}
+      {activeTab === 'withdraw' ? (
         <>
-          <div className="md:hidden">
-            {renderCardView()}
+          {/* 统计部分 - 从现有数据计算 */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">待处理</p>
+                  <p className="text-xl md:text-2xl font-bold text-yellow-300">
+                    {withdraws.filter(w => w.status === 'pending').length}
+                  </p>
+                </div>
+                <Clock className="w-6 h-6 md:w-8 md:h-8 text-yellow-400" />
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">已支付</p>
+                  <p className="text-xl md:text-2xl font-bold text-green-300">
+                    {withdraws.filter(w => w.status === 'paid').length}
+                  </p>
+                </div>
+                <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">已拒绝</p>
+                  <p className="text-xl md:text-2xl font-bold text-red-300">
+                    {withdraws.filter(w => w.status === 'rejected').length}
+                  </p>
+                </div>
+                <XCircle className="w-6 h-6 md:w-8 md:h-8 text-red-400" />
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-400">支付总USDT</p>
+                  <p className="text-xl md:text-2xl font-bold text-purple-300">
+                    {formatUSDT(
+                      withdraws
+                        .filter(w => w.status === 'paid')
+                        .reduce((sum, w) => {
+                          const usdtAmount = w.usdt_amount || calculateNetUSDT(w.amount);
+                          return sum + parseFloat(usdtAmount || 0);
+                        }, 0)
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-400">USDT</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="hidden md:block">
-            {renderTableView()}
+          
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="搜索玩家ID或钱包地址..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2 overflow-x-auto">
+                {['all', 'pending', 'paid', 'rejected'].map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`px-4 py-2 rounded-lg whitespace-nowrap ${filter === f ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+                  >
+                    {f === 'all' ? '全部' :
+                     f === 'pending' ? '待处理' :
+                     f === 'paid' ? '已支付' : '已拒绝'}
+                  </button>
+                ))}
+              </div>
+              
+              <button
+                onClick={() => {
+                  loadWithdraws(); // 重新加载数据
+                }}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="hidden md:inline">刷新</span>
+              </button>
+            </div>
           </div>
+          
+          {filteredWithdraws.length === 0 ? (
+            <div className="text-center py-12 bg-gray-800 rounded-lg">
+              <p className="text-gray-400">没有取款请求</p>
+            </div>
+          ) : (
+            <>
+              <div className="md:hidden">
+                {renderCardView()}
+              </div>
+              <div className="hidden md:block">
+                {renderTableView()}
+              </div>
+            </>
+          )}
+          
+          {filteredWithdraws.length > 0 && (
+            <div className="mt-4 text-center text-sm text-gray-400">
+              显示 {filteredWithdraws.length} 条记录
+            </div>
+          )}
         </>
-      )}
-      
-      {filteredWithdraws.length > 0 && (
-        <div className="mt-4 text-center text-sm text-gray-400">
-          显示 {filteredWithdraws.length} 条记录
+      ) : (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 text-center">
+          <Gamepad2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h2 className="text-xl font-bold text-gray-300 mb-2">Games Dashboard</h2>
+          <p className="text-gray-400 mb-4">
+            กำลังเปลี่ยนไปยังหน้า Games Dashboard...
+          </p>
+          <div className="text-sm text-gray-500">
+            กดแท็บ "Games Dashboard" เพื่อดูรายงานผู้เล่น
+          </div>
         </div>
       )}
     </div>
