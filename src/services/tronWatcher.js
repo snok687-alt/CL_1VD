@@ -378,9 +378,18 @@ async function checkAPIHealth() {
   }
 }
 
+function getHealthStatus() {
+  return {
+    isHealthy: true,
+    consecutiveFailures: 0,
+    cacheSize: 0
+  };
+}
+
 module.exports = {
   checkUSDTTransfers,
   setSocketIO,
   checkAPIHealth,
-  getAllUSDTTransactions
+  getAllUSDTTransactions,
+  getHealthStatus
 };

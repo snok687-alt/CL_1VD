@@ -1,4 +1,6 @@
 const { pool } = require('../config/db');
+const axios = require("axios");
+const CryptoJS = require("crypto-js");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -514,5 +516,49 @@ exports.checkUsername = async (req, res) => {
   } catch (err) {
     console.error('Error checking username:', err);
     res.status(500).json({ exists: false });
+  }
+};
+
+exports.claimDailyGift = async (req, res) => {
+  try {
+    const username = req.user.username; // จาก JWT
+
+    // เช็ควันนี้รับแล้วไหม
+    const [check] = await db.query(
+      "SELECT last_claim_date FROM users WHERE username=?",
+      [username]
+    );
+
+    const today = new Date().toISOString().slice(0, 10);
+    if (check[0]?.last_claim_date?.toISOString().slice(0, 10) === today) {
+      return res.json({ success: false, message: "Already claimed" });
+    }
+
+    // เพิ่ม gift
+    await db.query(`
+      UPDATE users 
+      SET amount_gift = amount_gift + 1,
+          last_claim_date = NOW()
+      WHERE username = ?
+    `, [username]);
+
+    // ดึงยอดใหม่
+    const [user] = await db.query(
+      "SELECT amount_gift FROM users WHERE username=?",
+      [username]
+    );
+
+    const amount = user[0].amount_gift;
+
+    // ✅ ถ้า amount_gift == 1 เติมเงินเข้าเกมทันที
+    if (amount === 1) {
+      await transferToGame(username, 1);
+    }
+
+    res.json({ success: true, amount_gift: amount });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false });
   }
 };

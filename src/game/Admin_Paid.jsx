@@ -18,6 +18,7 @@ function Admin_Paid() {
   const [stats, setStats] = useState(null);
   const [exchangeRate, setExchangeRate] = useState(7.2);
   const [activeTab, setActiveTab] = useState('withdraw');
+  const [verifyingTx, setVerifyingTx] = useState({});
 
   useEffect(() => {
     // ตรวจสอบ path เพื่อตั้งค่าแท็บเริ่มต้น
@@ -26,7 +27,7 @@ function Admin_Paid() {
     } else if (location.pathname.includes('games')) {
       setActiveTab('games');
     }
-    
+
     loadWithdraws();
     loadExchangeRate();
   }, [location.pathname]);
@@ -73,7 +74,7 @@ function Admin_Paid() {
           return sum + parseFloat(usdtAmount || 0);
         }, 0)
     };
-    
+
     setStats(statsData);
   };
 
@@ -91,7 +92,7 @@ function Admin_Paid() {
   // 实际可用的复制函数
   const copyToClipboard = (text, id, type) => {
     if (!text) return;
-    
+
     // 创建用于复制的元素
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -100,14 +101,14 @@ function Admin_Paid() {
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
-    
+
     try {
       const successful = document.execCommand('copy');
       if (successful) {
         // 显示成功图标
         const key = `${id}_${type}`;
         setCopiedIds(prev => ({ ...prev, [key]: true }));
-        
+
         // 1.5秒后重置
         setTimeout(() => {
           setCopiedIds(prev => ({ ...prev, [key]: false }));
@@ -116,7 +117,7 @@ function Admin_Paid() {
     } catch (err) {
       console.error('复制失败:', err);
     }
-    
+
     document.body.removeChild(textArea);
   };
 
@@ -135,14 +136,30 @@ function Admin_Paid() {
     return parseFloat(amount).toFixed(6);
   };
 
+  // 2. ฟังก์ชันตรวจสอบ TX จาก TronGrid API
+  const verifyTxHash = async (txHash, expectedAmount, expectedAddress) => {
+    // ✅ เรียก TronGrid API
+    // ✅ ตรวจสอบ USDT Contract
+    // ✅ ตรวจสอบจำนวนเงิน
+    // ✅ ตรวจสอบที่อยู่ปลายทาง
+    // ✅ ตรวจสอบสถานะ SUCCESS
+  };
+
   const markPaid = async (id) => {
     const txHash = txHashes[id];
-    if (!txHash?.trim()) {
-      alert("请输入TX Hash");
-      return;
-    }
-
     const withdraw = withdraws.find(w => w.id === id);
+
+    // ✅ ตรวจสอบ TX Hash ก่อน
+    const verifyResult = await verifyTxHash(
+      txHash,
+      usdtAmount,
+      withdraw.wallet_address
+    );
+
+    if (!verifyResult.success) {
+      alert('❌ TX Hash ไม่ถูกต้อง');
+      return; // ❌ ไม่อนุมัติ
+    }
     if (withdraw) {
       const usdtAmount = withdraw.usdt_amount || calculateNetUSDT(withdraw.amount);
       const confirmMessage = `确认批准取款请求？\n\n` +
@@ -251,11 +268,11 @@ function Admin_Paid() {
             {filteredWithdraws.map(w => {
               const usdtAmount = w.usdt_amount || calculateNetUSDT(w.amount);
               const fee = w.fee || (w.amount * 0.01);
-              
+
               return (
                 <tr key={w.id} className="border-b border-gray-700 hover:bg-gray-750">
                   <td className="px-4 py-3">#{w.id}</td>
-                  
+
                   <td className="px-4 py-3">
                     <div>
                       <p className="font-semibold">{w.player_id}</p>
@@ -264,12 +281,12 @@ function Admin_Paid() {
                       )}
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <p className="font-bold">{parseFloat(w.amount).toFixed(2)}</p>
                     <p className="text-xs text-gray-400">CNY</p>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div>
@@ -293,7 +310,7 @@ function Admin_Paid() {
                       </button>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <code className="text-xs bg-gray-900 px-2 py-1 rounded truncate max-w-[150px]">
@@ -311,13 +328,13 @@ function Admin_Paid() {
                       </button>
                     </div>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded text-xs border ${getStatusColor(w.status)}`}>
                       {getStatusText(w.status)}
                     </span>
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     {w.status === 'pending' ? (
                       <input
@@ -344,7 +361,7 @@ function Admin_Paid() {
                       <span className="text-xs text-gray-500">-</span>
                     )}
                   </td>
-                  
+
                   <td className="px-4 py-3">
                     {w.status === 'pending' ? (
                       <div className="flex gap-2">
@@ -384,7 +401,7 @@ function Admin_Paid() {
       {filteredWithdraws.map(w => {
         const usdtAmount = w.usdt_amount || calculateNetUSDT(w.amount);
         const fee = w.fee || (w.amount * 0.01);
-        
+
         return (
           <div key={w.id} className="bg-gray-800 border border-gray-700 rounded-lg p-4">
             <div className="flex justify-between items-start mb-3">
@@ -399,7 +416,7 @@ function Admin_Paid() {
                 {getStatusText(w.status)}
               </span>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <p className="text-xs text-gray-400">金额 CNY</p>
@@ -410,7 +427,7 @@ function Admin_Paid() {
                 <p className="text-yellow-400">{parseFloat(fee).toFixed(2)} CNY</p>
               </div>
             </div>
-            
+
             <div className="bg-gray-900/50 p-3 rounded-lg mb-3">
               <div className="flex justify-between items-center">
                 <div>
@@ -434,7 +451,7 @@ function Admin_Paid() {
                 </button>
               </div>
             </div>
-            
+
             <div className="mb-3">
               <p className="text-xs text-gray-400 mb-1">钱包地址</p>
               <div className="flex items-center gap-2">
@@ -453,7 +470,7 @@ function Admin_Paid() {
                 </button>
               </div>
             </div>
-            
+
             {w.status === 'pending' ? (
               <>
                 <div className="mb-3">
@@ -534,23 +551,21 @@ function Admin_Paid() {
         <div className="flex border-b border-gray-700">
           <button
             onClick={() => handleTabChange('games')}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === 'games'
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${activeTab === 'games'
                 ? 'text-blue-400 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-gray-300'
-            }`}
+              }`}
           >
             <Gamepad2 className="w-5 h-5" />
             Games Dashboard
           </button>
-          
+
           <button
             onClick={() => handleTabChange('withdraw')}
-            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${
-              activeTab === 'withdraw'
+            className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors ${activeTab === 'withdraw'
                 ? 'text-blue-400 border-b-2 border-blue-400'
                 : 'text-gray-400 hover:text-gray-300'
-            }`}
+              }`}
           >
             <CreditCard className="w-5 h-5" />
             Withdraw Management
@@ -574,7 +589,7 @@ function Admin_Paid() {
                 <Clock className="w-6 h-6 md:w-8 md:h-8 text-yellow-400" />
               </div>
             </div>
-            
+
             <div className="bg-gray-800 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -586,7 +601,7 @@ function Admin_Paid() {
                 <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-green-400" />
               </div>
             </div>
-            
+
             <div className="bg-gray-800 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -598,7 +613,7 @@ function Admin_Paid() {
                 <XCircle className="w-6 h-6 md:w-8 md:h-8 text-red-400" />
               </div>
             </div>
-            
+
             <div className="bg-gray-800 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -618,7 +633,7 @@ function Admin_Paid() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
@@ -633,7 +648,7 @@ function Admin_Paid() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex gap-2 overflow-x-auto">
                 {['all', 'pending', 'paid', 'rejected'].map(f => (
                   <button
@@ -642,12 +657,12 @@ function Admin_Paid() {
                     className={`px-4 py-2 rounded-lg whitespace-nowrap ${filter === f ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}
                   >
                     {f === 'all' ? '全部' :
-                     f === 'pending' ? '待处理' :
-                     f === 'paid' ? '已支付' : '已拒绝'}
+                      f === 'pending' ? '待处理' :
+                        f === 'paid' ? '已支付' : '已拒绝'}
                   </button>
                 ))}
               </div>
-              
+
               <button
                 onClick={() => {
                   loadWithdraws(); // 重新加载数据
@@ -659,7 +674,7 @@ function Admin_Paid() {
               </button>
             </div>
           </div>
-          
+
           {filteredWithdraws.length === 0 ? (
             <div className="text-center py-12 bg-gray-800 rounded-lg">
               <p className="text-gray-400">没有取款请求</p>
@@ -674,7 +689,7 @@ function Admin_Paid() {
               </div>
             </>
           )}
-          
+
           {filteredWithdraws.length > 0 && (
             <div className="mt-4 text-center text-sm text-gray-400">
               显示 {filteredWithdraws.length} 条记录

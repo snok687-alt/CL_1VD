@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import CryptoJS from 'crypto-js';
 import {
   Eye,
   EyeOff,
@@ -60,6 +61,9 @@ const GiftModal = ({
 
   // ✅ เพิ่มสถานะสำหรับ tracking การรับของขวัญ
   const [todayClaimed, setTodayClaimed] = useState(false);
+
+  const API_SN = import.meta.env?.VITE_API_SN || process.env.API_SN;
+  const API_SECRET = import.meta.env?.VITE_API_SECRET || process.env.API_SECRET;
 
   // ✅ เมื่อ isLoggedIn เปลี่ยนแปลงใน GiftModal ให้อัพเดท parent ด้วย
   useEffect(() => {
@@ -203,8 +207,8 @@ const GiftModal = ({
       for (const endpoint of endpoints) {
         try {
           const random = Math.random().toString(36).substring(2, 18);
-          const sn = 'tnv';
-          const secret = 'VJ3Z394e88U8Gz9wa64sMlW8871m481o';
+          const sn = API_SN;
+          const secret = API_SECRET;
           const signStr = `${random}${sn}${secret}`;
 
           // สร้าง MD5 signature
@@ -293,8 +297,8 @@ const GiftModal = ({
   const apiCall = async (action, payload, baseUrl = '/api/game') => {
     try {
       const random = Math.random().toString(36).substring(2, 18);
-      const sn = 'tnv';
-      const secret = 'VJ3Z394e88U8Gz9wa64sMlW8871m481o';
+      const sn = API_SN;
+      const secret = API_SECRET;
       const signStr = `${random}${sn}${secret}`;
 
       // สร้าง MD5 signature
@@ -583,132 +587,132 @@ const GiftModal = ({
     }
   };
 
- const handleRegister = async (e) => {
-  e?.preventDefault();
-  setLoading(true);
-  setMessage("");
+  const handleRegister = async (e) => {
+    e?.preventDefault();
+    setLoading(true);
+    setMessage("");
 
-  if (password.length < 4) {
-    setMessage("❌ 密码至少需要4个字符");
-    setLoading(false);
-    return;
-  }
-  if (password !== confirmPassword) {
-    setMessage("❌ 密码不匹配");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    let giftSuccess = false;
-    let giftToken = null;
-    let giftMessage = "";
-
-    // 1. ตรวจสอบชื่อผู้ใช้ในระบบ Gift
-    const { ok: checkOk, body: checkBody } = await apiFetch(
-      `/backend-api/gift/check-username?username=${username}`
-    );
-
-    if (checkOk && checkBody.exists === false) {
-      // สร้างบัญชี Gift ใหม่
-      const { ok, body } = await apiFetch("/backend-api/gift/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: username, password })
-      });
-
-      if (ok && body.success) {
-        giftSuccess = true;
-        giftToken = body.token;
-        giftMessage = "✅ 注册成功!";
-      } else {
-        giftMessage = body?.message || "❌ 注册失败";
-      }
-    } else if (checkOk && checkBody.exists === true) {
-      // ล็อกอินแทน
-      const loginResult = await handleAutoLogin(username, password);
-      if (loginResult.success) {
-        giftSuccess = true;
-        giftToken = loginResult.token;
-        giftMessage = "✅ ล็อกอินสำเร็จ (ชื่อผู้ใช้มีอยู่แล้ว)";
-      } else {
-        giftMessage = "⚠️ ชื่อผู้ใช้นี้มีอยู่แล้ว กรุณาล็อกอินแทน";
-      }
-    } else {
-      giftMessage = "⚠️ ไม่สามารถตรวจสอบชื่อผู้ใช้ได้";
+    if (password.length < 4) {
+      setMessage("❌ 密码至少需要4个字符");
+      setLoading(false);
+      return;
     }
-
-    // 2. ✅ บันทึกลง game_accounts ใน MySQL
-    setMessage(`${giftMessage} 正在保存到数据库...`);
+    if (password !== confirmPassword) {
+      setMessage("❌ 密码不匹配");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const saveToDbResult = await apiFetch('/backend-api/game/create-game-account', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerId: username.trim(),
-          platType: 'ag',
-          currency: 'CNY'
-        })
-      });
+      let giftSuccess = false;
+      let giftToken = null;
+      let giftMessage = "";
 
-      if (saveToDbResult.ok && saveToDbResult.body.success) {
-        console.log('✅ บันทึกบัญชีเกมลง MySQL สำเร็จ');
+      // 1. ตรวจสอบชื่อผู้ใช้ในระบบ Gift
+      const { ok: checkOk, body: checkBody } = await apiFetch(
+        `/backend-api/gift/check-username?username=${username}`
+      );
+
+      if (checkOk && checkBody.exists === false) {
+        // สร้างบัญชี Gift ใหม่
+        const { ok, body } = await apiFetch("/backend-api/gift/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: username, password })
+        });
+
+        if (ok && body.success) {
+          giftSuccess = true;
+          giftToken = body.token;
+          giftMessage = "✅ 注册成功!";
+        } else {
+          giftMessage = body?.message || "❌ 注册失败";
+        }
+      } else if (checkOk && checkBody.exists === true) {
+        // ล็อกอินแทน
+        const loginResult = await handleAutoLogin(username, password);
+        if (loginResult.success) {
+          giftSuccess = true;
+          giftToken = loginResult.token;
+          giftMessage = "✅ ล็อกอินสำเร็จ (ชื่อผู้ใช้มีอยู่แล้ว)";
+        } else {
+          giftMessage = "⚠️ ชื่อผู้ใช้นี้มีอยู่แล้ว กรุณาล็อกอินแทน";
+        }
       } else {
-        console.warn('⚠️ ไม่สามารถบันทึกลง MySQL ได้:', saveToDbResult.body?.message);
+        giftMessage = "⚠️ ไม่สามารถตรวจสอบชื่อผู้ใช้ได้";
       }
-    } catch (dbError) {
-      console.error('❌ ข้อผิดพลาดในการบันทึกลง MySQL:', dbError);
-    }
 
-    // 3. สร้างเกมแอคเคาท์
-    setMessage(`${giftMessage} 正在创建游戏账号...`);
+      // 2. ✅ บันทึกลง game_accounts ใน MySQL
+      setMessage(`${giftMessage} 正在保存到数据库...`);
 
-    const gameAccountResult = await createGameAccount(username);
+      try {
+        const saveToDbResult = await apiFetch('/backend-api/game/create-game-account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playerId: username.trim(),
+            platType: 'ag',
+            currency: 'CNY'
+          })
+        });
 
-    if (gameAccountResult.success) {
-      if (giftSuccess && giftToken) {
-        // บันทึกข้อมูล
-        localStorage.setItem("gift_token", giftToken);
-        localStorage.setItem("gift_username", username);
-        localStorage.setItem("gift_token_time", Date.now().toString());
-        localStorage.setItem(
-          "gift_login_type",
-          forceLoginView ? "video" : "gift"
-        );
+        if (saveToDbResult.ok && saveToDbResult.body.success) {
+          console.log('✅ บันทึกบัญชีเกมลง MySQL สำเร็จ');
+        } else {
+          console.warn('⚠️ ไม่สามารถบันทึกลง MySQL ได้:', saveToDbResult.body?.message);
+        }
+      } catch (dbError) {
+        console.error('❌ ข้อผิดพลาดในการบันทึกลง MySQL:', dbError);
+      }
 
-        setIsLoggedIn(true);
-        setForceLoginView(false);
+      // 3. สร้างเกมแอคเคาท์
+      setMessage(`${giftMessage} 正在创建游戏账号...`);
 
-        // ตั้งค่าเริ่มต้นว่ายังไม่ได้รับของขวัญวันนี้
-        setTodayClaimed(false);
-        setCanClaimToday(true);
+      const gameAccountResult = await createGameAccount(username);
 
-        window.dispatchEvent(new CustomEvent('userLoggedIn', {
-          detail: { username, token: giftToken }
-        }));
+      if (gameAccountResult.success) {
+        if (giftSuccess && giftToken) {
+          // บันทึกข้อมูล
+          localStorage.setItem("gift_token", giftToken);
+          localStorage.setItem("gift_username", username);
+          localStorage.setItem("gift_token_time", Date.now().toString());
+          localStorage.setItem(
+            "gift_login_type",
+            forceLoginView ? "video" : "gift"
+          );
 
-        setMessage(`✅ ${giftMessage} และสร้างเกมแอคเคาท์ "${username}" สำเร็จ`);
+          setIsLoggedIn(true);
+          setForceLoginView(false);
+
+          // ตั้งค่าเริ่มต้นว่ายังไม่ได้รับของขวัญวันนี้
+          setTodayClaimed(false);
+          setCanClaimToday(true);
+
+          window.dispatchEvent(new CustomEvent('userLoggedIn', {
+            detail: { username, token: giftToken }
+          }));
+
+          setMessage(`✅ ${giftMessage} และสร้างเกมแอคเคาท์ "${username}" สำเร็จ`);
+        } else {
+          setMessage(`🎮 สร้างเกมแอคเคาท์ "${username}" สำเร็จ! (สามารถล็อกอินในระบบเกมได้)`);
+        }
       } else {
-        setMessage(`🎮 สร้างเกมแอคเคาท์ "${username}" สำเร็จ! (สามารถล็อกอินในระบบเกมได้)`);
+        setMessage(`${giftMessage} แต่ไม่สามารถสร้างเกมแอคเคาท์: ${gameAccountResult.message}`);
       }
-    } else {
-      setMessage(`${giftMessage} แต่ไม่สามารถสร้างเกมแอคเคาท์: ${gameAccountResult.message}`);
+
+      setTimeout(() => {
+        setShowRegister(false);
+        setPassword("");
+        setConfirmPassword("");
+      }, 3000);
+
+    } catch (err) {
+      console.error("Register error:", err);
+      setMessage("❌ 发生错误");
+    } finally {
+      setLoading(false);
     }
-
-    setTimeout(() => {
-      setShowRegister(false);
-      setPassword("");
-      setConfirmPassword("");
-    }, 3000);
-
-  } catch (err) {
-    console.error("Register error:", err);
-    setMessage("❌ 发生错误");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // ============================================================
   // ✅ ฟังก์ชันล็อกอินอัตโนมัติ

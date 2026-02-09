@@ -1,9 +1,6 @@
 // api.js
 import CryptoJS from 'crypto-js';
 
-// ✅ ดึงค่าจาก environment variables
-// สำหรับ Vite: import.meta.env.VITE_*
-// สำหรับ Create React App: process.env.REACT_APP_*
 const API_SN = import.meta.env?.VITE_API_SN || process.env.API_SN;
 const API_SECRET = import.meta.env?.VITE_API_SECRET || process.env.API_SECRET;
 

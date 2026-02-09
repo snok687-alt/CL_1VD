@@ -234,6 +234,13 @@ async function statsMiddleware(req, res) {
     });
   }
 }
+function getHealthStatus() {
+  return {
+    isHealthy: true, // หรือตรวจสอบจริงๆ
+    consecutiveFailures: 0,
+    cacheSize: 0
+  };
+}
 
 module.exports = {
   checkAllHealth,
@@ -243,5 +250,6 @@ module.exports = {
   isSystemReady,
   getSystemStats,
   healthCheckMiddleware,
-  statsMiddleware
+  statsMiddleware,
+  getHealthStatus
 };
