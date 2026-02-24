@@ -1,6 +1,4 @@
 const { pool } = require('../config/db');
-const axios = require("axios");
-const CryptoJS = require("crypto-js");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -203,7 +201,6 @@ exports.dailyGiftByIP = async (req, res) => {
       let user = null;
 
       if (userId) {
-        // 使用 token 的用户 ID
         const [rows] = await connection.query(
           `SELECT id, username, amount_gift, last_claim_date,
                   CASE 
@@ -218,29 +215,21 @@ exports.dailyGiftByIP = async (req, res) => {
         
         if (rows.length === 0) {
           await connection.rollback();
-          return res.status(404).json({ 
-            success: false, 
-            message: "❌ 用户不存在" 
-          });
+          return res.status(404).json({ success: false, message: "❌ 用户不存在" });
         }
         
         user = rows[0];
         
-        // 检查24小时内是否已领取
         if (user.claimed_recently) {
           await connection.rollback();
-          
-          // 计算剩余时间（从上次领取时间起24小时）
           const [timeRows] = await connection.query(
             `SELECT TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(last_claim_date, INTERVAL 24 HOUR)) as seconds_left 
              FROM users_custom_gift WHERE id = ?`,
             [userId]
           );
-          
           const secondsLeft = timeRows[0]?.seconds_left || 0;
           const hours = Math.floor(secondsLeft / 3600);
           const minutes = Math.floor((secondsLeft % 3600) / 60);
-          
           return res.json({
             success: false,
             message: "⏳ 请等待24小时后再领取礼物",
@@ -250,7 +239,6 @@ exports.dailyGiftByIP = async (req, res) => {
           });
         }
       } else {
-        // 无 token - 使用 IP
         const [rows] = await connection.query(
           `SELECT id, username, amount_gift, last_claim_date,
                   CASE 
@@ -264,42 +252,32 @@ exports.dailyGiftByIP = async (req, res) => {
         );
 
         if (rows.length === 0) {
-          // 为新IP创建用户
           const username = "guest_" + Math.random().toString(36).substring(2, 10);
           const [result] = await connection.query(
             `INSERT INTO users_custom_gift (username, password_hash, ip_address, amount_gift, last_claim_date)
              VALUES (?, ?, ?, ?, NOW())`,
             [username, "no_password", userIP, 1]
           );
-          
           await connection.commit();
           return res.json({ 
-            success: true, 
-            added: 1, 
-            amount_gift: 1, 
+            success: true, added: 1, amount_gift: 1, 
             message: "🎁 欢迎！获得首次礼物 +1 元", 
-            isNewUser: true, 
-            last_claim_date: new Date() 
+            isNewUser: true, last_claim_date: new Date() 
           });
         }
 
         user = rows[0];
         
-        // 检查24小时内是否已领取
         if (user.claimed_recently) {
           await connection.rollback();
-          
-          // 计算剩余时间
           const [timeRows] = await connection.query(
             `SELECT TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(last_claim_date, INTERVAL 24 HOUR)) as seconds_left 
              FROM users_custom_gift WHERE ip_address = ?`,
             [userIP]
           );
-          
           const secondsLeft = timeRows[0]?.seconds_left || 0;
           const hours = Math.floor(secondsLeft / 3600);
           const minutes = Math.floor((secondsLeft % 3600) / 60);
-          
           return res.json({
             success: false,
             message: "⏳ 请等待24小时后再领取礼物",
@@ -310,25 +288,19 @@ exports.dailyGiftByIP = async (req, res) => {
         }
       }
 
-      // 更新金额和最后领取时间
       const updateQuery = userId
         ? `UPDATE users_custom_gift SET amount_gift = amount_gift + 1, last_claim_date = NOW() WHERE id = ?`
         : `UPDATE users_custom_gift SET amount_gift = amount_gift + 1, last_claim_date = NOW() WHERE ip_address = ?`;
-      
       const params = userId ? [userId] : [userIP];
-      
       await connection.query(updateQuery, params);
-      
-      // 获取最新数据返回
+
       const [updatedRows] = await connection.query(
         `SELECT amount_gift, last_claim_date FROM users_custom_gift WHERE ${userId ? 'id = ?' : 'ip_address = ?'}`,
         params
       );
-      
       await connection.commit();
 
       const updatedUser = updatedRows[0];
-
       return res.json({
         success: true,
         added: 1,
@@ -423,10 +395,8 @@ exports.checkClaimStatus = async (req, res) => {
     connection = await pool.getConnection();
 
     let rows;
-    let user = null;
     
     if (userIdFromToken) {
-      // 使用 token 的用户 ID
       [rows] = await connection.query(
         `SELECT id, username, amount_gift, last_claim_date, 
                 CASE 
@@ -439,14 +409,9 @@ exports.checkClaimStatus = async (req, res) => {
         [userIdFromToken]
       );
     } else {
-      // 无 token - 使用 IP
       if (!userIP) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "无法识别 IP 地址" 
-        });
+        return res.status(400).json({ success: false, message: "无法识别 IP 地址" });
       }
-      
       [rows] = await connection.query(
         `SELECT id, username, amount_gift, last_claim_date, 
                 CASE 
@@ -460,9 +425,8 @@ exports.checkClaimStatus = async (req, res) => {
       );
     }
 
-    user = rows[0];
+    const user = rows[0];
     
-    // 如果未找到用户 = 尚未领取过礼物
     if (!user) {
       return res.json({
         success: true,
@@ -474,7 +438,6 @@ exports.checkClaimStatus = async (req, res) => {
     }
 
     const claimedRecently = !!user.claimed_recently;
-    
     let time_left = null;
     if (claimedRecently) {
       const secondsLeft = Math.max(0, user.seconds_left || 0);
@@ -493,15 +456,15 @@ exports.checkClaimStatus = async (req, res) => {
 
   } catch (err) {
     console.error('检查状态错误:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: "发生错误" 
-    });
+    res.status(500).json({ success: false, message: "发生错误" });
   } finally {
     if (connection) connection.release();
   }
 };
 
+// -----------------------------------------------------
+// ตรวจสอบ username ซ้ำ
+// -----------------------------------------------------
 exports.checkUsername = async (req, res) => {
   try {
     const { username } = req.query;
@@ -511,7 +474,6 @@ exports.checkUsername = async (req, res) => {
       'SELECT id FROM users_custom_gift WHERE username = ? LIMIT 1',
       [username]
     );
-    
     return res.json({ exists: rows.length > 0 });
   } catch (err) {
     console.error('Error checking username:', err);
@@ -519,46 +481,126 @@ exports.checkUsername = async (req, res) => {
   }
 };
 
-exports.claimDailyGift = async (req, res) => {
+// -----------------------------------------------------
+// ✅ แลกของขวัญเป็นเงินเกม
+// -----------------------------------------------------
+exports.redeemGift = async (req, res) => {
+  let connection;
   try {
-    const username = req.user.username; // จาก JWT
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    const userIP = getClientIP(req);
 
-    // เช็ควันนี้รับแล้วไหม
-    const [check] = await db.query(
-      "SELECT last_claim_date FROM users WHERE username=?",
-      [username]
-    );
-
-    const today = new Date().toISOString().slice(0, 10);
-    if (check[0]?.last_claim_date?.toISOString().slice(0, 10) === today) {
-      return res.json({ success: false, message: "Already claimed" });
+    let userId = null;
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.id;
+      } catch (err) {
+        // token ไม่ valid ใช้ IP แทน
+      }
     }
 
-    // เพิ่ม gift
-    await db.query(`
-      UPDATE users 
-      SET amount_gift = amount_gift + 1,
-          last_claim_date = NOW()
-      WHERE username = ?
-    `, [username]);
-
-    // ดึงยอดใหม่
-    const [user] = await db.query(
-      "SELECT amount_gift FROM users WHERE username=?",
-      [username]
-    );
-
-    const amount = user[0].amount_gift;
-
-    // ✅ ถ้า amount_gift == 1 เติมเงินเข้าเกมทันที
-    if (amount === 1) {
-      await transferToGame(username, 1);
+    // ต้องมี userId หรือ userIP อย่างใดอย่างหนึ่ง
+    if (!userId && (!userIP || userIP === 'unknown')) {
+      return res.status(400).json({ success: false, message: '❌ 无法识别用户' });
     }
 
-    res.json({ success: true, amount_gift: amount });
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
 
+    try {
+      let rows;
+      if (userId) {
+        [rows] = await connection.query(
+          `SELECT id, username, amount_gift FROM users_custom_gift WHERE id = ? LIMIT 1 FOR UPDATE`,
+          [userId]
+        );
+      } else {
+        [rows] = await connection.query(
+          `SELECT id, username, amount_gift FROM users_custom_gift WHERE ip_address = ? LIMIT 1 FOR UPDATE`,
+          [userIP]
+        );
+      }
+
+      // ไม่พบ user หรือ ยอดของขวัญ = 0
+      if (rows.length === 0) {
+        await connection.rollback();
+        return res.json({ success: false, message: '❌ 未找到用户记录' });
+      }
+
+      if (rows[0].amount_gift <= 0) {
+        await connection.rollback();
+        return res.json({ success: false, message: '❌ 没有可兑换的礼物余额' });
+      }
+
+      const user = rows[0];
+      const redeemAmount = Number(user.amount_gift);
+
+      // หักยอดของขวัญเป็น 0
+      await connection.query(
+        `UPDATE users_custom_gift SET amount_gift = 0 WHERE id = ?`,
+        [user.id]
+      );
+
+      await connection.commit();
+
+      console.log(`✅ 兑换成功: user=${user.username}, amount=${redeemAmount}`);
+
+      return res.json({
+        success: true,
+        redeemAmount,
+        message: `✅ 兑换成功 +${redeemAmount} 元`,
+        new_amount_gift: 0
+      });
+
+    } catch (txErr) {
+      await connection.rollback();
+      throw txErr;
+    }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+    console.error('兑换错误:', err);
+    res.status(500).json({ success: false, message: '系统发生错误', error: process.env.NODE_ENV === 'development' ? err.message : undefined });
+  } finally {
+    if (connection) connection.release();
   }
+};
+
+// ✅ Sync balance จาก AG เข้า MySQL
+exports.syncBalance = async (req, res) => {
+    const { playerId, balance } = req.body;
+    if (!playerId) return res.json({ success: false, message: 'ไม่มี playerId' });
+    
+    try {
+        await pool.query(`
+            INSERT INTO player_balances (player_id, balance, updated_at)
+            VALUES (?, ?, NOW())
+            ON DUPLICATE KEY UPDATE 
+                balance = VALUES(balance),
+                updated_at = NOW()
+        `, [playerId, balance ?? 0]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('syncBalance error:', error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+// ✅ ดึง balance จาก MySQL
+exports.getPlayerBalance = async (req, res) => {
+    const { playerId } = req.params;
+    if (!playerId) return res.json({ success: false, balance: 0 });
+    
+    try {
+        const [rows] = await pool.query(
+            'SELECT balance, total_deposit, total_withdraw FROM player_balances WHERE player_id = ?',
+            [playerId]
+        );
+        
+        if (rows.length === 0) return res.json({ success: false, balance: 0 });
+        res.json({ success: true, ...rows[0] });
+    } catch (error) {
+        console.error('getPlayerBalance error:', error);
+        res.json({ success: false, balance: 0 });
+    }
 };

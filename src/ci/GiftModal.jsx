@@ -522,7 +522,10 @@ const GiftModal = ({
       const { ok, status, body } = await apiFetch("/backend-api/gift/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: username, password })
+        body: JSON.stringify({
+          name: username,  // เปลี่ยนจาก username เป็น name
+          password
+        })
       });
 
       if (!ok) {
@@ -618,7 +621,10 @@ const GiftModal = ({
         const { ok, body } = await apiFetch("/backend-api/gift/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: username, password })
+          body: JSON.stringify({
+            name: username,  // เปลี่ยนจาก username เป็น name
+            password
+          })
         });
 
         if (ok && body.success) {
@@ -722,7 +728,7 @@ const GiftModal = ({
       const { ok, status, body } = await apiFetch("/backend-api/gift/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: username, password })
+        body: JSON.stringify({ username, password })
       });
 
       if (!ok) {

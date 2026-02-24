@@ -1,9 +1,7 @@
 // gameReportService.js - ปรับปรุงให้แสดงข้อมูลที่ต้องการ
 const { pool } = require('./config/db');
+require('dotenv').config({ path: '/usr/share/nginx/html/src/services/.env' });
 
-/**
- * ดึงข้อมูลรายงานผู้เล่นทั้งหมด (ไม่มี Filters)
- */
 async function getAllPlayersSimpleReport() {
   try {
     const query = `
@@ -13,7 +11,6 @@ async function getAllPlayersSimpleReport() {
         ga.status AS account_status,
         ga.last_login,
         
-        -- 🟢 Online Status
         CASE 
           WHEN ga.last_login IS NULL THEN 'NEVER LOGGED IN'
           WHEN ga.last_login > NOW() - INTERVAL 5 MINUTE THEN '🟢 ONLINE'
@@ -22,22 +19,22 @@ async function getAllPlayersSimpleReport() {
           ELSE '⚫ OFFLINE'
         END AS online_status,
         
-        IFNULL(b.balance, 0) AS total_balance,
+        IFNULL(pb.balance, 0) AS total_balance,
+        IFNULL(pb.total_deposit, 0) AS total_deposit,
+        IFNULL(pb.total_withdraw, 0) AS total_withdraw,
+        IFNULL(d.deposit_times, 0) AS deposit_times,
+        IFNULL(w.withdraw_times, 0) AS withdraw_times,
         IFNULL(p.total_bet, 0) AS total_cost,
         IFNULL(p.house_profit, 0) AS player_profit,
-        IFNULL(d.deposit_times, 0) AS deposit_times,
-        IFNULL(d.total_deposit, 0) AS total_deposit,
-        IFNULL(w.withdraw_times, 0) AS withdraw_times,
-        IFNULL(w.total_withdraw, 0) AS total_withdraw
+        IFNULL(g.redeemed_gift, 0) AS redeemed_gift,
+        IFNULL(g.redeem_times, 0) AS redeem_times
         
       FROM game_accounts ga
-        
-      LEFT JOIN (
-        SELECT player_id,
-        SUM(CASE WHEN type='transfer_in' THEN amount ELSE -amount END) AS balance
-        FROM transfers
-        GROUP BY player_id
-      ) b ON ga.player_id = b.player_id
+      
+      -- ✅ แก้ Collation ด้วย CONVERT
+      LEFT JOIN player_balances pb 
+        ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+         = CONVERT(pb.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         
       LEFT JOIN (
         SELECT player_id,
@@ -45,25 +42,38 @@ async function getAllPlayersSimpleReport() {
         SUM(valid_amount - settled_amount) AS house_profit
         FROM game_records
         GROUP BY player_id
-      ) p ON ga.player_id = p.player_id
+      ) p ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+           = CONVERT(p.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         
       LEFT JOIN (
         SELECT player_id,
-        COUNT(*) AS deposit_times,
-        SUM(usdt_amount) AS total_deposit
+        COUNT(*) AS deposit_times
         FROM crypto_deposits
-        WHERE status='paid'
+        WHERE status = 'paid'
         GROUP BY player_id
-      ) d ON ga.player_id = d.player_id
+      ) d ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+           = CONVERT(d.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         
       LEFT JOIN (
         SELECT player_id,
-        COUNT(*) AS withdraw_times,
-        SUM(amount) AS total_withdraw
+        COUNT(*) AS withdraw_times
         FROM withdraw_requests
-        WHERE status='paid'
+        WHERE status IN ('completed', 'approved', 'paid')
         GROUP BY player_id
-      ) w ON ga.player_id = w.player_id
+      ) w ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+           = CONVERT(w.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+      
+      LEFT JOIN (
+        SELECT 
+          player_id,
+          SUM(amount) AS redeemed_gift,
+          COUNT(*) AS redeem_times
+        FROM transfers
+        WHERE order_id LIKE 'gift_%'
+          AND type = 'transfer_in'
+        GROUP BY player_id
+      ) g ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+           = CONVERT(g.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
         
       ORDER BY 
         CASE 
@@ -77,7 +87,6 @@ async function getAllPlayersSimpleReport() {
     
     const [players] = await pool.query(query);
     
-    // คำนวณสรุปข้อมูล
     const summary = {
       total_players: players.length,
       online_players: players.filter(p => p.online_status === '🟢 ONLINE').length,
@@ -90,7 +99,10 @@ async function getAllPlayersSimpleReport() {
       total_deposit: players.reduce((sum, p) => sum + parseFloat(p.total_deposit || 0), 0),
       total_withdraw: players.reduce((sum, p) => sum + parseFloat(p.total_withdraw || 0), 0),
       total_deposit_times: players.reduce((sum, p) => sum + parseInt(p.deposit_times || 0), 0),
-      total_withdraw_times: players.reduce((sum, p) => sum + parseInt(p.withdraw_times || 0), 0)
+      total_withdraw_times: players.reduce((sum, p) => sum + parseInt(p.withdraw_times || 0), 0),
+      total_redeemed_gift: players.reduce((sum, p) => sum + parseFloat(p.redeemed_gift || 0), 0),
+      total_redeem_times: players.reduce((sum, p) => sum + parseInt(p.redeem_times || 0), 0),
+      players_with_gift: players.filter(p => parseFloat(p.redeemed_gift || 0) > 0).length
     };
     
     return {
@@ -106,9 +118,6 @@ async function getAllPlayersSimpleReport() {
   }
 }
 
-/**
- * ดึงเฉพาะผู้เล่นออนไลน์
- */
 async function getOnlinePlayers() {
   try {
     const query = `
@@ -116,14 +125,11 @@ async function getOnlinePlayers() {
         ga.player_id,
         ga.currency,
         ga.last_login,
-        IFNULL(b.balance, 0) AS total_balance
+        IFNULL(pb.balance, 0) AS total_balance
       FROM game_accounts ga
-      LEFT JOIN (
-        SELECT player_id,
-        SUM(CASE WHEN type='transfer_in' THEN amount ELSE -amount END) AS balance
-        FROM transfers
-        GROUP BY player_id
-      ) b ON ga.player_id = b.player_id
+      LEFT JOIN player_balances pb 
+        ON CONVERT(ga.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci 
+         = CONVERT(pb.player_id USING utf8mb4) COLLATE utf8mb4_unicode_ci
       WHERE ga.last_login > NOW() - INTERVAL 5 MINUTE
       ORDER BY ga.last_login DESC
     `;
@@ -143,7 +149,18 @@ async function getOnlinePlayers() {
   }
 }
 
+async function fetchRealtimeRecords() {
+  try {
+    console.log('🎮 Running realtime fetch...');
+    return { success: true };
+  } catch (error) {
+    console.error('Realtime fetch error:', error);
+    return { success: false, message: error.message };
+  }
+}
+
 module.exports = {
   getAllPlayersSimpleReport,
-  getOnlinePlayers
+  getOnlinePlayers,
+  fetchRealtimeRecords
 };
